@@ -12,11 +12,6 @@ on:
         default: false
         required: false
         type: boolean
-      directory:
-        description: Chart directory
-        default: "charts/app"
-        required: false
-        type: string
       environment:
         description: Environment name; omit for PRs
         required: false
@@ -59,11 +54,6 @@ on:
         default: 10
         required: false
         type: number
-      values:
-        description: "Values file"
-        default: "values.yaml"
-        required: false
-        type: string
 
     outputs:
       tag:
@@ -92,16 +82,6 @@ jobs:
       tag: ${{ inputs.tag || steps.pr.outputs.pr }}
       triggered: ${{ steps.deploy.outputs.triggered }}
     steps:
-      - uses: bcgov/action-crunchy@v2.0.0
-        name: Deploy Crunchy
-        id: deploy_crunchy
-        with:
-          oc_namespace: ${{ secrets.OC_NAMESPACE }}
-          oc_token: ${{ secrets.OC_TOKEN }}
-          environment: ${{ inputs.environment }}
-          values_file: charts/crunchy/values.yml
-          triggers: ${{ inputs.db_triggers }}
-
       # Variables
       - if: inputs.tag  == ''
         id: pr

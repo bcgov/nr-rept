@@ -1,0 +1,191 @@
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rept-backend
+  labels:
+    app: rept-backend
+spec:
+  replicas: <MIN_REPLICAS>
+  selector:
+    matchLabels:
+      app: rept-backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  template:
+    metadata:
+      labels:
+        app: rept-backend
+      annotations:
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: '8080'
+        prometheus.io/scrape: 'true'
+    spec:
+      initContainers:
+        - name: rept-backend-init
+          image: ghcr.io/bcgov/nr-forest-client/common:prod
+          imagePullPolicy: Always
+          env:
+            - name: ORACLEDB_HOST
+              value: <DB_HOST>
+            - name: ORACLEDB_SECRET
+              value: <KEYSTORE_SECRET>
+            - name: ORACLEDB_PORT
+              value: "1543"
+          volumeMounts:
+            - name: rept-backend-api-cert
+              mountPath: /cert
+          resources:
+            requests:
+              cpu: 200m
+              memory: 300Mi
+      containers:
+        - name: rept-backend
+          image: <IMAGE_PLACEHOLDER>
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: DB_JDBC_CONNECT_STRING
+              value: <DB_JDBC_CONNECT_STRING>
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rept-backend-secret
+                  key: DB_USER
+            - name: DB_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: rept-backend-secret
+                  key: DB_PWD
+            - name: SPRING_SECURITY_LOG_LEVEL
+              value: <SPRING_SECURITY_LOG_LEVEL>
+            - name: SPRING_WEB_LOG_LEVEL
+              value: <SPRING_WEB_LOG_LEVEL>
+            - name: APP_LOG_LEVEL
+              value: <APP_LOG_LEVEL>
+            - name: SPRING_BOOT_AUTOCONFIG_LOG_LEVEL
+              value: <SPRING_BOOT_AUTOCONFIG_LOG_LEVEL>
+            - name: SPRING_SHOW_REQUEST_DETAILS
+              value: "<SPRING_SHOW_REQUEST_DETAILS>"
+            - name: SPRING_JPA_SHOW_SQL
+              value: "<SPRING_JPA_SHOW_SQL>"
+            - name: TOKEN_ISSUER_URL
+              value: <TOKEN_ISSUER_URL>
+            - name: KEYSTORE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: rept-backend-secret
+                  key: KEYSTORE_SECRET
+          resources:
+            requests:
+              cpu: <MIN_CPU>
+              memory: <MIN_MEM>
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+            successThreshold: 1
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 20
+            successThreshold: 1
+          volumeMounts:
+            - name: rept-backend-api-cert
+              mountPath: /cert
+            - name: tls-certs
+              mountPath: "/etc/tls-certs"
+              readOnly: true
+            - name: log-storage
+              mountPath: /logs
+            - name: app-storage
+              mountPath: /temp
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: rept-backend-cert
+        - name: log-storage
+          emptyDir: {}
+        - name: app-storage
+          emptyDir: {}
+        - name: rept-backend-api-cert
+          persistentVolumeClaim:
+            claimName: rept-backend-api-cert
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rept-backend
+  labels:
+    app: rept-backend
+  annotations:
+    service.alpha.openshift.io/serving-cert-secret-name: rept-backend-cert
+spec:
+  selector:
+    app: rept-backend
+  ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+---
+# Route (OpenShift-specific ingress)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: rept-backend-cpu-autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: rept-backend
+  minReplicas: <MIN_REPLICAS>
+  maxReplicas: <MAX_REPLICAS>
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 200
+---
+# PVC for Keystore
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  labels:
+    app: rept-backend
+  name: rept-backend-api-cert
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Mi
+  storageClassName: netapp-file-standard
+---
+# Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rept-backend-secret
+  labels:
+    app: rept-backend
+type: Opaque
+stringData:
+  DB_USER: <DB_USER>
+  DB_PWD: <DB_PWD>
+  KEYSTORE_SECRET: <KEYSTORE_SECRET>

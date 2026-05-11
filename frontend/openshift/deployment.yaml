@@ -1,0 +1,79 @@
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rept-frontend
+  labels:
+    app: rept-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rept-frontend
+  template:
+    metadata:
+      labels:
+        app: rept-frontend
+    spec:
+      containers:
+        - name: rept-frontend
+          # Updated by the CI pipeline via kustomize / sed
+          image: <IMAGE_PLACEHOLDER>
+          ports:
+            - containerPort: 2015
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 2015
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 2015
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rept-frontend
+spec:
+  selector:
+    app: rept-frontend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 2015
+      targetPort: 2015
+---
+# Route (OpenShift-specific ingress)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: rept-frontend
+spec:
+  to:
+    kind: Service
+    name: rept-frontend
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
