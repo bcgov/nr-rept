@@ -15,7 +15,7 @@
     "pretest:coverage": "npm run pretest:browser",
     "test:coverage": "vitest run --coverage",
     "pretest:ci": "npm run pretest:browser",
-    "test:ci": "vitest run --ci",
+    "test:ci": "vitest run",
     "pretest:watch": "npm run pretest:browser",
     "test:watch": "vitest --coverage"
   },
