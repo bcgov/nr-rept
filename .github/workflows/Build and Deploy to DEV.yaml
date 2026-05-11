@@ -20,7 +20,7 @@ env:
   IMAGE_REGISTRY_PASSWORD: ${{ github.token }}
 
   IMAGE_TAG: latest
-  APP_NAME: fsp
+  APP_NAME: rept
   MIN_REPLICAS: 1
   MAX_REPLICAS: 2
   MIN_CPU: 300m
@@ -241,11 +241,11 @@ jobs:
 
       - name: Perform backend rollout
         run: |
-          oc rollout restart deployment/fsp-backend
+          oc rollout restart deployment/rept-backend
 
       - name: Wait for backend rollout
         run: |
-          oc rollout status deployment/fsp-backend
+          oc rollout status deployment/rept-backend
 
       - name: Tag frontend image into OpenShift
         env:
@@ -264,11 +264,11 @@ jobs:
 
       - name: Perform frontend rollout
         run: |
-          oc rollout restart deployment/fsp-frontend
+          oc rollout restart deployment/rept-frontend
 
       - name: Wait for frontend rollout
         run: |
-          oc rollout status deployment/fsp-frontend
+          oc rollout status deployment/rept-frontend
 
       - name: ZAP Scan
         uses: zaproxy/action-api-scan@v0.10.0

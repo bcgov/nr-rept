@@ -6,7 +6,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: fsp-frontend
+      app: rept-frontend
   ingress:
     - from:
         - namespaceSelector:
