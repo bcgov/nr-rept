@@ -1,0 +1,83 @@
+@use '../../styles/variables' as vars;
+@use '@carbon/react/scss/breakpoint' as *;
+@use '@carbon/type';
+
+.logo {
+  margin-top: 1.2rem;
+}
+
+.landing-grid-container {
+  .landing-grid {
+    padding: 0;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    padding-inline: 0;
+
+    .landing-content-col {
+      margin: 0;
+      padding: 2rem;
+
+      @include breakpoint-down(md) {
+        padding: 1rem;
+      }
+
+      .landing-content-wrapper {
+        display: flex;
+        flex-direction: column;
+
+        .landing-title {
+          @include type.type-style('fluid-display-01', true);
+        }
+
+        .landing-subtitle {
+          @include type.type-style('fluid-paragraph-01', true);
+          color: var(--#{vars.$bcgov-prefix}-text-secondary);
+        }
+      }
+
+      .buttons-container {
+        display: flex;
+        width: 100%;
+
+        .login-btn {
+          width: 18rem;
+          height: 3rem;
+
+          @include breakpoint-down(md) {
+            padding-inline: calc(var(--cds-layout-density-padding-inline-local) - 0.0625rem) calc(var(--cds-layout-density-padding-inline-local) + 1rem - 0.0625rem);
+          }
+        }
+      }
+
+      .single-row {
+        flex-direction: row;
+        gap: 1rem;
+      }
+
+      .two-rows {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
+
+    .landing-img-col {
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      height: 100vh;
+      max-height: 100vh;
+
+      .landing-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        object-position: center;
+      }
+    }
+  }
+}

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Log4j2 configuration for the REPT backend.
+  Spring Boot picks up this file automatically (the -spring suffix lets Spring
+  apply its own environment property substitution before Log4j2 initialises).
+
+  Active appender selection:
+    - Local / dev  → plain human-readable pattern on stdout
+    - Container    → JSON pattern on stdout (matches the pipeline expectation)
+
+  The active profile is injected via the Spring Lookup syntax:
+    $spring{spring.profiles.active}
+
+  MDC keys populated by filters / interceptors:
+    X-TRACE-ID, X-USER (carried via Micrometer / MDC propagation)
+-->
+<Configuration status="WARN" monitorInterval="30">
+
+  <Properties>
+    <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [${spring:spring.application.name:-rept-backend}] [%X{X-TRACE-ID:-},${sys:PID:-}] [%t] %c{1.}:%L - %m%n%xEx</Property>
+    <Property name="LOG_JSON_PATTERN">{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","app":"${spring:spring.application.name:-rept-backend}","user":"%X{X-USER:-}","traceId":"%X{X-TRACE-ID:-}","pid":"${sys:PID:-}","thread":"%t","source":"%c{1.63}:%L","message":"%enc{%m}{JSON}","exception":"%enc{%xEx}{JSON}"}%n</Property>
+  </Properties>
+
+  <Appenders>
+
+    <!-- Plain text — used in local / dev mode -->
+    <Console name="ConsoleText" target="SYSTEM_OUT">
+      <PatternLayout pattern="${LOG_PATTERN}"/>
+    </Console>
+
+    <!-- Structured JSON — used in containerised / pipeline deployments -->
+    <Console name="ConsoleJson" target="SYSTEM_OUT">
+      <PatternLayout pattern="${LOG_JSON_PATTERN}"/>
+    </Console>
+
+    <!--
+      Routing appender: delegates to ConsoleJson when LOG_FORMAT=json
+      (set by the container / pipeline), or ConsoleText otherwise.
+    -->
+    <Routing name="Console">
+      <Routes pattern="${env:LOG_FORMAT:-text}">
+        <Route ref="ConsoleJson" key="json"/>
+        <Route ref="ConsoleText"/>
+      </Routes>
+    </Routing>
+
+  </Appenders>
+
+  <Loggers>
+
+    <!-- Application code -->
+    <Logger name="ca.bc.gov.nrs.hrs" level="${env:LOGGING_LEVEL:-INFO}" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <!-- HikariCP connection pool -->
+    <Logger name="com.zaxxer.hikari" level="DEBUG" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="com.zaxxer.hikari.HikariConfig" level="DEBUG" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <!-- Hibernate SQL / binding -->
+    <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="org.hibernate.orm.jdbc.bind" level="TRACE" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="org.hibernate.engine.jdbc.connections" level="DEBUG" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <!-- Oracle JDBC -->
+    <Logger name="oracle.jdbc" level="DEBUG" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <!-- Spring Security -->
+    <Logger name="org.springframework.security" level="INFO" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <!-- Root logger — fallback for everything else -->
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+    </Root>
+
+  </Loggers>
+
+</Configuration>

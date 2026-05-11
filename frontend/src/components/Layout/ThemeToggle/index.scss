@@ -1,0 +1,62 @@
+@use '../../../styles/variables' as variables;
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/type' as *;
+@use '@carbon/react/scss/breakpoint' as *;
+@use '@carbon/react/scss/theme' as *;
+@use '@carbon/react/scss/colors' as colors;
+
+.theme-toggle {
+  width: 3rem;
+  height: 1.5rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  padding: 0.188rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  .circle {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.3s, background-color 0.3s;
+    background-color: var(--#{variables.$bcgov-prefix}-background-brand);
+  }
+
+  .icon {
+    width: 3.125rem;
+    height: 3.125rem;
+    padding: 1px;
+  }
+
+  &.off {
+    background-color: colors.$white;
+    .circle {
+      transform: translateX(0);
+    }
+    .icon {
+      color: colors.$white;
+    }
+    .icon path{
+      fill: currentColor;
+    }
+  }
+  &.on {
+    background-color: colors.$gray-100;
+    .circle {
+      transform: translateX(24px);
+      background-color: colors.$white;
+    }
+    .icon {
+      color: colors.$gray-100;
+    }
+    .icon path{
+      fill: currentColor;
+    }
+  }
+
+}

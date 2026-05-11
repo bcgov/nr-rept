@@ -1,0 +1,63 @@
+@use './mixins';
+@use './overrides';
+@use "./variables" as variables;
+@use './default-grid';
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+// Wrap a Carbon Table in this for a subtle outer border + rounded corners.
+// Pair with `useZebraStyles` on the table for striped rows.
+.bordered-table {
+  border: 1px solid var(--cds-border-subtle-01, #c6c6c6);
+  border-radius: 0.25rem;
+  overflow: hidden;
+
+  // When applied to a Carbon DataTable.TableContainer, kill its default
+  // top padding so the table head sits flush with our border.
+  &.cds--data-table-container {
+    padding-block-start: 0;
+  }
+}
+
+/* Toast Notification - Set it to the top-right corner and animate */
+.#{variables.$bcgov-prefix}--toast-notification {
+  z-index: 12000 !important;
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  transform: translateX(100%);
+  opacity: 0;
+
+  &.slide-in {
+    animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  &.slide-out {
+    animation: slide-out-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}

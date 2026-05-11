@@ -1,0 +1,78 @@
+.project-search-grid {
+  row-gap: 2rem;
+}
+
+.project-search__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  h1 {
+    margin: 0;
+  }
+}
+
+.project-search__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  // Sit on the "next layer up" surface so the tile contrasts with the page
+  // background in both light and dark themes (white in light, lighter dark
+  // gray in dark). Bumping --cds-layer / --cds-field / --cds-layer-accent
+  // together nests the children (inputs, zebra-striped DataTable) onto the
+  // same elevated layer so the row stripes still contrast in dark theme.
+  background: var(--cds-layer-02);
+  --cds-layer: var(--cds-layer-02);
+  --cds-field: var(--cds-field-02);
+  --cds-layer-accent: var(--cds-layer-accent-02);
+  --cds-layer-hover: var(--cds-layer-hover-02);
+}
+
+.project-search__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.project-search__field-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 672px) {
+  .project-search__field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1056px) {
+  .project-search__field-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.project-search__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.project-search__summary {
+  margin: 0;
+  font-weight: 600;
+}
+
+.project-search__link {
+  color: var(--cds-link-primary);
+  text-decoration: none;
+}
+
+
+.project-search__link:hover,
+.project-search__link:focus {
+  text-decoration: underline;
+}

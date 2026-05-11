@@ -1,0 +1,28 @@
+@use '@carbon/type';
+@use '../../../styles/variables' as vars;
+
+.page-title-col {
+  .page-title-breadcrumb {
+    .#{vars.$bcgov-prefix}--link {
+      cursor: pointer;
+    }
+
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title-container {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.5rem;
+
+    .title-container {
+      display: flex;
+      flex-direction: row;
+      column-gap: 0.5rem;
+
+      h1 {
+        @include type.type-style('heading-05');
+      }
+    }
+  }
+}

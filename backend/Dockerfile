@@ -1,35 +1,65 @@
-# Build
-FROM node:24.15.0-slim AS build
+### Builder Stage
+FROM eclipse-temurin:21-jdk-alpine AS build
 
-# Copy, build static files; see .dockerignore for exclusions
 WORKDIR /app
-COPY . ./
-ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
-RUN npm run deploy
 
-# Dependencies
-FROM node:24.15.0-slim AS dependencies
+# Copy Maven wrapper and pom.xml first for better caching
+COPY pom.xml mvnw ./
+COPY .mvn/ ./.mvn
 
-# Copy, build static files; see .dockerignore for exclusions
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+COPY scripts ./scripts
+
+# Build the application
+RUN ./mvnw package -DskipTests -Dskip.unit.tests=true
+
+### Runtime Stage
+FROM eclipse-temurin:21-jre-alpine
+
+ARG PORT=3000
+
+# Install required tools (openssl for certificate fetching)
+RUN apk add --no-cache openssl curl bash
+
 WORKDIR /app
-COPY . ./
-ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
-RUN npm ci --ignore-scripts --no-update-notifier --omit=dev
 
-# Deploy using minimal Distroless image
-FROM gcr.io/distroless/nodejs22-debian12:nonroot
-ENV NODE_ENV=production
+# Copy the built JAR file
+COPY --from=build /app/target/rept-backend.jar ./app.jar
 
-# Copy app and dependencies
-WORKDIR /app
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=build /app/generated ./generated
-COPY --from=build /app/dist ./dist
+# Copy certificate fetch script for Jasper Reports HTTPS
+COPY --from=build /app/scripts/fetch-certificates.sh ./scripts/fetch-certificates.sh
+RUN chmod +x ./scripts/fetch-certificates.sh
 
-# Boilerplate, not used in OpenShift/Kubernetes
-EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:3000/api
+# Create startup script that fetches Jasper certs before starting the app
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'set -e' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Fetch Jasper Reports SSL certificates into Java truststore' >> /app/start.sh && \
+    echo 'echo "Fetching Jasper Reports SSL certificates..."' >> /app/start.sh && \
+    echo '/app/scripts/fetch-certificates.sh "$JAVA_HOME/lib/security/cacerts" changeit || echo "Warning: Certificate fetch had issues, continuing..."' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start the application' >> /app/start.sh && \
+    echo 'echo "Starting REPT Backend..."' >> /app/start.sh && \
+    echo 'exec java -jar /app/app.jar' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
-# Nonroot user, limit heap size to 150 MB
-USER nonroot
-CMD ["--max-old-space-size=150", "/app/dist/main"]
+# Create non-root user
+RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -D appuser
+USER appuser
+
+# Expose port
+EXPOSE ${PORT}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/actuator/health || exit 1
+
+# Environment variables
+ENV SPRING_PROFILES_ACTIVE=container \
+    SERVER_PORT=${PORT}
+
+ENTRYPOINT ["/app/start.sh"]

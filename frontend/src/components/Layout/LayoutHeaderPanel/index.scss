@@ -1,0 +1,23 @@
+@use '../../../styles/variables' as vars;
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/type' as *;
+@use '@carbon/react/scss/breakpoint' as *;
+@use '@carbon/react/scss/theme' as *;
+@use '@bcgov-nr/nr-theme/design-tokens/colors.scss' as colors;
+@use '@carbon/type';
+
+.profile-panel {
+  inline-size: 20rem !important;
+  background-color: var(--#{vars.$bcgov-prefix}-layer-02);
+  color: var(--#{vars.$bcgov-prefix}-text-primary);
+  transition: width 0.11s cubic-bezier(0.2, 0, 1, 0.9);
+  will-change: width;
+  border-left: 0.063rem solid var(--#{vars.$bcgov-prefix}-border-subtle-01);
+}
+
+.right-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+}

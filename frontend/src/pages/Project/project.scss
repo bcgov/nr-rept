@@ -1,0 +1,720 @@
+@use '@carbon/type';
+@use '../../styles/variables' as vars;
+
+.project-detail-grid {
+  row-gap: 2rem;
+}
+
+.project-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  h1 {
+    @include type.type-style('heading-04');
+    margin: 0;
+  }
+}
+
+.project-header__title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .#{vars.$bcgov-prefix}--tag {
+    transform: translateY(1px);
+  }
+}
+
+.user-lookup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 16rem;
+}
+
+/* Underline on the read-only user input to visually indicate
+   it's a clickable/selectable field, not a plain disabled one. */
+.user-lookup-field__input input[readonly] {
+  border-bottom: 1px solid var(--cds-border-strong-01, #8d8d8d);
+  cursor: default;
+}
+
+.project-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.project-file {
+  @include type.type-style('body-compact-01');
+  font-family: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-weight: 500;
+  color: var(--#{vars.$bcgov-prefix}-text-secondary);
+}
+
+.project-tiles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+
+  @media only screen and (min-width: 672px) {
+    grid-template-columns: 1fr;
+  }
+
+  @media only screen and (min-width: 1056px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  // Tighten the gap between adjacent full-width tiles (e.g. the Narrative
+  // tile sitting below the two-column row, or stacked acquisition sections).
+  // The first child is left alone so it doesn't overlap whatever's above it.
+  > .project-tile--full + .project-tile--full {
+    margin-top: -2.75rem;
+  }
+}
+
+.project-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  min-height: 100%;
+
+  @media only screen and (min-width: 672px) {
+    padding: 2rem;
+  }
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+}
+
+.project-tile__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.project-tile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.project-tabs,
+.property-tabs {
+  width: 100%;
+
+  .#{vars.$bcgov-prefix}--tabs {
+    width: 100%;
+  }
+}
+
+.property-tabs__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.property-tabs__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+
+  .section-title {
+    padding-bottom: 0;
+  }
+}
+
+.project-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+
+  > .form-actions {
+    margin-top: -1.25rem;
+  }
+
+  > .agreement-workspace-tile {
+    margin-top: -2.5rem;
+  }
+
+  > .property-details-tile {
+    margin-top: -2.5rem;
+  }
+}
+
+.project-summary-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.project-summary-readonly__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.agreement-payments {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.agreement-payment-card {
+  border: 1px solid var(--#{vars.$bcgov-prefix}-border-subtle-01);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  h3,
+  h4 {
+    margin: 0;
+  }
+
+  h3 {
+    @include type.type-style('heading-compact-02');
+    color: var(--#{vars.$bcgov-prefix}-text-primary);
+  }
+
+  h4 {
+    @include type.type-style('heading-compact-01');
+    color: var(--#{vars.$bcgov-prefix}-text-secondary);
+  }
+}
+
+.agreement-payment-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.agreement-payment-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  p {
+    @include type.type-style('body-compact-01');
+    color: var(--#{vars.$bcgov-prefix}-text-secondary);
+    margin: 0;
+  }
+}
+
+.agreement-payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agreement-payment-form__fieldset {
+  // Strip browser-default fieldset chrome so it acts as a transparent
+  // disabled-state wrapper around the form.
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-inline-size: auto;
+}
+
+.agreement-payment-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agreement-payment-modal__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.agreement-payment-form__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.agreement-payment-form__checkbox {
+  display: flex;
+  align-items: center;
+  padding-top: 1.25rem;
+}
+
+.agreement-payment-form__totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  background-color: var(--#{vars.$bcgov-prefix}-layer-accent);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+
+  p {
+    @include type.type-style('label-01');
+    text-transform: uppercase;
+    color: var(--#{vars.$bcgov-prefix}-text-helper);
+    margin: 0;
+  }
+
+  strong {
+    @include type.type-style('body-compact-01');
+    color: var(--#{vars.$bcgov-prefix}-text-primary);
+  }
+}
+
+.agreement-payee-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agreement-payee-selector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.agreement-payee-selector__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.agreement-payee-table {
+  td,
+  th {
+    white-space: nowrap;
+  }
+}
+
+.agreement-payee-row {
+  transition: background-color 0.2s ease;
+
+  &--selected {
+    background-color: var(--#{vars.$bcgov-prefix}-layer-selected);
+  }
+}
+
+.agreement-payee-selector__summary {
+  border: 1px solid var(--#{vars.$bcgov-prefix}-border-subtle-01);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  h5 {
+    @include type.type-style('heading-compact-01');
+    margin: 0;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  li {
+    display: flex;
+    flex-direction: column;
+    @include type.type-style('body-compact-01');
+
+    strong {
+      font-weight: 600;
+    }
+
+    span {
+      color: var(--#{vars.$bcgov-prefix}-text-helper);
+    }
+  }
+}
+
+.agreement-payment-note {
+  @include type.type-style('body-compact-01');
+  color: var(--#{vars.$bcgov-prefix}-text-helper);
+  margin: 0;
+}
+
+.project-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.property-row {
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--#{vars.$bcgov-prefix}-layer-hover);
+  }
+
+  &--selected {
+    background-color: var(--#{vars.$bcgov-prefix}-layer-selected);
+
+    td {
+      font-weight: 600;
+    }
+  }
+}
+
+.field-empty {
+  @include type.type-style('body-compact-01');
+  color: var(--#{vars.$bcgov-prefix}-text-helper);
+  margin: 0;
+}
+
+.contact-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.5rem;
+}
+
+.contact-card {
+  padding: 1.5rem;
+  border: 1px solid var(--#{vars.$bcgov-prefix}-border-subtle-01);
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  h3 {
+    @include type.type-style('heading-compact-01');
+    margin: 0;
+  }
+
+  dl {
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+}
+
+.contact-card__row {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.75rem;
+
+  dt {
+    @include type.type-style('label-01');
+    text-transform: uppercase;
+    color: var(--#{vars.$bcgov-prefix}-text-helper);
+    margin: 0;
+  }
+
+  dd {
+    @include type.type-style('body-compact-01');
+    margin: 0;
+    word-break: break-word;
+  }
+}
+
+.section-title {
+  @include type.type-style('heading-02');
+  margin: 0;
+  padding-bottom: 0.75rem;
+}
+
+.agreement-properties-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agreement-properties-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agreement-properties-editor__columns {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  @media only screen and (min-width: 1056px) {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+}
+
+.agreement-properties-editor__column {
+  flex: 1;
+  border: 1px solid var(--#{vars.$bcgov-prefix}-border-subtle-01);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.agreement-properties-editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.agreement-properties-editor__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--#{vars.$bcgov-prefix}-border-subtle-01);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.agreement-properties-editor__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.agreement-properties-editor__item-title {
+  @include type.type-style('body-compact-01');
+  font-weight: 600;
+  margin: 0;
+}
+
+.agreement-properties-editor__item-subtitle {
+  @include type.type-style('label-01');
+  color: var(--#{vars.$bcgov-prefix}-text-helper);
+  margin: 0.1rem 0 0;
+}
+
+.agreement-properties-editor__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.agreement-details-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agreement-details-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.agreement-details-form__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.agreement-details-form__checkbox {
+  display: flex;
+  align-items: center;
+  padding-top: 1.25rem;
+}
+
+.agreement-details-form__full-width {
+  grid-column: 1 / -1;
+}
+
+.agreement-details-form__co-user {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  @media only screen and (min-width: 672px) {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+}
+
+.field-list {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+
+  @media only screen and (min-width: 672px) {
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 1.25rem 1.5rem;
+  }
+
+  @media only screen and (min-width: 1056px) {
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 1.5rem 2rem;
+  }
+
+  @media only screen and (min-width: 1312px) {
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  }
+}
+
+.field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+
+  dt {
+    @include type.type-style('label-01');
+    text-transform: uppercase;
+    color: var(--#{vars.$bcgov-prefix}-text-helper);
+    margin: 0;
+  }
+
+  dd {
+    @include type.type-style('body-compact-01');
+    color: var(--#{vars.$bcgov-prefix}-text-primary);
+    margin: 0;
+    word-break: break-word;
+  }
+}
+
+// Property Edit Forms
+.property-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.form-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+
+  &--full {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.tab-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+// ── Add Agreement create form ──────────────────────────────────────────────────
+.add-agreement-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.add-agreement-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// ── Acquisition Request / generic form fields grid ───────────────────────────
+.form-fields {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+
+  @media only screen and (min-width: 672px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  &--stacked {
+    grid-template-columns: 1fr;
+
+    @media only screen and (min-width: 672px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// ── Horizontal field layout (label on left, value/input on right) ────────────
+.field-list--horizontal {
+  .field-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    grid-template-columns: none;
+  }
+
+  .field-item {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 1rem;
+
+    dt {
+      flex: 0 0 9rem;
+      text-align: left;
+    }
+
+    dd {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+}
+
+// ── Empty state (no records yet) ─────────────────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.empty-state__message {
+  @include type.type-style('body-compact-01');
+  color: var(--#{vars.$bcgov-prefix}-text-secondary);
+  margin: 0;
+}
+
+// ── Contact search row inside "Add Contact" modal ────────────────────────────
+.contact-search-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  align-items: flex-end;
+
+  @media only screen and (max-width: 671px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ── Add Contact modal footer ─────────────────────────────────────────────────
+.add-contact-modal {
+  .cds--modal-content {
+    padding-bottom: 1rem;
+  }
+}
+
+.add-contact-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cds-border-subtle-01);
+}

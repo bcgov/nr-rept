@@ -1,0 +1,10 @@
+@use '../../../styles/variables' as vars;
+@use '@carbon/type';
+
+.subtitle-section {
+  @include type.type-style('body-02');
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--#{vars.$bcgov-prefix}-text-secondary);
+}

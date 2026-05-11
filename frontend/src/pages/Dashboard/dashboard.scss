@@ -1,0 +1,45 @@
+@use '@carbon/type';
+@use '../../styles/variables' as vars;
+
+.page-title-container {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5rem;
+
+  h1 {
+    @include type.type-style('heading-05');
+    margin: 0;
+  }
+
+  .subtitle {
+    @include type.type-style('body-01');
+    color: var(--#{vars.$bcgov-prefix}-text-secondary);
+    margin: 0;
+  }
+}
+
+.dashboard-grid {
+  row-gap: 2rem;
+}
+
+.recent-projects__title {
+  @include type.type-style('heading-02');
+  margin: 0 0 0.75rem;
+}
+
+.rept-projects-table__row {
+  cursor: pointer;
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  h1 {
+    margin: 0;
+  }
+}
+

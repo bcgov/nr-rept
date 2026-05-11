@@ -1,0 +1,36 @@
+@use '../../../styles/variables' as vars;
+@use '@bcgov-nr/nr-theme/design-tokens/colors.scss' as colors;
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/breakpoint' as *;
+@use '@carbon/type';
+
+.#{vars.$bcgov-prefix}--header {
+
+  .#{vars.$bcgov-prefix}--header__name {
+    margin-left: 0.9375rem;
+    color: colors.$white;
+
+    &:hover {
+      color: colors.$white;
+    }
+
+    @include breakpoint-down(lg) {
+      margin-left: 0;      
+      padding: 0;
+    }
+  }
+
+  .#{vars.$bcgov-prefix}--header__menu-toggle {
+    color: colors.$white;
+
+    &.#{vars.$bcgov-prefix}--header__action--active {
+      color: var(--#{vars.$bcgov-prefix}-layer-selected-inverse);
+    }
+
+    path{
+      fill: currentColor;
+    }
+
+  }
+
+}

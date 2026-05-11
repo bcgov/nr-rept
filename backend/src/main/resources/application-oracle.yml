@@ -1,0 +1,25 @@
+spring:
+  autoconfigure:
+    # Re-enable datasource autoconfiguration for oracle profile (override POC default exclusion)
+    exclude: []
+
+  oracle:
+    jdbcUrl: "jdbc:oracle:thin:@//${DATABASE_HOST}:1521/${SERVICE_NAME}"
+    hikari:
+      # The Hikari binding expects properties like jdbc-url, username, password, and pool tuning
+      jdbc-url: ${spring.oracle.jdbcUrl}
+      username: ${DATABASE_USER}
+      password: ${DATABASE_PASSWORD}
+      driver-class-name: oracle.jdbc.OracleDriver
+      maximum-pool-size: 10
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # Optional JPA / Hibernate overrides when using the EntityManagerFactory
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+        format_sql: false

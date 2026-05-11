@@ -1,0 +1,79 @@
+package ca.bc.gov.nrs.hrs.configuration;
+
+import io.micrometer.core.aop.TimedAspect;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.config.MeterFilter;
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class HrsMetricConfiguration {
+
+  @Value("${info.app.version}")
+  private String appVersion;
+
+  @Value("${info.app.name}")
+  private String appName;
+
+  @Value("${info.app.zone}")
+  private String appZone;
+
+  @Bean
+  public TimedAspect timedAspect(MeterRegistry registry) {
+    return new TimedAspect(registry);
+  }
+
+  @Bean
+  public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags() {
+    return registry -> registry.config()
+        .commonTags(
+            "version", appVersion,
+            "app", appName,
+            "zone",appZone
+        )
+        .meterFilter(ignoreTag())
+        .meterFilter(distribution());
+  }
+
+  @Bean
+  public MeterRegistryCustomizer<PrometheusMeterRegistry> prometheusConfiguration() {
+    return MeterRegistry::config;
+  }
+
+  public MeterFilter ignoreTag() {
+    return MeterFilter.ignoreTags("type");
+  }
+
+  public MeterFilter distribution() {
+    return new MeterFilter() {
+
+      @Override
+      public DistributionStatisticConfig configure(Meter.Id id,
+          DistributionStatisticConfig config) {
+        return DistributionStatisticConfig
+            .builder()
+            .percentiles(0.5, 0.95, 0.99)
+            .serviceLevelObjectives(
+                Duration.ofMillis(100).toNanos(),
+                Duration.ofMillis(250).toNanos(),
+                Duration.ofMillis(500).toNanos(),
+                Duration.ofSeconds(1).toNanos(),
+                Duration.ofSeconds(2).toNanos(),
+                Duration.ofSeconds(5).toNanos(),
+                Duration.ofSeconds(15).toNanos(),
+                Duration.ofSeconds(30).toNanos(),
+                Duration.ofMinutes(1).toNanos()
+            )
+            .build()
+            .merge(config);
+      }
+    };
+  }
+
+}

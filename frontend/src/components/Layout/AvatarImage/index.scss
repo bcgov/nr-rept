@@ -1,0 +1,22 @@
+.profile-image {
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  background-color: #c7d4e7;
+  color: #072251;
+  font-size: 1.4rem;
+  border: 2px solid #072251;
+}
+
+.small {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.large {
+  width: 4rem;
+  height: 4rem;
+}
+

@@ -1,0 +1,67 @@
+.project-create-grid {
+  // Match the Project Search page row-gap so the tile sits close to the H1.
+  row-gap: 2rem;
+}
+
+.page-title-container {
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+}
+
+.project-create__tile {
+  // White tile, gray inputs. Bumping just the tile to layer-02 (white) means
+  // the children inherit the default field-01 (gray) — that's the contrast
+  // the design wants. We do NOT override --cds-field; previously setting it
+  // to field-02 made the inputs the same white as the tile. No padding
+  // override either; we use Carbon's default Tile padding to match the
+  // Project Search page.
+  background: var(--cds-layer-02);
+}
+
+.project-create__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.project-create__field-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.project-create__requestor-field {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.user-lookup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 16rem;
+}
+
+/* Underline on the read-only user input to visually indicate
+   it's a clickable/selectable field, not a plain disabled one. */
+.user-lookup-field__input input[readonly] {
+  border-bottom: 1px solid var(--cds-border-strong-01, #8d8d8d);
+  cursor: default;
+}
+
+.project-create__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+@media (max-width: 42rem) {
+  .project-create__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}

@@ -1,0 +1,192 @@
+# General application
+server:
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:/pub/rept}
+  error:
+    include-message: always
+  port: ${SERVER_PORT:3000}
+  shutdown: graceful
+  max-http-request-header-size: 16KB
+
+spring:
+  application:
+    name: rept-backend
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AWS_COGNITO_ISSUER_URI}
+          jwk-set-uri: ${AWS_COGNITO_ISSUER_URI}/.well-known/jwks.json
+  # Datasource is intentionally left un-configured for the POC. The application will expect
+  # environment-specific JDBC settings (e.g. Oracle) to be provided at runtime. Flyway and
+  # Postgres-specific settings were removed for this POC.
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        # Dialect should be set via environment or profile when connecting to the chosen DB.
+        boot.allow_jdbc_metadata_access: false
+        #hikari.connection.provider_class: org.hibernate.hikaricp.internal.HikariCPConnectionProvider
+  mvc:
+    problemdetails:
+      enabled: true
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  sleuth:
+    propagation-keys:
+      - X-TRACE-ID
+      - X-USER
+    baggage-keys:
+      - X-TRACE-ID
+      - X-USER
+    log:
+      slf4j:
+        whitelisted-mdc-keys:
+          - X-TRACE-ID
+          - X-USER
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+
+# Actuator and ops
+management:
+  enable-native-support: true
+  endpoint:
+    metrics:
+      enabled: false
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      breaker:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+  retry:
+    instances:
+      apiRetry:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - ca.bc.gov.nrs.hrs.exception.RetriableException
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.ResourceAccessException
+          - ca.bc.gov.nrs.hrs.exception.TooManyRequestsException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - ca.bc.gov.nrs.hrs.exception.UnretriableException
+
+
+
+# Certificate for the Database
+ca:
+  bc:
+    gov:
+      nrs:
+        self-uri: ${SELF_URI:http://localhost:3000}
+        identity-lookup:
+          base-url: ${IDENTITY_LOOKUP_BASE_URL}
+          default-page-size: 10
+          connect-timeout: 15s
+          read-timeout: 30s
+        cognito:
+          userinfo-uri: ${COGNITO_USERINFO_URI}
+        frontend:
+          url: ${ALLOWED_ORIGINS:http://localhost:3000}
+          cors:
+            headers:
+              - x-requested-with
+              - X-REQUESTED-WITH
+              - authorization
+              - Authorization
+              - Content-Type
+              - content-type
+              - credential
+              - CREDENTIAL
+              - X-XSRF-TOKEN
+              - access-control-allow-origin
+              - Access-Control-Allow-Origin
+              - DNT
+              - Keep-Alive,
+              - User-Agent,
+              - X-Requested-With,
+              - If-Modified-Since,
+              - Cache-Control,
+              - Content-Range,
+              - Range
+              - Location
+              - location
+            methods:
+              - OPTIONS
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            age: 5m
+        # Proxy is configured at the Tomcat JVM level via CATALINA_OPTS — not via Spring.
+        reporting:
+          jasper:
+            base-url: ${J_URL_FETCH}
+            username: ${J_USERNAME}
+            password: ${J_PASSWORD}
+            connect-timeout: ${J_CONNECT_TIMEOUT:10s}
+            read-timeout: ${J_READ_TIMEOUT:60s}
+
+info:
+  app:
+    name: ${spring.application.name}
+    zone: ${APP_ZONE:local}
+    version: ${APP_VERSION:0.0.1-SNAPSHOT}
+# Logging — levels are still honoured by Spring Boot's Log4j2 auto-config;
+# patterns are configured in log4j2-spring.xml.
+logging:
+  level:
+    # Application logging — controls verbosity of all internal code
+    ca.bc.gov.nrs.hrs: ${LOGGING_LEVEL:INFO}
+    # HikariCP — logs the actual JDBC URL and pool lifecycle events at DEBUG
+    com.zaxxer.hikari: DEBUG
+    com.zaxxer.hikari.HikariConfig: DEBUG
+    # Hibernate — logs SQL and connection acquisition
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.engine.jdbc.connections: DEBUG
+    # Oracle JDBC driver — logs connection negotiation (SSL vs plain)
+    oracle.jdbc: DEBUG
+    # Spring Security
+    org.springframework.security: INFO
+
+# Profile Specific Properties
+---
+spring:
+  config:
+    activate:
+      on-profile: container
+  sleuth:
+    propagation-keys:
+      - X-TRACE-ID
+      - X-USER
+    baggage-keys:
+      - X-TRACE-ID
+      - X-USER
+    log:
+      slf4j:
+        whitelisted-mdc-keys:
+          - X-TRACE-ID
+          - X-USER
+
+logging:
+  level:
+    root: DEBUG

@@ -1,0 +1,33 @@
+@use '@carbon/type';
+@use '../../../styles/variables' as vars;
+
+.empty-section-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.375rem 0;
+
+  .empty-section-icon {
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    margin-bottom: 1rem;
+    color: var(--#{vars.$bcgov-prefix}-border-interactive);
+  }
+}
+
+.empty-section-white-layer {
+  background-color: var(--#{vars.$bcgov-prefix}-layer-02);
+}
+
+.empty-section-title {
+  @include type.type-style('heading-02');
+}
+
+.empty-section-subtitle {
+  @include type.type-style('body-compact-02');
+}

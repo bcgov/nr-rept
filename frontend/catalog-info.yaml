@@ -1,0 +1,24 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+spec:
+  system: rept
+  lifecycle: production
+  subcomponentOf:
+    - component:rept-backend
+  type: library
+  owner: ""
+metadata:
+  name: rept-frontend
+  annotations:
+    license: Apache-2.0
+    playbook.io.nrs.gov.bc.ca/clientId: "42ec0f20-76ef-40b2-a9b8-7b5ae7ef1f9b"
+    playbook.io.nrs.gov.bc.ca/unitTestsPath: "./.github/workflows/build-test-frontend.yaml"
+    playbook.io.nrs.gov.bc.ca/postDeployTestsPath: ""
+    playbook.io.nrs.gov.bc.ca/publishArtifactSuffix: dist
+    playbook.io.nrs.gov.bc.ca/deployOnPrem: false
+    github.com/project-slug: bcgov-c/nr-rept3
+    playbook.io.nrs.gov.bc.ca/ociArtifacts: ""
+    composer.io.nrs.gov.bc.ca/generators: gh-nodejs-build,backstage
+    playbook.io.nrs.gov.bc.ca/nodeVersion: "24"
+  description: REPT Frontend
+  title: REPT Frontend
