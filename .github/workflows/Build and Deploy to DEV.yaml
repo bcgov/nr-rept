@@ -81,7 +81,7 @@ jobs:
 
       - name: Run tests
         working-directory: ./frontend
-        run: npm test -- --watchAll=false --passWithNoTests
+        run: npm run test:ci -- --passWithNoTests
 
   # ────────────────────────────────────────────────────────
   build-and-push-frontend:
