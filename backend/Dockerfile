@@ -1,65 +1,21 @@
-### Builder Stage
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM maven:3.9.9-amazoncorretto-21-alpine AS build
+WORKDIR /workspace/app
 
-WORKDIR /app
+COPY pom.xml .
+COPY src src
+RUN mvn package -DskipTests
+RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
-# Copy Maven wrapper and pom.xml first for better caching
-COPY pom.xml mvnw ./
-COPY .mvn/ ./.mvn
+FROM eclipse-temurin:21.0.9_10-jdk-alpine-3.23
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
-COPY scripts ./scripts
-
-# Build the application
-RUN ./mvnw package -DskipTests -Dskip.unit.tests=true
-
-### Runtime Stage
-FROM eclipse-temurin:21-jre-alpine
-
-ARG PORT=3000
-
-# Install required tools (openssl for certificate fetching)
-RUN apk add --no-cache openssl curl bash
-
-WORKDIR /app
-
-# Copy the built JAR file
-COPY --from=build /app/target/rept-backend.jar ./app.jar
-
-# Copy certificate fetch script for Jasper Reports HTTPS
-COPY --from=build /app/scripts/fetch-certificates.sh ./scripts/fetch-certificates.sh
-RUN chmod +x ./scripts/fetch-certificates.sh
-
-# Create startup script that fetches Jasper certs before starting the app
-RUN echo '#!/bin/bash' > /app/start.sh && \
-    echo 'set -e' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Fetch Jasper Reports SSL certificates into Java truststore' >> /app/start.sh && \
-    echo 'echo "Fetching Jasper Reports SSL certificates..."' >> /app/start.sh && \
-    echo '/app/scripts/fetch-certificates.sh "$JAVA_HOME/lib/security/cacerts" changeit || echo "Warning: Certificate fetch had issues, continuing..."' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Start the application' >> /app/start.sh && \
-    echo 'echo "Starting REPT Backend..."' >> /app/start.sh && \
-    echo 'exec java -jar /app/app.jar' >> /app/start.sh && \
-    chmod +x /app/start.sh
-
-# Create non-root user
-RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -D appuser
-USER appuser
-
-# Expose port
-EXPOSE ${PORT}
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/actuator/health || exit 1
-
-# Environment variables
-ENV SPRING_PROFILES_ACTIVE=container \
-    SERVER_PORT=${PORT}
-
-ENTRYPOINT ["/app/start.sh"]
+RUN adduser -D -s /bin/sh spring
+RUN mkdir -p /logs
+RUN chown -R spring:spring /logs
+RUN chmod 755 /logs
+USER spring
+VOLUME /tmp
+ARG DEPENDENCY=/workspace/app/target/dependency
+COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
+COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
+COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
+ENTRYPOINT ["java","-Duser.name=REPT-API","-Xms100m","-Xmx200m","-noverify","-XX:TieredStopAtLevel=1","-XX:+UseParallelGC","-XX:MinHeapFreeRatio=20","-XX:MaxHeapFreeRatio=40","-XX:GCTimeRatio=4","-XX:AdaptiveSizePolicyWeight=90","-XX:MaxMetaspaceSize=200m","-XX:ParallelGCThreads=2","-Djava.util.concurrent.ForkJoinPool.common.parallelism=8","-XX:CICompilerCount=2","-XX:+ExitOnOutOfMemoryError","-Dspring.profiles.active=openshift","-Djava.security.egd=file:/dev/./urandom","-cp","app:app/lib/*","ca.bc.gov.nrs.rept.ReptApiApplication"]

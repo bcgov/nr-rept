@@ -146,7 +146,7 @@ docker run -p 8080:8080 \
 
 ```
 backend/
-├── src/main/java/ca/bc/gov/nrs/hrs/
+├── src/main/java/ca/bc/gov/nrs/rept/
 │   ├── configuration/    # Spring configuration
 │   ├── controller/       # REST controllers
 │   ├── dto/              # Data transfer objects

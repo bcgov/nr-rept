@@ -15,7 +15,7 @@
 	<name>REPT Backend</name>
 	<description>Real Estate Project Tracking Backend (Spring Boot + JWT Auth)</description>
 
-	<url>https://github.com/bcgov/nr-hrs</url>
+	<url>https://github.com/bcgov/nr-rept</url>
 
 	<licenses>
 		<license>
@@ -58,9 +58,9 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:https://github.com/bcgov/nr-hrs.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com:bcgov/nr-hrs.git</developerConnection>
-		<url>https://github.com/bcgov/nr-hrs</url>
+		<connection>scm:git:https://github.com/bcgov/nr-rept.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com:bcgov/nr-rept.git</developerConnection>
+		<url>https://github.com/bcgov/nr-rept</url>
 		<tag>HEAD</tag>
 	</scm>
 

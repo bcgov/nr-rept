@@ -49,7 +49,7 @@
   <Loggers>
 
     <!-- Application code -->
-    <Logger name="ca.bc.gov.nrs.hrs" level="${env:LOGGING_LEVEL:-INFO}" additivity="false">
+    <Logger name="ca.bc.gov.nrs.rept" level="${env:LOGGING_LEVEL:-INFO}" additivity="false">
       <AppenderRef ref="Console"/>
     </Logger>
 

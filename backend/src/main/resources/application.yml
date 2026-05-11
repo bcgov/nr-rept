@@ -81,13 +81,13 @@ resilience4j:
         enable-exponential-backoff: true
         exponential-backoff-multiplier: 2
         retry-exceptions:
-          - ca.bc.gov.nrs.hrs.exception.RetriableException
+          - ca.bc.gov.nrs.rept.exception.RetriableException
           - org.springframework.web.client.HttpServerErrorException
           - org.springframework.web.client.ResourceAccessException
-          - ca.bc.gov.nrs.hrs.exception.TooManyRequestsException
+          - ca.bc.gov.nrs.rept.exception.TooManyRequestsException
         ignore-exceptions:
           - org.springframework.web.client.HttpClientErrorException
-          - ca.bc.gov.nrs.hrs.exception.UnretriableException
+          - ca.bc.gov.nrs.rept.exception.UnretriableException
 
 
 
@@ -155,7 +155,7 @@ info:
 logging:
   level:
     # Application logging — controls verbosity of all internal code
-    ca.bc.gov.nrs.hrs: ${LOGGING_LEVEL:INFO}
+    ca.bc.gov.nrs.rept: ${LOGGING_LEVEL:INFO}
     # HikariCP — logs the actual JDBC URL and pool lifecycle events at DEBUG
     com.zaxxer.hikari: DEBUG
     com.zaxxer.hikari.HikariConfig: DEBUG
