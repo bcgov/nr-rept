@@ -20,9 +20,14 @@ const queryClient = new QueryClient(queryClientConfig);
 
 // Configure AWS Amplify with Cognito; store tokens in cookies so they
 // survive page reloads and are accessible to the service worker.
-// Use default CookieStorage (path '/') — so Amplify's signOut()
-// can reliably find and delete all Cognito cookies.
-Amplify.configure(amplifyconfig);
+//
+// Storage MUST be set BEFORE Amplify.configure(): in v6, configure() can
+// trigger immediate OAuth-callback processing when the URL contains
+// ?code=...&state=..., and that processing reads the OAuth flow state
+// (PKCE verifier, state, nonce) from whatever storage is active at that
+// moment. If we configure first and swap storage afterward, the callback
+// handler reads from the default (localStorage) while signInWithRedirect
+// wrote to the swapped-in CookieStorage — silent miss, no token POST.
 cognitoUserPoolsTokenProvider.setKeyValueStorage(
   new CookieStorage({
     domain: window.location.hostname,
@@ -32,6 +37,7 @@ cognitoUserPoolsTokenProvider.setKeyValueStorage(
     expires: undefined, // session cookie — dies when browser closes
   }),
 );
+Amplify.configure(amplifyconfig);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
