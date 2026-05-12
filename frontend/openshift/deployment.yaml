@@ -21,7 +21,15 @@ spec:
           # Updated by the CI pipeline via envsubst
           image: ${FRONTEND_IMAGE}
           ports:
-            - containerPort: 2015
+            - name: http
+              containerPort: 3000
+            - name: health
+              containerPort: 3001
+          env:
+            - name: LOG_LEVEL
+              value: ${FRONTEND_LOG_LEVEL}
+            - name: BACKEND_URL
+              value: ${BACKEND_URL}
           resources:
             requests:
               cpu: "50m"
@@ -31,14 +39,14 @@ spec:
               memory: "128Mi"
           livenessProbe:
             httpGet:
-              path: /healthz
-              port: 2015
+              path: /health
+              port: 3001
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /healthz
-              port: 2015
+              path: /health
+              port: 3001
             initialDelaySeconds: 3
             periodSeconds: 5
           securityContext:
@@ -60,8 +68,8 @@ spec:
   ports:
     - name: http
       protocol: TCP
-      port: 2015
-      targetPort: 2015
+      port: 3000
+      targetPort: 3000
 ---
 # Route (OpenShift-specific ingress)
 apiVersion: route.openshift.io/v1

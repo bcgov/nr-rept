@@ -1,7 +1,7 @@
 # General application
 server:
   servlet:
-    context-path: /pub/rept
+    context-path: /
   error:
     include-message: always
   port: 3000

@@ -26,6 +26,9 @@ env:
   SPRING_WEB_LOG_LEVEL:             INFO
   SPRING_BOOT_AUTOCONFIG_LOG_LEVEL: INFO
   SPRING_JPA_SHOW_SQL:              "false"
+  FRONTEND_LOG_LEVEL:               INFO
+  # In-cluster URL of the backend service. Caddy reverse_proxies /api* requests here.
+  BACKEND_URL:                      http://rept-backend:8080
 
 jobs:
   # https://github.com/redhat-actions/buildah-build#readme
@@ -186,7 +189,7 @@ jobs:
         run: |
           mkdir -p /tmp/manifests
           export FRONTEND_IMAGE="image-registry.openshift-image-registry.svc:5000/${OC_NAMESPACE}/${APP_NAME}-frontend:${IMAGE_TAG}"
-          envsubst '$FRONTEND_IMAGE' \
+          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL' \
             < frontend/openshift/deployment.yaml \
             > /tmp/manifests/frontend.yaml
 
