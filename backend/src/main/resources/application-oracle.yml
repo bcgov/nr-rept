@@ -4,7 +4,7 @@ spring:
     exclude: []
 
   oracle:
-    jdbcUrl: "jdbc:oracle:thin:@//${DATABASE_HOST}:1521/${SERVICE_NAME}"
+    jdbcUrl: "jdbc:oracle:thin:@//${DATABASE_HOST}:1521/${DATABASE_SERVICE_NAME}"
     hikari:
       # The Hikari binding expects properties like jdbc-url, username, password, and pool tuning
       jdbc-url: ${spring.oracle.jdbcUrl}

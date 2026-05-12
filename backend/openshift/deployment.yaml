@@ -87,8 +87,8 @@ spec:
             # ── Oracle DB (consumed by application-oracle.yml) ─
             - name: DATABASE_HOST
               value: ${DATABASE_HOST}
-            - name: SERVICE_NAME
-              value: ${SERVICE_NAME}
+            - name: DATABASE_SERVICE_NAME
+              value: ${DATABASE_SERVICE_NAME}
             - name: DATABASE_USER
               valueFrom:
                 secretKeyRef:
