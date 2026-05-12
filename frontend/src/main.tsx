@@ -14,6 +14,7 @@ import NotificationProvider from '@/context/notification/NotificationProvider';
 import PageTitleProvider from '@/context/pageTitle/PageTitleProvider';
 import { PreferenceProvider } from '@/context/preference/PreferenceProvider.tsx';
 import ThemeProvider from '@/context/theme/ThemeProvider.tsx';
+import { env } from '@/env';
 
 const queryClient = new QueryClient(queryClientConfig);
 
@@ -25,7 +26,7 @@ Amplify.configure(amplifyconfig);
 cognitoUserPoolsTokenProvider.setKeyValueStorage(
   new CookieStorage({
     domain: window.location.hostname,
-    path: '/pub/rept',
+    path: env.VITE_BASE_PATH || '/',
     secure: true, // HTTPS only
     sameSite: 'strict', // no cross-site sending
     expires: undefined, // session cookie — dies when browser closes

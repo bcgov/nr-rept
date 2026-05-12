@@ -1,6 +1,6 @@
 import { env } from '@/env';
 
-const redirectUri = window.location.origin + '/pub/rept';
+const redirectUri = window.location.origin + (env.VITE_BASE_PATH || '/').replace(/\/$/, '');
 
 // The full BC Gov logoff chain URL — must exactly match one of the Allowed sign-out URLs
 // registered in the Cognito app client for the current environment.
