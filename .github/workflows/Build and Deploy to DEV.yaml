@@ -19,8 +19,8 @@ env:
   # ── Sizing / logging (non-secret deployment defaults) ──
   MIN_REPLICAS:                     1
   MAX_REPLICAS:                     2
-  MIN_CPU:                          300m
-  MIN_MEM:                          1G
+  MIN_CPU:                          200m
+  MIN_MEM:                          500Mi
   APP_LOG_LEVEL:                    INFO
   SPRING_SECURITY_LOG_LEVEL:        INFO
   SPRING_WEB_LOG_LEVEL:             INFO
