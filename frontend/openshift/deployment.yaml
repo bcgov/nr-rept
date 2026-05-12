@@ -77,6 +77,7 @@ kind: Route
 metadata:
   name: rept-frontend
 spec:
+  host: ${FRONTEND_HOST}
   to:
     kind: Service
     name: rept-frontend

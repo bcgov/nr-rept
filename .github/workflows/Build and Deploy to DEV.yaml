@@ -189,7 +189,8 @@ jobs:
         run: |
           mkdir -p /tmp/manifests
           export FRONTEND_IMAGE="image-registry.openshift-image-registry.svc:5000/${OC_NAMESPACE}/${APP_NAME}-frontend:${IMAGE_TAG}"
-          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL' \
+          export FRONTEND_HOST="${APP_NAME}-${OC_NAMESPACE}.apps.silver.devops.gov.bc.ca"
+          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL $FRONTEND_HOST' \
             < frontend/openshift/deployment.yaml \
             > /tmp/manifests/frontend.yaml
 
