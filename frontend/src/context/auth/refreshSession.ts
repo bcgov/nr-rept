@@ -34,7 +34,7 @@ export async function ensureSessionFresh(): Promise<void> {
       // No session — force sign out and redirect
       await signOut();
       window.location.href =
-        window.location.origin + (import.meta.env.VITE_BASE_PATH || '/pub/rept');
+        window.location.origin + (import.meta.env.VITE_BASE_PATH ?? '').replace(/\/$/, '');
       return;
     }
 

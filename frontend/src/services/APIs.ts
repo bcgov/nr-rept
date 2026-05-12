@@ -4,10 +4,14 @@ import { UserService } from '@/services/users.service';
 
 import type { APIConfig } from '@/config/api/types';
 
+// Strip a trailing '/' so VITE_BASE_PATH='/' produces '/api' (not '//api',
+// which the browser parses as scheme-relative → https://api/...).
+const basePath = (env.VITE_BASE_PATH ?? '').replace(/\/$/, '');
+
 // Central API configuration shared by all service classes.
 // The TOKEN getter refreshes the Cognito accessToken from cookies on every request.
 export const BackendApiConfig: APIConfig = {
-  BASE: env.VITE_BACKEND_URL || `${env.VITE_BASE_PATH || '/pub/rept'}/api`,
+  BASE: env.VITE_BACKEND_URL || `${basePath}/api`,
   VERSION: '0',
   WITH_CREDENTIALS: true,
   CREDENTIALS: 'include',
