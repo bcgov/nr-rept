@@ -63,6 +63,13 @@ management:
     health:
       show-details: always
 
+# Application metadata (consumed by ReptMetricConfiguration + Actuator /info endpoint)
+info:
+  app:
+    name: ${spring.application.name}
+    version: ${APP_VERSION:0.0.1-SNAPSHOT}
+    zone: ${APP_ZONE:local}
+
 resilience4j:
   circuitbreaker:
     instances:

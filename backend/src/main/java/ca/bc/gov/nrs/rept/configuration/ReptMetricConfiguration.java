@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class HrsMetricConfiguration {
+public class ReptMetricConfiguration {
 
   @Value("${info.app.version}")
   private String appVersion;

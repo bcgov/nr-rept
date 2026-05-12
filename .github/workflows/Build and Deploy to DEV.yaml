@@ -35,7 +35,7 @@ jobs:
     outputs:
       registry-path: ${{ steps.push-image-backend.outputs.registry-path }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build Backend from Dockerfile
         id: build-image-backend
         uses: redhat-actions/buildah-build@v2
@@ -62,9 +62,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: build-and-push-backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -90,7 +90,7 @@ jobs:
       registry-path: ${{ steps.push-image-frontend.outputs.registry-path }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build Frontend from Dockerfile
         id: build-image-frontend
@@ -133,7 +133,7 @@ jobs:
       KEYSTORE_SECRET:          ${{ secrets.KEYSTORE_SECRET }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install oc CLI
         uses: redhat-actions/openshift-tools-installer@v1
