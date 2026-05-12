@@ -95,6 +95,28 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Write .env.production from GitHub Actions secrets/vars
+        # Baked into the image at build time as `import.meta.env.X`. The committed
+        # frontend/.env.production is overwritten here so DEV/PROD share the same
+        # source tree but get env-specific values per environment.
+        env:
+          VITE_USER_POOLS_ID:            ${{ secrets.VITE_USER_POOLS_ID }}
+          VITE_USER_POOLS_WEB_CLIENT_ID: ${{ secrets.VITE_USER_POOLS_WEB_CLIENT_ID }}
+          VITE_REDIRECT_SIGN_OUT:        ${{ secrets.VITE_REDIRECT_SIGN_OUT }}
+          VITE_BACKEND_URL:              ${{ vars.VITE_BACKEND_URL }}
+          VITE_APP_NAME:                 ${{ vars.VITE_APP_NAME }}
+          VITE_ZONE:                     ${{ vars.VITE_ZONE }}
+        run: |
+          cat > frontend/.env.production <<EOF
+          VITE_BASE_PATH=/
+          VITE_APP_NAME=${VITE_APP_NAME:-REPT}
+          VITE_ZONE=${VITE_ZONE:-dev}
+          VITE_USER_POOLS_ID=${VITE_USER_POOLS_ID}
+          VITE_USER_POOLS_WEB_CLIENT_ID=${VITE_USER_POOLS_WEB_CLIENT_ID}
+          VITE_REDIRECT_SIGN_OUT=${VITE_REDIRECT_SIGN_OUT}
+          VITE_BACKEND_URL=${VITE_BACKEND_URL}
+          EOF
+
       - name: Build Frontend from Dockerfile
         id: build-image-frontend
         uses: redhat-actions/buildah-build@v2
