@@ -65,7 +65,7 @@ export const HistoryTab: FC<HistoryTabProps> = ({ projectId, project }) => {
         kind: 'error',
         title: 'Failed to save history',
         subtitle: (mutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [mutation.isError, mutation.error, display]);
@@ -136,7 +136,7 @@ export const HistoryTab: FC<HistoryTabProps> = ({ projectId, project }) => {
       },
       {
         onSuccess: () => {
-          display({ kind: 'success', title: 'History saved.', timeout: 4000 });
+          display({ kind: 'success', title: 'History saved.', timeout: 7000 });
           setIsEditing(false);
         },
       },
@@ -170,7 +170,7 @@ export const HistoryTab: FC<HistoryTabProps> = ({ projectId, project }) => {
             <div className="project-tile__actions">
               {canEdit && (
                 <Button
-                  kind="primary"
+                  kind="tertiary"
                   size="sm"
                   renderIcon={Edit}
                   onClick={handleStartEdit}
@@ -231,7 +231,7 @@ export const HistoryTab: FC<HistoryTabProps> = ({ projectId, project }) => {
       </Tile>
 
       <div className="form-actions">
-        <Button kind="tertiary" size="sm" onClick={handleCancelEdit}>
+        <Button kind="secondary" size="sm" onClick={handleCancelEdit}>
           Cancel
         </Button>
         <Button

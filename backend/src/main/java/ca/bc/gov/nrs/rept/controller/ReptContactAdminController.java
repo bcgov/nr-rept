@@ -6,10 +6,13 @@ import ca.bc.gov.nrs.rept.dto.rept.admin.ReptContactUpsertRequestDto;
 import ca.bc.gov.nrs.rept.service.rept.admin.ReptContactAdminService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,4 +67,21 @@ public class ReptContactAdminController {
     service.delete(id, revision);
     return ResponseEntity.noContent().build();
   }
+
+  @ExceptionHandler(DataAccessException.class)
+  public ResponseEntity<Map<String, String>> handleDataAccess(DataAccessException ex) {
+    Throwable cause = ex;
+    while (cause != null) {
+      String msg = cause.getMessage();
+      if (msg != null && msg.contains("ORA-02292")) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(Map.of(
+                "message",
+                "This contact has records associated with it; please remove any linkages to this contact before attempting another delete action"));
+      }
+      cause = cause.getCause();
+    }
+    throw ex;
+  }
 }
+

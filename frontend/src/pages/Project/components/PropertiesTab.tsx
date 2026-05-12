@@ -1,5 +1,6 @@
-import { AddAlt as Add, Edit, TrashCan } from '@carbon/icons-react';
+import { Add, Edit, TrashCan } from '@carbon/icons-react';
 import {
+  IconButton,
   InlineNotification,
   Select,
   SelectItem,
@@ -14,6 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableSelectRow,
   Tabs,
   TextInput,
   Tile,
@@ -309,7 +311,14 @@ const PropertyContactsTable: FC<{
   removeDisabled?: boolean;
 }> = ({ contacts, canDelete, onRemove, removeDisabled }) => {
   if (!contacts.length) {
-    return <p className="field-empty">No contacts recorded for this property.</p>;
+    return (
+      <InlineNotification
+        kind="info"
+        lowContrast
+        title="No contacts recorded for this property."
+        hideCloseButton
+      />
+    );
   }
 
   return (
@@ -378,7 +387,6 @@ type PropertyDetailTabsProps = {
   propertyCompositeReturn: ReturnType<typeof useReptPropertyComposite>;
   selectedSummary?: ReptPropertySummary;
   options?: ReptPropertyOptions | null;
-  onPropertyDeleted?: () => void;
 };
 
 const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
@@ -387,7 +395,6 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
   propertyCompositeReturn,
   selectedSummary,
   options,
-  onPropertyDeleted,
 }) => {
   const { canEdit, canDelete } = useAuthorization();
   const { display } = useNotification();
@@ -395,7 +402,6 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
   const [activeTab, setActiveTab] = useState(0);
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Form states
   const [detailsForm, setDetailsForm] = useState<PropertyDetailsFormState>(() =>
@@ -416,7 +422,6 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
   const updateMilestonesMutation = useUpdateReptPropertyMilestones(projectId, propertyId);
   const upsertRegistrationMutation = useUpsertReptPropertyRegistration(projectId, propertyId);
   const upsertExpropriationMutation = useUpsertReptPropertyExpropriation(projectId, propertyId);
-  const deletePropertyMutation = useDeleteReptProperty(projectId);
 
   // Property contact mutations and state
   const addPropertyContactMutation = useAddReptPropertyContact(projectId, propertyId);
@@ -429,7 +434,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to save',
         subtitle: (updateDetailsMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [updateDetailsMutation.isError, updateDetailsMutation.error, display]);
@@ -440,7 +445,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to save',
         subtitle: (updateMilestonesMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [updateMilestonesMutation.isError, updateMilestonesMutation.error, display]);
@@ -451,7 +456,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to save',
         subtitle: (upsertRegistrationMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [upsertRegistrationMutation.isError, upsertRegistrationMutation.error, display]);
@@ -462,7 +467,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to save',
         subtitle: (upsertExpropriationMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [upsertExpropriationMutation.isError, upsertExpropriationMutation.error, display]);
@@ -473,7 +478,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to add contact',
         subtitle: (addPropertyContactMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [addPropertyContactMutation.isError, addPropertyContactMutation.error, display]);
@@ -484,7 +489,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to remove contact',
         subtitle: (removePropertyContactMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [removePropertyContactMutation.isError, removePropertyContactMutation.error, display]);
@@ -495,7 +500,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to load property details',
         subtitle: (detail.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [detail.isError, detail.error, display]);
@@ -506,7 +511,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to load property milestones',
         subtitle: (milestones.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [milestones.isError, milestones.error, display]);
@@ -517,7 +522,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to load property registration',
         subtitle: (registration.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [registration.isError, registration.error, display]);
@@ -528,7 +533,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to load property expropriation',
         subtitle: (expropriation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [expropriation.isError, expropriation.error, display]);
@@ -539,7 +544,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
         kind: 'error',
         title: 'Failed to load property contacts',
         subtitle: (contacts.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [contacts.isError, contacts.error, display]);
@@ -612,7 +617,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
           display({
             kind: 'success',
             title: `Contact "${selectedContact.displayName ?? 'Unknown'}" added to property.`,
-            timeout: 4000,
+            timeout: 7000,
           });
           handleCloseAddContactModal();
         },
@@ -641,7 +646,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
           display({
             kind: 'success',
             title: `Contact "${deleteContactConfirm.displayName}" removed from property.`,
-            timeout: 4000,
+            timeout: 7000,
           });
           setDeleteContactConfirm(null);
         },
@@ -721,7 +726,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
       {
         onSuccess: () => {
           setEditingTab(null);
-          display({ kind: 'success', title: 'Property details updated.', timeout: 4000 });
+          display({ kind: 'success', title: 'Property details updated.', timeout: 7000 });
         },
       },
     );
@@ -757,7 +762,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
       {
         onSuccess: () => {
           setEditingTab(null);
-          display({ kind: 'success', title: 'Property milestones updated.', timeout: 4000 });
+          display({ kind: 'success', title: 'Property milestones updated.', timeout: 7000 });
         },
       },
     );
@@ -775,7 +780,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
       {
         onSuccess: () => {
           setEditingTab(null);
-          display({ kind: 'success', title: 'Registration updated.', timeout: 4000 });
+          display({ kind: 'success', title: 'Registration updated.', timeout: 7000 });
         },
       },
     );
@@ -803,26 +808,11 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
       {
         onSuccess: () => {
           setEditingTab(null);
-          display({ kind: 'success', title: 'Expropriation updated.', timeout: 4000 });
+          display({ kind: 'success', title: 'Expropriation updated.', timeout: 7000 });
         },
       },
     );
   }, [expropriation.data, expropriationForm, upsertExpropriationMutation, display]);
-
-  const handleDeleteProperty = useCallback(() => {
-    const revisionCount = detail.data?.revisionCount;
-    if (revisionCount == null) return;
-
-    setDeleteConfirmOpen(false);
-    deletePropertyMutation.mutate(
-      { propertyId, revisionCount },
-      {
-        onSuccess: () => {
-          onPropertyDeleted?.();
-        },
-      },
-    );
-  }, [detail.data, propertyId, deletePropertyMutation, onPropertyDeleted]);
 
   const propertyDetailFields = useMemo(
     () => buildPropertyDetails(detail.data ?? selectedSummary ?? null),
@@ -886,7 +876,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
             <div className="tab-actions">
               {canEdit && (
                 <Button
-                  kind="primary"
+                  kind="tertiary"
                   size="sm"
                   renderIcon={Edit}
                   onClick={() => handleStartEdit('details')}
@@ -935,7 +925,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
             <div className="tab-actions">
               {canEdit && (
                 <Button
-                  kind="primary"
+                  kind="tertiary"
                   size="sm"
                   renderIcon={Edit}
                   onClick={() => handleStartEdit('milestones')}
@@ -984,7 +974,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
             <div className="tab-actions">
               {canEdit && (
                 <Button
-                  kind="primary"
+                  kind="tertiary"
                   size="sm"
                   renderIcon={Edit}
                   onClick={() => handleStartEdit('registration')}
@@ -1034,7 +1024,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
             <div className="tab-actions">
               {canEdit && (
                 <Button
-                  kind="primary"
+                  kind="tertiary"
                   size="sm"
                   renderIcon={Edit}
                   onClick={() => handleStartEdit('expropriation')}
@@ -1242,15 +1232,6 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
     <div className="property-tabs">
       <div className="property-tabs__header">
         <h2 className="section-title">Property Details</h2>
-        <Button
-          kind="danger"
-          size="sm"
-          renderIcon={TrashCan}
-          onClick={() => setDeleteConfirmOpen(true)}
-          disabled={deletePropertyMutation.isPending || !canDelete}
-        >
-          Delete Property
-        </Button>
       </div>
       <Tabs
         selectedIndex={activeTab}
@@ -1271,21 +1252,12 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
           ))}
         </TabPanels>
       </Tabs>
-
-      <DestructiveModal
-        open={deleteConfirmOpen}
-        title="Delete Property?"
-        message="This action will permanently delete this property and its associated data. This cannot be undone."
-        onConfirm={handleDeleteProperty}
-        onCancel={() => setDeleteConfirmOpen(false)}
-        loading={deletePropertyMutation.isPending}
-      />
     </div>
   );
 };
 
 export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
-  const { canCreate } = useAuthorization();
+  const { canCreate, canDelete } = useAuthorization();
   const propertiesQuery = useReptPropertySummaries(projectId);
   const optionsQuery = useReptPropertyOptions(projectId);
   const propertySummaries = useMemo(() => propertiesQuery.data ?? [], [propertiesQuery.data]);
@@ -1295,9 +1267,11 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
     createDetailsFormState(null),
   );
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [propertyToDelete, setPropertyToDelete] = useState<ReptPropertySummary | null>(null);
   const { display } = useNotification();
 
   const createPropertyMutation = useCreateReptProperty(projectId);
+  const deletePropertyMutation = useDeleteReptProperty(projectId);
 
   useEffect(() => {
     if (createPropertyMutation.isError) {
@@ -1305,7 +1279,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to create property',
         subtitle: (createPropertyMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [createPropertyMutation.isError, createPropertyMutation.error, display]);
@@ -1316,7 +1290,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to load properties',
         subtitle: (propertiesQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [propertiesQuery.isError, propertiesQuery.error, display]);
@@ -1385,17 +1359,40 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
       {
         onSuccess: (result) => {
           setIsCreating(false);
-          display({ kind: 'success', title: 'Property created successfully.', timeout: 4000 });
+          display({ kind: 'success', title: 'Property created successfully.', timeout: 7000 });
           setSelectedPropertyId(String(result.id));
         },
       },
     );
   }, [projectId, createForm, createPropertyMutation, display]);
 
-  const handlePropertyDeleted = useCallback(() => {
-    setSelectedPropertyId(null);
-    display({ kind: 'success', title: 'Property deleted.', timeout: 4000 });
-  }, [display]);
+  const handleConfirmDelete = useCallback(() => {
+    if (!propertyToDelete) return;
+    const revisionCount = propertyToDelete.revisionCount;
+    if (revisionCount == null) return;
+
+    deletePropertyMutation.mutate(
+      { propertyId: String(propertyToDelete.id), revisionCount },
+      {
+        onSuccess: () => {
+          if (String(propertyToDelete.id) === selectedPropertyId) {
+            setSelectedPropertyId(null);
+          }
+          setPropertyToDelete(null);
+          display({ kind: 'success', title: 'Property deleted.', timeout: 7000 });
+        },
+        onError: (error) => {
+          setPropertyToDelete(null);
+          display({
+            kind: 'error',
+            title: 'Failed to delete property',
+            subtitle: (error as Error).message,
+            timeout: 9000,
+          });
+        },
+      },
+    );
+  }, [propertyToDelete, selectedPropertyId, deletePropertyMutation, display]);
 
   // Create Property Form
   if (isCreating) {
@@ -1418,7 +1415,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
 
           <div className="form-actions">
             <Button
-              kind="tertiary"
+              kind="secondary"
               size="sm"
               onClick={handleCancelCreate}
               disabled={createPropertyMutation.isPending}
@@ -1472,21 +1469,53 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                 </Button>
               )}
             </div>
-            <Select
-              id="property-selector"
-              labelText="Property"
-              hideLabel
-              value={selectedPropertyId ?? ''}
-              onChange={(e) => setSelectedPropertyId(e.target.value || null)}
-            >
-              {propertySummaries.map((property) => (
-                <SelectItem
-                  key={property.id}
-                  value={String(property.id)}
-                  text={buildPropertyOptionLabel(property)}
-                />
-              ))}
-            </Select>
+            <div className="bordered-table">
+              <Table className="project-table">
+                <TableHead>
+                  <TableRow>
+                    <TableHeader aria-label="Selected property" />
+                    <TableHeader>PID</TableHeader>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {propertySummaries.map((property) => {
+                    const isSelected = String(property.id) === selectedPropertyId;
+                    return (
+                      <TableRow
+                        key={property.id}
+                        onClick={() => setSelectedPropertyId(String(property.id))}
+                        className={`property-row${isSelected ? ' property-row--selected' : ''}`}
+                      >
+                        <TableSelectRow
+                          radio
+                          id={`property-select-${property.id}`}
+                          name="property-selection"
+                          ariaLabel={`Select property ${buildPropertyOptionLabel(property)}`}
+                          checked={isSelected}
+                          onSelect={() => setSelectedPropertyId(String(property.id))}
+                        />
+                        <TableCell>{buildPropertyOptionLabel(property)}</TableCell>
+                        <TableCell>
+                          <IconButton
+                            kind="ghost"
+                            size="sm"
+                            label="Delete property"
+                            disabled={!canDelete || deletePropertyMutation.isPending}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setPropertyToDelete(property);
+                            }}
+                          >
+                            <TrashCan />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </Tile>
 
           {selectedPropertyId && (
@@ -1498,13 +1527,21 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                   propertyCompositeReturn={propertyComposite}
                   selectedSummary={selectedSummary}
                   options={optionsQuery.data}
-                  onPropertyDeleted={handlePropertyDeleted}
                 />
               </div>
             </Tile>
           )}
         </>
       )}
+
+      <DestructiveModal
+        open={Boolean(propertyToDelete)}
+        title="Delete Property?"
+        message="This action will permanently delete this property and its associated data. This cannot be undone."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPropertyToDelete(null)}
+        loading={deletePropertyMutation.isPending}
+      />
     </div>
   );
 };

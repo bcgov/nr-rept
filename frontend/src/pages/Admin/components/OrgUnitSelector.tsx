@@ -47,7 +47,7 @@ const OrgUnitSelector: FC<OrgUnitSelectorProps> = ({
         kind: 'error',
         title: 'Unable to load org units',
         subtitle: error instanceof Error ? error.message : 'Unknown error',
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [isError, error, display]);

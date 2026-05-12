@@ -5,6 +5,17 @@ export type SortOption = {
   label: string;
 };
 
+export type ReportFieldKey =
+  | 'dateRange'
+  | 'agreementType'
+  | 'agreementActive'
+  | 'sortOptions'
+  | 'region'
+  | 'district'
+  | 'bctsOffice'
+  | 'agreementExists'
+  | 'projectStatus';
+
 export type ReportDefinition = {
   id: ReptReportId;
   title: string;
@@ -22,6 +33,13 @@ export type ReportDefinition = {
     agreementExists?: boolean;
     projectStatus?: boolean;
   };
+  /**
+   * Ordered rows of fields. Each inner array becomes a field-group row in the
+   * 3-column grid, so columns line up across rows. If a row has fewer than 3
+   * keys, trailing columns stay empty (this is what creates visual alignment
+   * with neighbouring rows that have more fields).
+   */
+  layout?: ReportFieldKey[][];
 };
 
 const YES_NO_OPTIONS: SortOption[] = [
@@ -55,6 +73,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['anniversary_date', 'Anniversary date'],
       ]),
     },
+    layout: [['dateRange'], ['agreementType', 'agreementActive', 'sortOptions']],
   },
   {
     id: '2101',
@@ -77,6 +96,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['expiry_date', 'Expiry date'],
       ]),
     },
+    layout: [['dateRange'], ['agreementActive', 'sortOptions']],
   },
   {
     id: '2102',
@@ -99,6 +119,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['expiry_date', 'Expiry date'],
       ]),
     },
+    layout: [['dateRange'], ['agreementActive', 'sortOptions']],
   },
   {
     id: '2103',
@@ -121,6 +142,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['pc_date', 'PC date'],
       ]),
     },
+    layout: [['dateRange'], ['agreementActive', 'sortOptions']],
   },
   {
     id: '2104',
@@ -142,6 +164,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['payment_amount', 'Payment amount'],
       ]),
     },
+    layout: [['dateRange'], ['agreementType', 'sortOptions']],
   },
   {
     id: '2105',
@@ -157,6 +180,12 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
       agreementActive: true,
       agreementExists: true,
     },
+    layout: [
+      ['dateRange'],
+      ['agreementActive', 'region', 'district'],
+      ['bctsOffice'],
+      ['agreementExists'],
+    ],
   },
   {
     id: '2106',
@@ -178,6 +207,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['district_bcts_name', 'District / BCTS name'],
       ]),
     },
+    layout: [['region', 'district'], ['bctsOffice'], ['sortOptions']],
   },
   {
     id: '2107',
@@ -201,6 +231,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['volume', 'Volume'],
       ]),
     },
+    layout: [['region', 'district'], ['bctsOffice'], ['projectStatus', 'sortOptions']],
   },
   {
     id: '2109',
@@ -222,6 +253,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
         ['payment_amount', 'Payment amount'],
       ]),
     },
+    layout: [['dateRange'], ['agreementType', 'agreementActive', 'sortOptions']],
   },
 ];
 

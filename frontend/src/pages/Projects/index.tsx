@@ -1,4 +1,4 @@
-import { AddAlt as Add } from '@carbon/icons-react';
+import { Add } from '@carbon/icons-react';
 import { Button, Column, Grid, Select, SelectItem, Stack, TextInput, Tile } from '@carbon/react';
 import { useCallback, useEffect, useMemo, useState, type FC } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -201,7 +201,7 @@ const ProjectSearchPage: FC = () => {
         kind: 'error',
         title: 'Project search options are unavailable',
         subtitle: (optionsQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [optionsQuery.isError, optionsQuery.error, display]);
@@ -212,7 +212,7 @@ const ProjectSearchPage: FC = () => {
         kind: 'error',
         title: 'Project search failed',
         subtitle: (searchQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [searchQuery.isError, searchQuery.error, display]);

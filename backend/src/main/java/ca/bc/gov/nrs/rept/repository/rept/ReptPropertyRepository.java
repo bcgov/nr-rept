@@ -573,7 +573,8 @@ public class ReptPropertyRepository extends AbstractReptRepository {
         record.parcelArea(),
         record.projectArea(),
         record.assessedValue(),
-        record.expropriationRecommended());
+        record.expropriationRecommended(),
+        record.revisionCount());
   }
 
   private ReptPropertyDetailDto toDetailDto(PropertyRecord record) {

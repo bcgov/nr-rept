@@ -145,5 +145,37 @@
 .report-form__field-group {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  // Force every grid child (DatePicker, Select, etc.) to honour the 1fr cell.
+  // `min-width: 0` overrides grid's default `min-width: auto`, which would
+  // otherwise let intrinsic-content widths blow out the column. Carbon's
+  // DatePicker is the main offender — its inner flex container has no
+  // explicit width and grows to its content.
+  > * {
+    min-width: 0;
+  }
+
+  // Carbon hardcodes `.cds--date-picker__input` (single mode) to 18rem via
+  // `inline-size`. Override it so the input fills its 1fr grid cell instead.
+  .cds--date-picker.cds--date-picker--single .cds--date-picker__input {
+    inline-size: 100%;
+    width: 100%;
+  }
+
+  .cds--date-picker,
+  .cds--date-picker-container,
+  .cds--date-picker-input__wrapper {
+    width: 100%;
+    min-width: 0;
+  }
+
+  // Carbon wraps the <input> in a <span> inside the input wrapper. The span is
+  // an inline element by default, so it sizes to its content (the 288px input)
+  // regardless of the wrapper width. Force it to fill the wrapper so the
+  // input's `inline-size: 100%` actually expands to the column width.
+  .cds--date-picker-input__wrapper > span {
+    display: block;
+    width: 100%;
+  }
 }

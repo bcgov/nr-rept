@@ -88,7 +88,7 @@ const ProjectDetailPage: FC = () => {
         kind: 'error',
         title: "We couldn't load this project file",
         subtitle: 'Project identifier is missing.',
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [projectId, display]);
@@ -99,7 +99,7 @@ const ProjectDetailPage: FC = () => {
         kind: 'error',
         title: "We couldn't load this project file",
         subtitle: (projectQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [projectQuery.isError, projectQuery.error, display]);

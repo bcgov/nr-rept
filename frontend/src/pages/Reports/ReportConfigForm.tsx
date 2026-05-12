@@ -1,20 +1,33 @@
 import {
   Button,
-  Checkbox,
+  DatePicker,
+  DatePickerInput,
   InlineNotification,
   Select,
   SelectItem,
   Stack,
-  TextInput,
+  Toggle,
 } from '@carbon/react';
-import { useEffect, useMemo, useState, type ChangeEvent, type FC, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FC,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 
 import { useNotification } from '@/context/notification/useNotification';
 import { useGenerateReport } from '@/services/reports/hooks';
 import { useReptProjectCreateOptions, useReptProjectSearchOptions } from '@/services/rept/hooks';
 import { openBlobInNewTab, triggerBrowserDownload } from '@/utils/download';
 
-import { AGREEMENT_ACTIVE_OPTIONS, type ReportDefinition } from './reportDefinitions';
+import {
+  AGREEMENT_ACTIVE_OPTIONS,
+  type ReportDefinition,
+  type ReportFieldKey,
+} from './reportDefinitions';
 
 import type { ReportFormat, ReportRequestPayload } from '@/services/reports/types';
 import type { CodeName } from '@/services/rept/types';
@@ -119,11 +132,6 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
   const createOptionsQuery = useReptProjectCreateOptions();
   const reportMutation = useGenerateReport(definition.id);
 
-  const handleChange = (field: keyof ReportFormState) => (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setFormState((prev) => ({ ...prev, [field]: value }));
-  };
-
   const handleSelectChange =
     (field: keyof ReportFormState) => (event: ChangeEvent<HTMLSelectElement>) => {
       setFormState((prev) => ({ ...prev, [field]: event.target.value }));
@@ -138,20 +146,20 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
         openBlobInNewTab(response.blob);
       } else {
         triggerBrowserDownload(response.blob, response.filename);
+        display({
+          title: `${definition.title} ready`,
+          subtitle: `Downloaded ${response.filename}`,
+          kind: 'success',
+          timeout: 7000,
+        });
       }
-      display({
-        title: `${definition.title} ready`,
-        subtitle: format === 'pdf' ? 'Opened in a new tab' : `Downloaded ${response.filename}`,
-        kind: 'success',
-        timeout: 4000,
-      });
     } catch (error) {
       const message = (error as Error).message ?? 'An unexpected error occurred';
       display({
         title: `Unable to generate ${definition.title}`,
         subtitle: message,
         kind: 'error',
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   };
@@ -174,39 +182,55 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
   const supportsPdf = definition.availableFormats.includes('pdf');
   const supportsCsv = definition.availableFormats.includes('csv');
 
-  return (
-    <form className="report-form" onSubmit={handleSubmit}>
-      <Stack gap={5}>
-        {optionsQuery.isError && (
-          <InlineNotification
-            kind="warning"
-            lowContrast
-            title="Filter options unavailable"
-            subtitle={(optionsQuery.error as Error)?.message ?? 'Failed to load lookup values.'}
-          />
-        )}
-
-        {definition.fields.dateRange && (
-          <div className="report-form__field-group">
-            <TextInput
+  const renderField = (key: ReportFieldKey): ReactNode[] | null => {
+    switch (key) {
+      case 'dateRange':
+        if (!definition.fields.dateRange) return null;
+        return [
+          <DatePicker
+            key="start-date"
+            datePickerType="single"
+            dateFormat="Y-m-d"
+            value={formState.startDate}
+            onChange={(dates: Date[]) => {
+              const date = dates[0];
+              setFormState((prev) => ({
+                ...prev,
+                startDate: date ? date.toISOString().split('T')[0] : '',
+              }));
+            }}
+          >
+            <DatePickerInput
               id={`report-${definition.id}-start-date`}
-              type="date"
               labelText="Start date"
-              value={formState.startDate}
-              onChange={handleChange('startDate')}
+              placeholder="YYYY-MM-DD"
             />
-            <TextInput
+          </DatePicker>,
+          <DatePicker
+            key="end-date"
+            datePickerType="single"
+            dateFormat="Y-m-d"
+            value={formState.endDate}
+            onChange={(dates: Date[]) => {
+              const date = dates[0];
+              setFormState((prev) => ({
+                ...prev,
+                endDate: date ? date.toISOString().split('T')[0] : '',
+              }));
+            }}
+          >
+            <DatePickerInput
               id={`report-${definition.id}-end-date`}
-              type="date"
               labelText="End date"
-              value={formState.endDate}
-              onChange={handleChange('endDate')}
+              placeholder="YYYY-MM-DD"
             />
-          </div>
-        )}
-
-        {definition.fields.agreementType && (
+          </DatePicker>,
+        ];
+      case 'agreementType':
+        if (!definition.fields.agreementType) return null;
+        return [
           <Select
+            key="agreement-type"
             id={`report-${definition.id}-agreement-type`}
             labelText="Agreement type"
             value={formState.agreementType}
@@ -215,11 +239,13 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
             <SelectItem value="" text="All types" />
             <SelectItem value="ACQUISITION" text="Acquisition" />
             <SelectItem value="DISPOSITION" text="Disposition" />
-          </Select>
-        )}
-
-        {definition.fields.agreementActive && (
+          </Select>,
+        ];
+      case 'agreementActive':
+        if (!definition.fields.agreementActive) return null;
+        return [
           <Select
+            key="agreement-active"
             id={`report-${definition.id}-agreement-active`}
             labelText="Agreement active"
             value={formState.agreementActive}
@@ -228,11 +254,28 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
             {AGREEMENT_ACTIVE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value} text={option.label} />
             ))}
-          </Select>
-        )}
-
-        {definition.fields.region && (
+          </Select>,
+        ];
+      case 'sortOptions':
+        if (!definition.fields.sortOptions) return null;
+        return [
           <Select
+            key="sort"
+            id={`report-${definition.id}-sort`}
+            labelText="Sort by"
+            value={formState.sortColumn}
+            onChange={handleSelectChange('sortColumn')}
+          >
+            {definition.fields.sortOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value} text={option.label} />
+            ))}
+          </Select>,
+        ];
+      case 'region':
+        if (!definition.fields.region) return null;
+        return [
+          <Select
+            key="region"
             id={`report-${definition.id}-region`}
             labelText="Region"
             value={formState.region}
@@ -243,11 +286,13 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
             {regions.map((region) => (
               <SelectItem key={region.code} value={region.code} text={toOptionLabel(region)} />
             ))}
-          </Select>
-        )}
-
-        {definition.fields.district && (
+          </Select>,
+        ];
+      case 'district':
+        if (!definition.fields.district) return null;
+        return [
           <Select
+            key="district"
             id={`report-${definition.id}-district`}
             labelText="District"
             value={formState.district}
@@ -262,11 +307,13 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
                 text={toOptionLabel(district)}
               />
             ))}
-          </Select>
-        )}
-
-        {definition.fields.bctsOffice && (
+          </Select>,
+        ];
+      case 'bctsOffice':
+        if (!definition.fields.bctsOffice) return null;
+        return [
           <Select
+            key="bcts"
             id={`report-${definition.id}-bcts`}
             labelText="BCTS office"
             value={formState.bctsOffice}
@@ -277,11 +324,13 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
             {bctsOffices.map((office) => (
               <SelectItem key={office.code} value={office.code} text={toOptionLabel(office)} />
             ))}
-          </Select>
-        )}
-
-        {definition.fields.projectStatus && (
+          </Select>,
+        ];
+      case 'projectStatus':
+        if (!definition.fields.projectStatus) return null;
+        return [
           <Select
+            key="project-status"
             id={`report-${definition.id}-project-status`}
             labelText="Project status"
             value={formState.projectStatus}
@@ -292,32 +341,59 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
             {statuses.map((status) => (
               <SelectItem key={status.code} value={status.code} text={toOptionLabel(status)} />
             ))}
-          </Select>
-        )}
-
-        {definition.fields.sortOptions && (
-          <Select
-            id={`report-${definition.id}-sort`}
-            labelText="Sort by"
-            value={formState.sortColumn}
-            onChange={handleSelectChange('sortColumn')}
-          >
-            {definition.fields.sortOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value} text={option.label} />
-            ))}
-          </Select>
-        )}
-
-        {definition.fields.agreementExists && (
-          <Checkbox
+          </Select>,
+        ];
+      case 'agreementExists':
+        if (!definition.fields.agreementExists) return null;
+        return [
+          <Toggle
+            key="agreement-exists"
             id={`report-${definition.id}-agreement-exists`}
-            labelText="Only projects with agreements"
-            checked={formState.agreementExists}
-            onChange={(_, { checked }) =>
+            labelText="Projects must have agreement"
+            labelA="No"
+            labelB="Yes"
+            toggled={formState.agreementExists}
+            onToggle={(checked) =>
               setFormState((prev) => ({ ...prev, agreementExists: checked }))
             }
+          />,
+        ];
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <form className="report-form" onSubmit={handleSubmit}>
+      <Stack gap={5}>
+        {optionsQuery.isError && (
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            title="Filter options unavailable"
+            subtitle={(optionsQuery.error as Error)?.message ?? 'Failed to load lookup values.'}
           />
         )}
+
+        {(
+          definition.layout ?? [
+            ['dateRange'],
+            ['agreementType', 'agreementActive', 'sortOptions'],
+            ['region'],
+            ['district'],
+            ['bctsOffice'],
+            ['projectStatus'],
+            ['agreementExists'],
+          ]
+        ).map((row, rowIndex) => {
+          const elements = row.flatMap((key) => renderField(key) ?? []);
+          if (elements.length === 0) return null;
+          return (
+            <div key={rowIndex} className="report-form__field-group">
+              {elements}
+            </div>
+          );
+        })}
 
         <div className="report-form__actions">
           <Button

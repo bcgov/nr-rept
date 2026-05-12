@@ -1,4 +1,4 @@
-import { AddAlt as Add, Edit } from '@carbon/icons-react';
+import { Add, Edit } from '@carbon/icons-react';
 import {
   Button,
   DatePicker,
@@ -181,7 +181,7 @@ export const AcquisitionTab: FC<AcquisitionTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to load acquisition request',
         subtitle: (acquisitionQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [acquisitionQuery.isError, acquisitionQuery.error, display]);
@@ -192,7 +192,7 @@ export const AcquisitionTab: FC<AcquisitionTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to save acquisition request',
         subtitle: (activeMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [activeMutation.isError, activeMutation.error, display]);
@@ -321,7 +321,7 @@ export const AcquisitionTab: FC<AcquisitionTabProps> = ({ projectId }) => {
         },
         {
           onSuccess: () => {
-            display({ kind: 'success', title: 'Acquisition request created.', timeout: 4000 });
+            display({ kind: 'success', title: 'Acquisition request created.', timeout: 7000 });
             setIsCreating(false);
           },
         },
@@ -353,7 +353,7 @@ export const AcquisitionTab: FC<AcquisitionTabProps> = ({ projectId }) => {
         },
         {
           onSuccess: () => {
-            display({ kind: 'success', title: 'Acquisition request updated.', timeout: 4000 });
+            display({ kind: 'success', title: 'Acquisition request updated.', timeout: 7000 });
             setIsEditing(false);
           },
         },
@@ -596,7 +596,7 @@ export const AcquisitionTab: FC<AcquisitionTabProps> = ({ projectId }) => {
 
         <div className="form-actions">
           <Button
-            kind="tertiary"
+            kind="secondary"
             size="sm"
             disabled={activeMutation.isPending}
             onClick={handleCancel}
@@ -626,7 +626,7 @@ export const AcquisitionTab: FC<AcquisitionTabProps> = ({ projectId }) => {
       {canEdit && (
         <div className="project-summary-readonly__actions">
           <Button
-            kind="primary"
+            kind="tertiary"
             size="sm"
             renderIcon={Edit}
             onClick={handleStartEdit}

@@ -1,5 +1,15 @@
-import { AddAlt as Add, Edit, TrashCan } from '@carbon/icons-react';
-import { Button, IconButton, Select, SelectItem, Stack, TextInput, Toggle } from '@carbon/react';
+import { Add, Edit, TrashCan } from '@carbon/icons-react';
+import {
+  Button,
+  IconButton,
+  RadioButton,
+  RadioButtonGroup,
+  Search,
+  Select,
+  SelectItem,
+  Stack,
+  TextInput,
+} from '@carbon/react';
 import { useCallback, useEffect, useMemo, useState, type FC } from 'react';
 
 import DestructiveModal from '@/components/core/DestructiveModal';
@@ -49,7 +59,7 @@ const QualifiedReceiversSection: FC = () => {
         kind: 'error',
         title: 'Unable to load qualified receivers',
         subtitle: (listQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [listQuery.isError, listQuery.error, display]);
@@ -65,14 +75,14 @@ const QualifiedReceiversSection: FC = () => {
 
   const showError = useCallback(
     (subtitle: string) => {
-      display({ kind: 'error', title: 'Qualified receiver error', subtitle, timeout: 6000 });
+      display({ kind: 'error', title: 'Qualified receiver error', subtitle, timeout: 9000 });
     },
     [display],
   );
 
   const showSuccess = useCallback(
     (title: string) => {
-      display({ kind: 'success', title, timeout: 4000 });
+      display({ kind: 'success', title, timeout: 7000 });
     },
     [display],
   );
@@ -113,7 +123,8 @@ const QualifiedReceiversSection: FC = () => {
         await mutations.update.mutateAsync({ id: formState.id, payload });
         showSuccess('Qualified receiver updated');
       } else {
-        await mutations.create.mutateAsync(payload);
+        const created = await mutations.create.mutateAsync(payload);
+        setSearchText(created?.name ?? trimmed);
         showSuccess('Qualified receiver created');
       }
       closeModal();
@@ -218,15 +229,38 @@ const QualifiedReceiversSection: FC = () => {
 
   return (
     <Stack gap={6} className="admin-section">
+      <div className="admin-section__filters-actions" style={{ marginBottom: '-0.5rem' }}>
+        <Button
+          kind="primary"
+          size="md"
+          renderIcon={Add}
+          iconDescription="Add qualified receiver"
+          onClick={openCreateModal}
+        >
+          Add qualified receiver
+        </Button>
+      </div>
       <div className="admin-section__toolbar">
         <div className="admin-section__filters">
-          <TextInput
-            id="qualified-search"
-            labelText="Search"
-            placeholder="Search by source name"
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-          />
+          <div>
+            <label
+              className="cds--label"
+              style={{ marginBottom: '0.5rem' }}
+              htmlFor="qualified-search"
+            >
+              Name
+            </label>
+            <Search
+              id="qualified-search"
+              size="md"
+              labelText="Name"
+              placeholder="Search by name"
+              closeButtonLabelText="Clear search"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              onClear={() => setSearchText('')}
+            />
+          </div>
           <Select
             id="qualified-active-filter"
             labelText="Status"
@@ -238,18 +272,9 @@ const QualifiedReceiversSection: FC = () => {
             <SelectItem value="inactive" text="Inactive only" />
           </Select>
         </div>
-        <Button
-          kind="primary"
-          size="md"
-          renderIcon={Add}
-          iconDescription="Add qualified receiver"
-          onClick={openCreateModal}
-        >
-          Add qualified receiver
-        </Button>
       </div>
 
-      <div className="bordered-table">
+      <div className={(tableContent.page?.totalElements ?? 0) > 0 ? 'bordered-table' : undefined}>
         <TableResource<QualifiedReceiverRow>
           headers={tableHeaders}
           content={tableContent}
@@ -274,14 +299,16 @@ const QualifiedReceiversSection: FC = () => {
             onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
             placeholder="Enter source name"
           />
-          <Toggle
-            id="qualified-active"
-            labelText="Active"
-            labelA="Inactive"
-            labelB="Active"
-            toggled={formState.active}
-            onToggle={(checked) => setFormState((prev) => ({ ...prev, active: checked }))}
-          />
+          <RadioButtonGroup
+            legendText="Is this receiver currently active?"
+            name="qualified-active"
+            orientation="vertical"
+            valueSelected={formState.active ? 'yes' : 'no'}
+            onChange={(value) => setFormState((prev) => ({ ...prev, active: value === 'yes' }))}
+          >
+            <RadioButton id="qualified-active-yes" labelText="Yes" value="yes" />
+            <RadioButton id="qualified-active-no" labelText="No" value="no" />
+          </RadioButtonGroup>
         </Stack>
         <div className="add-contact-modal__actions">
           <Button kind="secondary" size="md" onClick={closeModal}>

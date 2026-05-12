@@ -2,6 +2,8 @@ import { Search } from '@carbon/icons-react';
 import {
   Button,
   Column,
+  DatePicker,
+  DatePickerInput,
   Grid,
   InlineLoading,
   Select,
@@ -301,7 +303,7 @@ const ProjectCreatePage: FC = () => {
           subtitle: result.projectFile
             ? `Project file ${result.projectFile} was created successfully.`
             : 'Project file was created successfully.',
-          timeout: 4000,
+          timeout: 7000,
         });
         clearForm();
         navigate(`/projects/${result.id}`);
@@ -311,7 +313,7 @@ const ProjectCreatePage: FC = () => {
           kind: 'error',
           title: 'Project file not created',
           subtitle: message,
-          timeout: 6000,
+          timeout: 9000,
         });
       }
     },
@@ -324,7 +326,7 @@ const ProjectCreatePage: FC = () => {
         kind: 'error',
         title: 'Lookup values are unavailable',
         subtitle: (optionsQuery.error as Error)?.message ?? 'Failed to load project file options.',
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [optionsQuery.isError, optionsQuery.error, display]);
@@ -499,16 +501,27 @@ const ProjectCreatePage: FC = () => {
                     ))}
                   </Select>
 
-                  <TextInput
-                    id="project-create-request-date"
-                    type="date"
-                    labelText="Request date *"
+                  <DatePicker
+                    datePickerType="single"
+                    dateFormat="Y-m-d"
                     value={formState.requestDate}
-                    onChange={handleTextChange('requestDate')}
-                    disabled={isSubmitting}
-                    invalid={Boolean(validationErrors.requestDate)}
-                    invalidText={validationErrors.requestDate}
-                  />
+                    onChange={(dates: Date[]) => {
+                      const date = dates[0];
+                      setFormState((prev) => ({
+                        ...prev,
+                        requestDate: date ? date.toISOString().split('T')[0] : '',
+                      }));
+                    }}
+                  >
+                    <DatePickerInput
+                      id="project-create-request-date"
+                      labelText="Request date *"
+                      placeholder="YYYY-MM-DD"
+                      disabled={isSubmitting}
+                      invalid={Boolean(validationErrors.requestDate)}
+                      invalidText={validationErrors.requestDate}
+                    />
+                  </DatePicker>
                 </div>
 
                 <div className="user-lookup-field">

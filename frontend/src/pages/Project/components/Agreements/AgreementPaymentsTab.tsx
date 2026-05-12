@@ -1,6 +1,8 @@
 import {
   Button,
   Checkbox,
+  DatePicker,
+  DatePickerInput,
   InlineNotification,
   NumberInput,
   RadioButton,
@@ -213,7 +215,7 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
         kind: 'error',
         title: 'Failed to load agreement payments',
         subtitle: (agreementPaymentsQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [agreementPaymentsQuery.isError, agreementPaymentsQuery.error, display]);
@@ -224,7 +226,7 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
         kind: 'error',
         title: 'Unable to load payment options',
         subtitle: (paymentOptionsQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [paymentOptionsQuery.isError, paymentOptionsQuery.error, display]);
@@ -333,14 +335,14 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
           setDraft(buildInitialPaymentDraft());
           setSelectedPayeeId(null);
           setValidationErrors({});
-          display({ kind: 'success', title: 'Payment created.', timeout: 4000 });
+          display({ kind: 'success', title: 'Payment created.', timeout: 7000 });
         },
         onError: (error) => {
           display({
             kind: 'error',
             title: 'Payment creation failed',
             subtitle: error.message ?? 'Failed to create payment.',
-            timeout: 6000,
+            timeout: 9000,
           });
         },
       },
@@ -403,23 +405,17 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
 
   return (
     <div className="agreement-payments">
-      <section className="agreement-payment-card agreement-payment-card--new">
-        <div className="agreement-payment-card__header">
-          <div className="agreement-payment-card__title">
-            <h3>Agreement payments</h3>
-            <p>Create new payment requests and review the latest invoices.</p>
-          </div>
-          <Button
-            kind="primary"
-            size="md"
-            renderIcon={Add}
-            onClick={handleOpenPaymentModal}
-            disabled={!canCreate}
-          >
-            New payment
-          </Button>
-        </div>
-      </section>
+      <div className="project-summary-readonly__actions" style={{ marginBottom: 0 }}>
+        <Button
+          kind="primary"
+          size="sm"
+          renderIcon={Add}
+          onClick={handleOpenPaymentModal}
+          disabled={!canCreate}
+        >
+          New payment
+        </Button>
+      </div>
 
       {agreementPayments.length === 0 ? (
         <InlineNotification
@@ -499,8 +495,7 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                   kind="warning"
                   lowContrast
                   hideCloseButton
-                  title="A property contact is required before creating a payment"
-                  subtitle="Link a property to this agreement and add at least one contact to that property."
+                  title="A property contact is required before creating a payment. Link a property to this agreement and add at least one contact to that property."
                 />
               )}
               <fieldset
@@ -509,15 +504,26 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
               >
                 <div className="agreement-payment-form">
                   <div className="agreement-payment-form__grid">
-                    <TextInput
-                      id="payment-request-date"
-                      type="date"
-                      labelText="Request date *"
+                    <DatePicker
+                      datePickerType="single"
+                      dateFormat="Y-m-d"
                       value={draft.requestDate}
-                      onChange={(event) => handleDraftChange('requestDate', event.target.value)}
-                      invalid={Boolean(validationErrors.requestDate)}
-                      invalidText={validationErrors.requestDate}
-                    />
+                      onChange={(dates: Date[]) => {
+                        const date = dates[0];
+                        handleDraftChange(
+                          'requestDate',
+                          date ? date.toISOString().split('T')[0] : '',
+                        );
+                      }}
+                    >
+                      <DatePickerInput
+                        id="payment-request-date"
+                        labelText="Request date *"
+                        placeholder="YYYY-MM-DD"
+                        invalid={Boolean(validationErrors.requestDate)}
+                        invalidText={validationErrors.requestDate}
+                      />
+                    </DatePicker>
                     <NumberInput
                       id="payment-amount"
                       label="Payment amount *"

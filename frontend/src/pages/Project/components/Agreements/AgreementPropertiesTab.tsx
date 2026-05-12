@@ -1,4 +1,4 @@
-import { AddAlt as Add, Link, SubtractAlt as Subtract } from '@carbon/icons-react';
+import { Add, Link, SubtractAlt as Subtract } from '@carbon/icons-react';
 import {
   Button,
   InlineNotification,
@@ -88,7 +88,7 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
         kind: 'error',
         title: 'Failed to load project properties',
         subtitle: (projectPropertiesQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [projectPropertiesQuery.isError, projectPropertiesQuery.error, display]);
@@ -99,7 +99,7 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
         kind: 'error',
         title: 'Failed to load agreement properties',
         subtitle: (agreementPropertiesQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [agreementPropertiesQuery.isError, agreementPropertiesQuery.error, display]);
@@ -110,7 +110,7 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
         kind: 'error',
         title: 'Unable to save properties',
         subtitle: (updateAgreementPropertiesMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [updateAgreementPropertiesMutation.isError, updateAgreementPropertiesMutation.error, display]);
@@ -351,7 +351,7 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
 
           <div className="form-actions">
             <Button
-              kind="tertiary"
+              kind="secondary"
               size="sm"
               disabled={updateAgreementPropertiesMutation.isPending}
               onClick={handleCancelEditProperties}

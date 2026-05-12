@@ -1,4 +1,4 @@
-import { AddAlt as Add, TrashCan } from '@carbon/icons-react';
+import { Add, Search, TrashCan } from '@carbon/icons-react';
 import {
   Button,
   InlineNotification,
@@ -65,7 +65,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to load contacts',
         subtitle: (projectContactsQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [projectContactsQuery.isError, projectContactsQuery.error, display]);
@@ -122,7 +122,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to add contact',
         subtitle: (addMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [addMutation.isError, addMutation.error, display]);
@@ -133,7 +133,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to remove contact',
         subtitle: (removeMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [removeMutation.isError, removeMutation.error, display]);
@@ -148,7 +148,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to create contact',
         subtitle: (createContactMutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [createContactMutation.isError, createContactMutation.error, display]);
@@ -201,7 +201,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
           display({
             kind: 'success',
             title: `Contact "${selectedContact.displayName ?? 'Unknown'}" added to project.`,
-            timeout: 4000,
+            timeout: 7000,
           });
           handleCloseAddModal();
         },
@@ -257,7 +257,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Validation Error',
         subtitle: validation.errors.map((e) => e.message).join(' '),
-        timeout: 6000,
+        timeout: 9000,
       });
       return;
     }
@@ -298,7 +298,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
             kind: 'success',
             title: `Contact "${displayName}" created successfully.`,
             subtitle: 'Please select a contact type.',
-            timeout: 4000,
+            timeout: 7000,
           });
         }
         handleCloseCreateModal();
@@ -338,7 +338,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
           display({
             kind: 'success',
             title: `Contact "${deleteConfirm.displayName}" removed from project.`,
-            timeout: 4000,
+            timeout: 7000,
           });
           setDeleteConfirm(null);
         },
@@ -481,6 +481,7 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
           <Button
             kind="primary"
             size="md"
+            renderIcon={Search}
             onClick={handleSearch}
             disabled={
               (!searchFirstName.trim() && !searchLastName.trim() && !searchCompanyName.trim()) ||
@@ -488,6 +489,27 @@ export const ContactsTab: FC<ContactsTabProps> = ({ projectId }) => {
             }
           >
             {contactSearchQuery.isFetching ? 'Searching...' : 'Search'}
+          </Button>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-start',
+            marginTop: '0.25rem',
+            marginBottom: '1rem',
+          }}
+        >
+          <Button
+            kind="ghost"
+            size="md"
+            onClick={() => {
+              setSearchFirstName('');
+              setSearchLastName('');
+              setSearchCompanyName('');
+              setSearchParams(null);
+            }}
+          >
+            Clear filters
           </Button>
         </div>
 

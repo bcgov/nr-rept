@@ -11,9 +11,11 @@ const ThemeToggle: FC = () => {
     toggleTheme();
   };
 
+  const isDark = theme === 'g90' || theme === 'g100';
+
   return (
     <div
-      className={`theme-toggle ${theme !== 'g10' ? 'on' : 'off'}`}
+      className={`theme-toggle ${isDark ? 'on' : 'off'}`}
       onClick={handleToggle}
       role="button"
       tabIndex={0}
@@ -24,7 +26,7 @@ const ThemeToggle: FC = () => {
       }}
     >
       <div className="circle">
-        {theme !== 'g10' ? <AsleepFilled className="icon" /> : <LightFilled className="icon" />}
+        {isDark ? <AsleepFilled className="icon" /> : <LightFilled className="icon" />}
       </div>
     </div>
   );

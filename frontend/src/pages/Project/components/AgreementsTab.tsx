@@ -1,4 +1,4 @@
-import { AddAlt as Add } from '@carbon/icons-react';
+import { Add } from '@carbon/icons-react';
 import {
   Button,
   InlineNotification,
@@ -13,6 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableSelectRow,
   Tabs,
   Tile,
 } from '@carbon/react';
@@ -52,7 +53,7 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
         kind: 'error',
         title: 'Failed to load agreements',
         subtitle: (agreementsQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [agreementsQuery.isError, agreementsQuery.error, display]);
@@ -175,9 +176,10 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
             )}
           </div>
           <div className="bordered-table">
-            <Table className="project-table" useZebraStyles>
+            <Table className="project-table">
               <TableHead>
                 <TableRow>
+                  <TableHeader aria-label="Selected agreement" />
                   <TableHeader>Type</TableHeader>
                   <TableHeader>Agreement Label</TableHeader>
                   <TableHeader>Active</TableHeader>
@@ -197,6 +199,17 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
                       }}
                       className={`property-row${isSelected ? ' property-row--selected' : ''}`}
                     >
+                      <TableSelectRow
+                        radio
+                        id={`agreement-select-${agreement.id}`}
+                        name="agreement-selection"
+                        ariaLabel={`Select agreement ${agreement.agreementLabel ?? agreement.id}`}
+                        checked={isSelected}
+                        onSelect={() => {
+                          setSelectedAgreementId(String(agreement.id));
+                          setIsAddingAgreement(false);
+                        }}
+                      />
                       <TableCell>
                         {agreement.agreementType === 'ACQUISITION'
                           ? displayValue(agreement.acquisitionAgreementLabel)

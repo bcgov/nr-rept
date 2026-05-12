@@ -1,6 +1,13 @@
 import { Checkbox, NumberInput, Select, SelectItem, TextArea, TextInput } from '@carbon/react';
 
 import type { PropertyDetailsEditFormProps } from './types';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+
+const blockNonNumericKeys = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+  if (['e', 'E', '+', '-'].includes(event.key)) {
+    event.preventDefault();
+  }
+};
 
 const PropertyDetailsForm: React.FC<PropertyDetailsEditFormProps> = ({
   formState,
@@ -16,13 +23,16 @@ const PropertyDetailsForm: React.FC<PropertyDetailsEditFormProps> = ({
         value={formState.titleNumber}
         onChange={(e) => onChange('titleNumber', e.target.value)}
       />
-      <TextInput
+      <NumberInput
         id="parcelIdentifier"
-        labelText="PID *"
+        label="PID *"
         value={formState.parcelIdentifier}
-        onChange={(e) => onChange('parcelIdentifier', e.target.value)}
+        onChange={(_, { value }) => onChange('parcelIdentifier', String(value ?? ''))}
+        onKeyDown={blockNonNumericKeys}
         invalid={Boolean(validationErrors.parcelIdentifier)}
         invalidText={validationErrors.parcelIdentifier}
+        allowEmpty
+        hideSteppers
       />
     </div>
     <div className="form-row">
@@ -91,6 +101,7 @@ const PropertyDetailsForm: React.FC<PropertyDetailsEditFormProps> = ({
         label="Parent Area (ha) *"
         value={formState.parcelArea}
         onChange={(_, { value }) => onChange('parcelArea', String(value ?? ''))}
+        onKeyDown={blockNonNumericKeys}
         invalid={Boolean(validationErrors.parcelArea)}
         invalidText={validationErrors.parcelArea}
         allowEmpty
@@ -101,6 +112,7 @@ const PropertyDetailsForm: React.FC<PropertyDetailsEditFormProps> = ({
         label="Taking Area (ha) *"
         value={formState.projectArea}
         onChange={(_, { value }) => onChange('projectArea', String(value ?? ''))}
+        onKeyDown={blockNonNumericKeys}
         invalid={Boolean(validationErrors.projectArea)}
         invalidText={validationErrors.projectArea}
         allowEmpty
@@ -111,6 +123,7 @@ const PropertyDetailsForm: React.FC<PropertyDetailsEditFormProps> = ({
         label="Assessed Value"
         value={formState.assessedValue}
         onChange={(_, { value }) => onChange('assessedValue', String(value ?? ''))}
+        onKeyDown={blockNonNumericKeys}
         allowEmpty
         hideSteppers
       />

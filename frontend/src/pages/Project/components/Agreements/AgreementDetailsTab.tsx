@@ -2,6 +2,8 @@ import { Edit } from '@carbon/icons-react';
 import {
   Button,
   Checkbox,
+  DatePicker,
+  DatePickerInput,
   InlineNotification,
   NumberInput,
   TextArea,
@@ -205,7 +207,7 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
         kind: 'error',
         title: 'Unable to save agreement',
         subtitle: (mutation.error as Error)?.message ?? 'Update failed.',
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [mutation.isError, mutation.error, display]);
@@ -344,7 +346,7 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
       },
       {
         onSuccess: () => {
-          display({ kind: 'success', title: 'Agreement details saved.', timeout: 4000 });
+          display({ kind: 'success', title: 'Agreement details saved.', timeout: 7000 });
           setIsEditing(false);
         },
       },
@@ -360,7 +362,7 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
       {!isEditing && canEdit && (
         <div className="project-summary-readonly__actions">
           <Button
-            kind="primary"
+            kind="tertiary"
             size="sm"
             renderIcon={Edit}
             disabled={Boolean(editDisabledReason)}
@@ -428,14 +430,22 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
                 disabled={mutation.isPending}
               />
             </div>
-            <TextInput
-              id="agreement-expiry-date"
-              type="date"
-              labelText="Expiry date"
+            <DatePicker
+              datePickerType="single"
+              dateFormat="Y-m-d"
               value={formState.expiryDate}
-              onChange={(event) => handleFieldChange('expiryDate', event.target.value)}
-              disabled={mutation.isPending}
-            />
+              onChange={(dates: Date[]) => {
+                const date = dates[0];
+                handleFieldChange('expiryDate', date ? date.toISOString().split('T')[0] : '');
+              }}
+            >
+              <DatePickerInput
+                id="agreement-expiry-date"
+                labelText="Expiry date"
+                placeholder="YYYY-MM-DD"
+                disabled={mutation.isPending}
+              />
+            </DatePicker>
             {rules.showTerm && (
               <NumberInput
                 id="agreement-term"
@@ -467,40 +477,73 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
               />
             )}
             {rules.showBringForward && (
-              <TextInput
-                id="agreement-bring-forward"
-                type="date"
-                labelText="Bring-forward/PC date *"
+              <DatePicker
+                datePickerType="single"
+                dateFormat="Y-m-d"
                 value={formState.bringForwardDate}
-                onChange={(event) => handleFieldChange('bringForwardDate', event.target.value)}
-                disabled={mutation.isPending}
-                invalid={Boolean(validationErrors.bringForwardDate)}
-                invalidText={validationErrors.bringForwardDate}
-              />
+                onChange={(dates: Date[]) => {
+                  const date = dates[0];
+                  handleFieldChange(
+                    'bringForwardDate',
+                    date ? date.toISOString().split('T')[0] : '',
+                  );
+                }}
+              >
+                <DatePickerInput
+                  id="agreement-bring-forward"
+                  labelText="Bring-forward/PC date *"
+                  placeholder="YYYY-MM-DD"
+                  disabled={mutation.isPending}
+                  invalid={Boolean(validationErrors.bringForwardDate)}
+                  invalidText={validationErrors.bringForwardDate}
+                />
+              </DatePicker>
             )}
             {rules.showAnniversary && (
-              <TextInput
-                id="agreement-anniversary"
-                type="date"
-                labelText="Anniversary date *"
+              <DatePicker
+                datePickerType="single"
+                dateFormat="Y-m-d"
                 value={formState.anniversaryDate}
-                onChange={(event) => handleFieldChange('anniversaryDate', event.target.value)}
-                disabled={mutation.isPending}
-                invalid={Boolean(validationErrors.anniversaryDate)}
-                invalidText={validationErrors.anniversaryDate}
-              />
+                onChange={(dates: Date[]) => {
+                  const date = dates[0];
+                  handleFieldChange(
+                    'anniversaryDate',
+                    date ? date.toISOString().split('T')[0] : '',
+                  );
+                }}
+              >
+                <DatePickerInput
+                  id="agreement-anniversary"
+                  labelText="Anniversary date *"
+                  placeholder="YYYY-MM-DD"
+                  disabled={mutation.isPending}
+                  invalid={Boolean(validationErrors.anniversaryDate)}
+                  invalidText={validationErrors.anniversaryDate}
+                />
+              </DatePicker>
             )}
             {rules.showRenegotiation && (
-              <TextInput
-                id="agreement-renegotiation"
-                type="date"
-                labelText="Negotiation date *"
+              <DatePicker
+                datePickerType="single"
+                dateFormat="Y-m-d"
                 value={formState.renegotiationDate}
-                onChange={(event) => handleFieldChange('renegotiationDate', event.target.value)}
-                disabled={mutation.isPending}
-                invalid={Boolean(validationErrors.renegotiationDate)}
-                invalidText={validationErrors.renegotiationDate}
-              />
+                onChange={(dates: Date[]) => {
+                  const date = dates[0];
+                  handleFieldChange(
+                    'renegotiationDate',
+                    date ? date.toISOString().split('T')[0] : '',
+                  );
+                }}
+              >
+                <DatePickerInput
+                  id="agreement-renegotiation"
+                  labelText="Negotiation date *"
+                  placeholder="YYYY-MM-DD"
+                  disabled={mutation.isPending}
+                  invalid={Boolean(validationErrors.renegotiationDate)}
+                  invalidText={validationErrors.renegotiationDate}
+                />
+              </DatePicker>
             )}
             {rules.showLessorsFile && (
               <TextInput
@@ -556,7 +599,7 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
 
           <div className="form-actions">
             <Button
-              kind="tertiary"
+              kind="secondary"
               size="sm"
               disabled={mutation.isPending}
               onClick={handleCancelEdit}

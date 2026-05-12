@@ -22,7 +22,8 @@ public record ReptPropertySummaryDto(
     BigDecimal parcelArea,
     BigDecimal projectArea,
     BigDecimal assessedValue,
-    Boolean expropriationRecommended) {
+    Boolean expropriationRecommended,
+    Long revisionCount) {
 
   public ReptPropertySummaryDto {
     Objects.requireNonNull(id, "id is required");

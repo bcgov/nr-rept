@@ -185,6 +185,7 @@ export interface ReptPropertySummary {
   projectArea?: number | null;
   assessedValue?: number | null;
   expropriationRecommended?: boolean | null;
+  revisionCount?: number | null;
 }
 
 export interface ReptPropertyDetail {

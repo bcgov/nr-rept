@@ -1,6 +1,8 @@
 import {
   Button,
   Checkbox,
+  DatePicker,
+  DatePickerInput,
   NumberInput,
   Select,
   SelectItem,
@@ -105,7 +107,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
         kind: 'error',
         title: 'Failed to load agreement options',
         subtitle: (optionsQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [optionsQuery.isError, optionsQuery.error, display]);
@@ -116,7 +118,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
         kind: 'error',
         title: 'Failed to create agreement',
         subtitle: (createMutation.error as Error)?.message ?? 'Please try again.',
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [createMutation.isError, createMutation.error, display]);
@@ -293,14 +295,22 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
           </div>
 
           {/* Expiry date */}
-          <TextInput
-            id="new-agreement-expiry-date"
-            type="date"
-            labelText="Expiry date"
+          <DatePicker
+            datePickerType="single"
+            dateFormat="Y-m-d"
             value={formState.expiryDate}
-            onChange={(e) => handleFieldChange('expiryDate', e.target.value)}
-            disabled={isPending}
-          />
+            onChange={(dates: Date[]) => {
+              const date = dates[0];
+              handleFieldChange('expiryDate', date ? date.toISOString().split('T')[0] : '');
+            }}
+          >
+            <DatePickerInput
+              id="new-agreement-expiry-date"
+              labelText="Expiry date"
+              placeholder="YYYY-MM-DD"
+              disabled={isPending}
+            />
+          </DatePicker>
 
           {/* Payment terms – full width */}
           <TextArea
@@ -355,40 +365,73 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
               />
             )}
             {rules.showBringForward && (
-              <TextInput
-                id="new-agreement-bring-forward"
-                type="date"
-                labelText="Bring-forward/PC date *"
+              <DatePicker
+                datePickerType="single"
+                dateFormat="Y-m-d"
                 value={formState.bringForwardDate}
-                onChange={(e) => handleFieldChange('bringForwardDate', e.target.value)}
-                disabled={isPending}
-                invalid={Boolean(validationErrors.bringForwardDate)}
-                invalidText={validationErrors.bringForwardDate}
-              />
+                onChange={(dates: Date[]) => {
+                  const date = dates[0];
+                  handleFieldChange(
+                    'bringForwardDate',
+                    date ? date.toISOString().split('T')[0] : '',
+                  );
+                }}
+              >
+                <DatePickerInput
+                  id="new-agreement-bring-forward"
+                  labelText="Bring-forward/PC date *"
+                  placeholder="YYYY-MM-DD"
+                  disabled={isPending}
+                  invalid={Boolean(validationErrors.bringForwardDate)}
+                  invalidText={validationErrors.bringForwardDate}
+                />
+              </DatePicker>
             )}
             {rules.showAnniversary && (
-              <TextInput
-                id="new-agreement-anniversary"
-                type="date"
-                labelText="Anniversary date *"
+              <DatePicker
+                datePickerType="single"
+                dateFormat="Y-m-d"
                 value={formState.anniversaryDate}
-                onChange={(e) => handleFieldChange('anniversaryDate', e.target.value)}
-                disabled={isPending}
-                invalid={Boolean(validationErrors.anniversaryDate)}
-                invalidText={validationErrors.anniversaryDate}
-              />
+                onChange={(dates: Date[]) => {
+                  const date = dates[0];
+                  handleFieldChange(
+                    'anniversaryDate',
+                    date ? date.toISOString().split('T')[0] : '',
+                  );
+                }}
+              >
+                <DatePickerInput
+                  id="new-agreement-anniversary"
+                  labelText="Anniversary date *"
+                  placeholder="YYYY-MM-DD"
+                  disabled={isPending}
+                  invalid={Boolean(validationErrors.anniversaryDate)}
+                  invalidText={validationErrors.anniversaryDate}
+                />
+              </DatePicker>
             )}
             {rules.showRenegotiation && (
-              <TextInput
-                id="new-agreement-renegotiation"
-                type="date"
-                labelText="Negotiation date *"
+              <DatePicker
+                datePickerType="single"
+                dateFormat="Y-m-d"
                 value={formState.renegotiationDate}
-                onChange={(e) => handleFieldChange('renegotiationDate', e.target.value)}
-                disabled={isPending}
-                invalid={Boolean(validationErrors.renegotiationDate)}
-                invalidText={validationErrors.renegotiationDate}
-              />
+                onChange={(dates: Date[]) => {
+                  const date = dates[0];
+                  handleFieldChange(
+                    'renegotiationDate',
+                    date ? date.toISOString().split('T')[0] : '',
+                  );
+                }}
+              >
+                <DatePickerInput
+                  id="new-agreement-renegotiation"
+                  labelText="Negotiation date *"
+                  placeholder="YYYY-MM-DD"
+                  disabled={isPending}
+                  invalid={Boolean(validationErrors.renegotiationDate)}
+                  invalidText={validationErrors.renegotiationDate}
+                />
+              </DatePicker>
             )}
             {rules.showLessorsFile && (
               <TextInput
@@ -435,7 +478,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
 
       {/* ── Actions ── */}
       <div className="form-actions">
-        <Button kind="tertiary" size="sm" disabled={isPending} onClick={onCancel}>
+        <Button kind="secondary" size="sm" disabled={isPending} onClick={onCancel}>
           Cancel
         </Button>
         <Button kind="primary" size="sm" disabled={isPending} onClick={handleSave}>

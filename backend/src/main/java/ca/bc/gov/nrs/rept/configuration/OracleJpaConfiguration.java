@@ -1,9 +1,11 @@
 package ca.bc.gov.nrs.rept.configuration;
 
 import com.zaxxer.hikari.HikariDataSource;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.sql.DataSource;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateProperties;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateSettings;
@@ -31,6 +33,23 @@ public class OracleJpaConfiguration {
   public HikariDataSource oracleDataSource() {
     // Let Spring bind the Hikari properties (jdbcUrl, username, password, pool settings)
     return DataSourceBuilder.create().type(HikariDataSource.class).build();
+  }
+
+  /**
+   * Forces eager Hikari pool initialization once the DataSource has its
+   * {@code @ConfigurationProperties} fully bound. Throws on startup if the DB is
+   * unreachable (governed by {@code spring.oracle.hikari.initialization-fail-timeout}),
+   * making connectivity failures loud instead of deferred to the first request.
+   */
+  @Bean
+  public InitializingBean warmOraclePool(@Qualifier("oracleDataSource") DataSource ds) {
+    return () -> {
+      try (var ignored = ds.getConnection()) {
+        // first getConnection() triggers Hikari pool initialization
+      } catch (SQLException ex) {
+        throw new IllegalStateException("Failed to validate Oracle DataSource at startup", ex);
+      }
+    };
   }
 
   @Bean

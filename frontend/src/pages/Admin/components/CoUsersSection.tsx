@@ -1,5 +1,15 @@
-import { AddAlt as Add, Edit, TrashCan } from '@carbon/icons-react';
-import { Button, IconButton, Select, SelectItem, Stack, TextInput, Toggle } from '@carbon/react';
+import { Add, Edit, TrashCan } from '@carbon/icons-react';
+import {
+  Button,
+  IconButton,
+  RadioButton,
+  RadioButtonGroup,
+  Search,
+  Select,
+  SelectItem,
+  Stack,
+  TextInput,
+} from '@carbon/react';
 import { useCallback, useEffect, useMemo, useState, type FC } from 'react';
 
 import DestructiveModal from '@/components/core/DestructiveModal';
@@ -60,7 +70,7 @@ const CoUsersSection: FC = () => {
         kind: 'error',
         title: 'Unable to load co-users',
         subtitle: (listQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [listQuery.isError, listQuery.error, display]);
@@ -78,14 +88,14 @@ const CoUsersSection: FC = () => {
 
   const showError = useCallback(
     (subtitle: string) => {
-      display({ kind: 'error', title: 'Co-user error', subtitle, timeout: 6000 });
+      display({ kind: 'error', title: 'Co-user error', subtitle, timeout: 9000 });
     },
     [display],
   );
 
   const showSuccess = useCallback(
     (title: string) => {
-      display({ kind: 'success', title, timeout: 4000 });
+      display({ kind: 'success', title, timeout: 7000 });
     },
     [display],
   );
@@ -160,7 +170,8 @@ const CoUsersSection: FC = () => {
         await mutations.update.mutateAsync({ id: formState.id, payload });
         showSuccess('Co-user updated');
       } else {
-        await mutations.create.mutateAsync(payload);
+        const created = await mutations.create.mutateAsync(payload);
+        setSearchText(created?.name ?? '');
         showSuccess('Co-user created');
       }
       closeModal();
@@ -265,15 +276,38 @@ const CoUsersSection: FC = () => {
 
   return (
     <Stack gap={6} className="admin-section">
+      <div className="admin-section__filters-actions" style={{ marginBottom: '-0.5rem' }}>
+        <Button
+          kind="primary"
+          size="md"
+          renderIcon={Add}
+          iconDescription="Add co-user"
+          onClick={openCreateModal}
+        >
+          Add co-user
+        </Button>
+      </div>
       <div className="admin-section__toolbar">
         <div className="admin-section__filters">
-          <TextInput
-            id="couser-search"
-            labelText="Search"
-            placeholder="Search by name"
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-          />
+          <div>
+            <label
+              className="cds--label"
+              style={{ marginBottom: '0.5rem' }}
+              htmlFor="couser-search"
+            >
+              Name
+            </label>
+            <Search
+              id="couser-search"
+              size="md"
+              labelText="Name"
+              placeholder="Search by name"
+              closeButtonLabelText="Clear search"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              onClear={() => setSearchText('')}
+            />
+          </div>
           <Select
             id="couser-type-filter"
             labelText="User type"
@@ -285,18 +319,9 @@ const CoUsersSection: FC = () => {
             <SelectItem value="external" text="External" />
           </Select>
         </div>
-        <Button
-          kind="primary"
-          size="md"
-          renderIcon={Add}
-          iconDescription="Add co-user"
-          onClick={openCreateModal}
-        >
-          Add co-user
-        </Button>
       </div>
 
-      <div className="bordered-table">
+      <div className={(tableContent.page?.totalElements ?? 0) > 0 ? 'bordered-table' : undefined}>
         <TableResource<CoUserRow>
           headers={tableHeaders}
           content={tableContent}
@@ -315,21 +340,31 @@ const CoUsersSection: FC = () => {
         className="add-contact-modal"
       >
         <Stack gap={3} className="admin-modal__form">
-          <Toggle
-            id="couser-external"
-            labelText="Co-user type"
-            labelA="Internal (linked to org unit)"
-            labelB="External (custom name)"
-            toggled={formState.external}
-            onToggle={(checked) =>
+          <RadioButtonGroup
+            legendText="What type of co-user is this?"
+            name="couser-external"
+            orientation="vertical"
+            valueSelected={formState.external ? 'external' : 'internal'}
+            onChange={(value) =>
               setFormState((prev) => ({
                 ...prev,
-                external: checked,
-                name: checked ? prev.name : '',
-                orgUnit: checked ? null : prev.orgUnit,
+                external: value === 'external',
+                name: value === 'external' ? prev.name : '',
+                orgUnit: value === 'external' ? null : prev.orgUnit,
               }))
             }
-          />
+          >
+            <RadioButton
+              id="couser-external-internal"
+              labelText="Internal - linked to org unit"
+              value="internal"
+            />
+            <RadioButton
+              id="couser-external-external"
+              labelText="External - custom name"
+              value="external"
+            />
+          </RadioButtonGroup>
           {formState.external ? (
             <TextInput
               id="couser-name"
@@ -351,7 +386,12 @@ const CoUsersSection: FC = () => {
           <Button kind="secondary" size="md" onClick={closeModal}>
             Cancel
           </Button>
-          <Button kind="primary" size="md" disabled={isBusy} onClick={handleSubmit}>
+          <Button
+            kind="primary"
+            size="md"
+            disabled={isBusy || (formState.external ? !formState.name.trim() : !formState.orgUnit)}
+            onClick={handleSubmit}
+          >
             {formState.id ? 'Save changes' : 'Create'}
           </Button>
         </div>

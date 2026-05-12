@@ -24,6 +24,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.validation.annotation.Validated;
@@ -171,7 +173,7 @@ public class ReptPropertyController {
   }
 
   @DeleteMapping("/{propertyId}")
-  public ResponseEntity<Void> deleteProperty(
+  public ResponseEntity<?> deleteProperty(
       @PathVariable("projectId") @Positive Long projectId,
       @PathVariable("propertyId") @Positive Long propertyId,
       @RequestParam("revisionCount") @Positive Long revisionCount) {
@@ -192,6 +194,13 @@ public class ReptPropertyController {
           ex.getMessage());
       return ResponseEntity.badRequest().build();
     } catch (Exception ex) {
+      if (hasOracleErrorCode(ex, "ORA-02292")) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problem.setTitle("Property in use");
+        problem.setDetail(
+            "This property has records associated with it; please remove any linkages to this property before attempting another delete action");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+      }
       LOGGER.error(
           "REPT property delete failed for project {} property {}: {}",
           projectId,
@@ -200,6 +209,18 @@ public class ReptPropertyController {
           ex);
       return ResponseEntity.internalServerError().build();
     }
+  }
+
+  private static boolean hasOracleErrorCode(Throwable throwable, String code) {
+    Throwable cause = throwable;
+    while (cause != null) {
+      String msg = cause.getMessage();
+      if (msg != null && msg.contains(code)) {
+        return true;
+      }
+      cause = cause.getCause();
+    }
+    return false;
   }
 
   @GetMapping("/{propertyId}/milestones")

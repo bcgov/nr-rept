@@ -20,21 +20,21 @@ const AdminPage: FC = () => {
 
   const tabs = useMemo(
     () => [
+      { id: 'contacts', label: 'Contacts', content: <ContactsSection /> },
+      { id: 'co-users', label: 'Co-users', content: <CoUsersSection /> },
+      {
+        id: 'requesting-sources',
+        label: 'Requesting source',
+        content: <RequestingSourcesSection />,
+      },
       {
         id: 'expense-authorities',
-        label: 'Expense authorities',
+        label: 'Expense authority',
         content: <ExpenseAuthoritiesSection />,
       },
       {
-        id: 'requesting-sources',
-        label: 'Requesting sources',
-        content: <RequestingSourcesSection />,
-      },
-      { id: 'co-users', label: 'Co-users', content: <CoUsersSection /> },
-      { id: 'contacts', label: 'Contacts', content: <ContactsSection /> },
-      {
         id: 'qualified-receivers',
-        label: 'Qualified receivers',
+        label: 'Qualified receiver',
         content: <QualifiedReceiversSection />,
       },
     ],

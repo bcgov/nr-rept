@@ -1,4 +1,4 @@
-import { AddAlt as Add } from '@carbon/icons-react';
+import { Add } from '@carbon/icons-react';
 import {
   Button,
   Column,
@@ -74,7 +74,7 @@ const DashboardPage: FC = () => {
           kind: 'error',
           title: "We couldn't load your recent projects",
           subtitle: err.message,
-          timeout: 6000,
+          timeout: 9000,
         });
         setHasError(true);
         setProjects([]);

@@ -477,7 +477,7 @@ public class ReptContactRepository extends AbstractReptRepository {
     boolean hasFirstName = firstName != null && !firstName.isBlank();
     boolean hasLastName = lastName != null && !lastName.isBlank();
     boolean hasCompanyName = companyName != null && !companyName.isBlank();
-
+    
     if (!hasFirstName && !hasLastName && !hasCompanyName) {
       return List.of();
     }
@@ -690,6 +690,11 @@ public class ReptContactRepository extends AbstractReptRepository {
         case 2290:
           reason = ProjectCreationException.Reason.CHECK_CONSTRAINT;
           message = "Contact data violates a database rule.";
+          break;
+        case 2292:
+          reason = ProjectCreationException.Reason.CHILD_RECORDS_EXIST;
+          message =
+              "This contact has records associated with it; please remove any linkages to this contact before attempting another delete action";
           break;
         default:
           break;

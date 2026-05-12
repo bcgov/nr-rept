@@ -1,5 +1,15 @@
-import { AddAlt as Add, Edit, TrashCan } from '@carbon/icons-react';
-import { Button, IconButton, Select, SelectItem, Stack, TextInput, Toggle } from '@carbon/react';
+import { Add, Edit, TrashCan } from '@carbon/icons-react';
+import {
+  Button,
+  IconButton,
+  RadioButton,
+  RadioButtonGroup,
+  Search,
+  Select,
+  SelectItem,
+  Stack,
+  TextInput,
+} from '@carbon/react';
 import { useCallback, useEffect, useMemo, useState, type FC } from 'react';
 
 import DestructiveModal from '@/components/core/DestructiveModal';
@@ -63,7 +73,7 @@ const RequestingSourcesSection: FC = () => {
         kind: 'error',
         title: 'Unable to load requesting sources',
         subtitle: (listQuery.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [listQuery.isError, listQuery.error, display]);
@@ -81,14 +91,14 @@ const RequestingSourcesSection: FC = () => {
 
   const showError = useCallback(
     (subtitle: string) => {
-      display({ kind: 'error', title: 'Requesting source error', subtitle, timeout: 6000 });
+      display({ kind: 'error', title: 'Requesting source error', subtitle, timeout: 9000 });
     },
     [display],
   );
 
   const showSuccess = useCallback(
     (title: string) => {
-      display({ kind: 'success', title, timeout: 4000 });
+      display({ kind: 'success', title, timeout: 7000 });
     },
     [display],
   );
@@ -162,7 +172,8 @@ const RequestingSourcesSection: FC = () => {
         await mutations.update.mutateAsync({ id: formState.id, payload });
         showSuccess('Requesting source updated');
       } else {
-        await mutations.create.mutateAsync(payload);
+        const created = await mutations.create.mutateAsync(payload);
+        setSearchText(created?.name ?? '');
         showSuccess('Requesting source created');
       }
       closeModal();
@@ -267,15 +278,38 @@ const RequestingSourcesSection: FC = () => {
 
   return (
     <Stack gap={6} className="admin-section">
+      <div className="admin-section__filters-actions" style={{ marginBottom: '-0.5rem' }}>
+        <Button
+          kind="primary"
+          size="md"
+          renderIcon={Add}
+          iconDescription="Add requesting source"
+          onClick={openCreateModal}
+        >
+          Add requesting source
+        </Button>
+      </div>
       <div className="admin-section__toolbar">
         <div className="admin-section__filters">
-          <TextInput
-            id="requesting-search"
-            labelText="Search"
-            placeholder="Search by name"
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-          />
+          <div>
+            <label
+              className="cds--label"
+              style={{ marginBottom: '0.5rem' }}
+              htmlFor="requesting-search"
+            >
+              Name
+            </label>
+            <Search
+              id="requesting-search"
+              size="md"
+              labelText="Name"
+              placeholder="Search by name"
+              closeButtonLabelText="Clear search"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              onClear={() => setSearchText('')}
+            />
+          </div>
           <Select
             id="requesting-type-filter"
             labelText="Source type"
@@ -287,18 +321,9 @@ const RequestingSourcesSection: FC = () => {
             <SelectItem value="external" text="External" />
           </Select>
         </div>
-        <Button
-          kind="primary"
-          size="md"
-          renderIcon={Add}
-          iconDescription="Add requesting source"
-          onClick={openCreateModal}
-        >
-          Add requesting source
-        </Button>
       </div>
 
-      <div className="bordered-table">
+      <div className={(tableContent.page?.totalElements ?? 0) > 0 ? 'bordered-table' : undefined}>
         <TableResource<RequestingSourceRow>
           headers={tableHeaders}
           content={tableContent}
@@ -317,21 +342,31 @@ const RequestingSourcesSection: FC = () => {
         className="add-contact-modal"
       >
         <Stack gap={3} className="admin-modal__form">
-          <Toggle
-            id="requesting-external"
-            labelText="Source type"
-            labelA="Internal (linked to org unit)"
-            labelB="External (custom name)"
-            toggled={formState.external}
-            onToggle={(checked) =>
+          <RadioButtonGroup
+            legendText="What type of requesting source is this?"
+            name="requesting-external"
+            orientation="vertical"
+            valueSelected={formState.external ? 'external' : 'internal'}
+            onChange={(value) =>
               setFormState((prev) => ({
                 ...prev,
-                external: checked,
-                name: checked ? prev.name : '',
-                orgUnit: checked ? null : prev.orgUnit,
+                external: value === 'external',
+                name: value === 'external' ? prev.name : '',
+                orgUnit: value === 'external' ? null : prev.orgUnit,
               }))
             }
-          />
+          >
+            <RadioButton
+              id="requesting-external-internal"
+              labelText="Internal - linked to org unit"
+              value="internal"
+            />
+            <RadioButton
+              id="requesting-external-external"
+              labelText="External - custom name"
+              value="external"
+            />
+          </RadioButtonGroup>
           {formState.external ? (
             <TextInput
               id="requesting-name"
@@ -353,7 +388,12 @@ const RequestingSourcesSection: FC = () => {
           <Button kind="secondary" size="md" onClick={closeModal}>
             Cancel
           </Button>
-          <Button kind="primary" size="md" disabled={isBusy} onClick={handleSubmit}>
+          <Button
+            kind="primary"
+            size="md"
+            disabled={isBusy || (formState.external ? !formState.name.trim() : !formState.orgUnit)}
+            onClick={handleSubmit}
+          >
             {formState.id ? 'Save changes' : 'Create'}
           </Button>
         </div>

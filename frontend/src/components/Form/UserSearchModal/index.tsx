@@ -62,7 +62,7 @@ export const UserSearchModal = ({
         kind: 'error',
         title: 'User search failed',
         subtitle: searchQuery.error?.message ?? 'Unable to search for users.',
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [searchQuery.isError, searchQuery.error, display]);

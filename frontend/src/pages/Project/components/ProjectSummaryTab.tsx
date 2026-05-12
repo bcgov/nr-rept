@@ -204,7 +204,7 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
         kind: 'error',
         title: 'Failed to save project',
         subtitle: (mutation.error as Error).message,
-        timeout: 6000,
+        timeout: 9000,
       });
     }
   }, [mutation.isError, mutation.error, display]);
@@ -323,6 +323,26 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
     }
 
     const errors: Record<string, string> = {};
+    const isBlank = (value: string | undefined | null) => !value || value.trim().length === 0;
+
+    if (isBlank(formState.projectName)) {
+      errors.projectName = 'Project name is required.';
+    }
+    if (isBlank(formState.statusCode)) {
+      errors.statusCode = 'Select a status.';
+    }
+    if (isBlank(formState.regionNumber)) {
+      errors.regionNumber = 'Select a region.';
+    }
+    if (isBlank(formState.districtNumber)) {
+      errors.districtNumber = 'Select a district.';
+    }
+    if (isBlank(formState.requestingSourceId)) {
+      errors.requestingSourceId = 'Select a requesting source.';
+    }
+    if (isBlank(formState.requestDate)) {
+      errors.requestDate = 'Provide a request date.';
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -356,7 +376,7 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
       },
       {
         onSuccess: () => {
-          display({ kind: 'success', title: 'Project details saved.', timeout: 4000 });
+          display({ kind: 'success', title: 'Project details saved.', timeout: 7000 });
           setIsEditing(false);
         },
       },
@@ -394,7 +414,7 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
         {canEdit && (
           <div className="project-summary-readonly__actions">
             <Button
-              kind="primary"
+              kind="tertiary"
               size="sm"
               renderIcon={Edit}
               disabled={Boolean(editDisabledReason)}
@@ -436,7 +456,7 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
             />
             <TextInput
               id="projectName"
-              labelText="Project Name"
+              labelText="Project Name *"
               value={formState.projectName}
               onChange={(e) => handleFieldChange('projectName', e.target.value)}
               invalid={Boolean(validationErrors.projectName)}
@@ -444,9 +464,11 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
             />
             <Select
               id="statusCode"
-              labelText="Status"
+              labelText="Status *"
               value={formState.statusCode}
               onChange={(e) => handleFieldChange('statusCode', e.target.value)}
+              invalid={Boolean(validationErrors.statusCode)}
+              invalidText={validationErrors.statusCode}
             >
               <SelectItem value="" text="Select status..." />
               {options?.statuses.map((s) => (
@@ -455,12 +477,14 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
             </Select>
             <Select
               id="regionNumber"
-              labelText="Region"
+              labelText="Region *"
               value={formState.regionNumber}
               onChange={(e) => {
                 handleFieldChange('regionNumber', e.target.value);
                 handleFieldChange('districtNumber', '');
               }}
+              invalid={Boolean(validationErrors.regionNumber)}
+              invalidText={validationErrors.regionNumber}
             >
               <SelectItem value="" text="Select region..." />
               {options?.regions.map((r) => (
@@ -469,9 +493,11 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
             </Select>
             <Select
               id="districtNumber"
-              labelText="District"
+              labelText="District *"
               value={formState.districtNumber}
               onChange={(e) => handleFieldChange('districtNumber', e.target.value)}
+              invalid={Boolean(validationErrors.districtNumber)}
+              invalidText={validationErrors.districtNumber}
             >
               <SelectItem value="" text="Select district..." />
               {filteredDistricts.map((d) => (
@@ -491,9 +517,11 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
             </Select>
             <Select
               id="requestingSourceId"
-              labelText="Requesting Source"
+              labelText="Requesting Source *"
               value={formState.requestingSourceId}
               onChange={(e) => handleFieldChange('requestingSourceId', e.target.value)}
+              invalid={Boolean(validationErrors.requestingSourceId)}
+              invalidText={validationErrors.requestingSourceId}
             >
               <SelectItem value="" text="Select requesting source..." />
               {options?.requestingSources.map((rs) => (
@@ -509,7 +537,13 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
                 handleFieldChange('requestDate', date ? date.toISOString().split('T')[0] : '');
               }}
             >
-              <DatePickerInput id="requestDate" labelText="Request Date" placeholder="YYYY-MM-DD" />
+              <DatePickerInput
+                id="requestDate"
+                labelText="Request Date *"
+                placeholder="YYYY-MM-DD"
+                invalid={Boolean(validationErrors.requestDate)}
+                invalidText={validationErrors.requestDate}
+              />
             </DatePicker>
             <div className="user-lookup-field">
               <TextInput
@@ -583,7 +617,7 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
       </div>
 
       <div className="form-actions">
-        <Button kind="tertiary" size="sm" disabled={mutation.isPending} onClick={handleCancelEdit}>
+        <Button kind="secondary" size="sm" disabled={mutation.isPending} onClick={handleCancelEdit}>
           Cancel
         </Button>
         <Button
