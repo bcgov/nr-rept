@@ -6,7 +6,7 @@ on:
 
 env:
   # ── Configure these in your repo's Settings → Secrets & Variables ──
-  OPENSHIFT_URL:   ${{ secrets.OC_SERVER }}     # https://api.<cluster>:6443
+  OPENSHIFT_URL:   ${{ vars.OC_SERVER }}     # https://api.<cluster>:6443
   OC_TOKEN: ${{ secrets.OC_TOKEN }}   # service-account token with deploy rights
   OC_NAMESPACE:   ${{ secrets.OC_NAMESPACE }}     # target namespace / project
   DB_JDBC_CONNECT_STRING: ${{ secrets.DB_JDBC_CONNECT_STRING }}
