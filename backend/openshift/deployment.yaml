@@ -7,7 +7,7 @@ metadata:
   labels:
     app: rept-backend
 spec:
-  replicas: <MIN_REPLICAS>
+  replicas: ${MIN_REPLICAS}
   selector:
     matchLabels:
       app: rept-backend
@@ -31,9 +31,12 @@ spec:
           imagePullPolicy: Always
           env:
             - name: ORACLEDB_HOST
-              value: <DB_HOST>
+              value: ${DATABASE_HOST}
             - name: ORACLEDB_SECRET
-              value: <KEYSTORE_SECRET>
+              valueFrom:
+                secretKeyRef:
+                  name: rept-backend-secret
+                  key: KEYSTORE_SECRET
             - name: ORACLEDB_PORT
               value: "1543"
           volumeMounts:
@@ -45,38 +48,71 @@ spec:
               memory: 300Mi
       containers:
         - name: rept-backend
-          image: <IMAGE_PLACEHOLDER>
+          image: ${BACKEND_IMAGE}
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
               protocol: TCP
           env:
-            - name: DB_JDBC_CONNECT_STRING
-              value: <DB_JDBC_CONNECT_STRING>
-            - name: DB_USER
+            # ── Spring profile + server ───────────────────────
+            - name: SPRING_PROFILES_ACTIVE
+              value: oracle,container
+            - name: SERVER_PORT
+              value: "8080"
+
+            # ── Cognito / OAuth2 resource server ──────────────
+            - name: AWS_COGNITO_ISSUER_URI
+              value: ${AWS_COGNITO_ISSUER_URI}
+            - name: COGNITO_USERINFO_URI
+              value: ${COGNITO_USERINFO_URI}
+
+            # ── Identity-lookup (IDIR user search) ────────────
+            - name: IDENTITY_LOOKUP_BASE_URL
+              value: ${IDENTITY_LOOKUP_BASE_URL}
+
+            # ── Jasper / reporting ────────────────────────────
+            - name: J_URL_FETCH
+              value: ${J_URL_FETCH}
+            - name: J_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: rept-backend-secret
-                  key: DB_USER
-            - name: DB_PWD
+                  key: J_USERNAME
+            - name: J_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: rept-backend-secret
-                  key: DB_PWD
-            - name: SPRING_SECURITY_LOG_LEVEL
-              value: <SPRING_SECURITY_LOG_LEVEL>
-            - name: SPRING_WEB_LOG_LEVEL
-              value: <SPRING_WEB_LOG_LEVEL>
-            - name: APP_LOG_LEVEL
-              value: <APP_LOG_LEVEL>
-            - name: SPRING_BOOT_AUTOCONFIG_LOG_LEVEL
-              value: <SPRING_BOOT_AUTOCONFIG_LOG_LEVEL>
-            - name: SPRING_SHOW_REQUEST_DETAILS
-              value: "<SPRING_SHOW_REQUEST_DETAILS>"
+                  key: J_PASSWORD
+
+            # ── Oracle DB (consumed by application-oracle.yml) ─
+            - name: DATABASE_HOST
+              value: ${DATABASE_HOST}
+            - name: SERVICE_NAME
+              value: ${SERVICE_NAME}
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rept-backend-secret
+                  key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rept-backend-secret
+                  key: DATABASE_PASSWORD
+
+            # ── Logging ───────────────────────────────────────
+            - name: LOGGING_LEVEL
+              value: ${APP_LOG_LEVEL}
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
+              value: ${SPRING_SECURITY_LOG_LEVEL}
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB
+              value: ${SPRING_WEB_LOG_LEVEL}
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE
+              value: ${SPRING_BOOT_AUTOCONFIG_LOG_LEVEL}
             - name: SPRING_JPA_SHOW_SQL
-              value: "<SPRING_JPA_SHOW_SQL>"
-            - name: TOKEN_ISSUER_URL
-              value: <TOKEN_ISSUER_URL>
+              value: "${SPRING_JPA_SHOW_SQL}"
+
+            # ── Keystore (for Oracle TLS cert mounted at /cert) ─
             - name: KEYSTORE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -84,8 +120,8 @@ spec:
                   key: KEYSTORE_SECRET
           resources:
             requests:
-              cpu: <MIN_CPU>
-              memory: <MIN_MEM>
+              cpu: ${MIN_CPU}
+              memory: ${MIN_MEM}
           livenessProbe:
             httpGet:
               path: /actuator/health
@@ -142,7 +178,7 @@ spec:
       port: 8080
       protocol: TCP
 ---
-# Route (OpenShift-specific ingress)
+# HorizontalPodAutoscaler
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -152,8 +188,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: rept-backend
-  minReplicas: <MIN_REPLICAS>
-  maxReplicas: <MAX_REPLICAS>
+  minReplicas: ${MIN_REPLICAS}
+  maxReplicas: ${MAX_REPLICAS}
   metrics:
     - type: Resource
       resource:
@@ -177,7 +213,7 @@ spec:
       storage: 50Mi
   storageClassName: netapp-file-standard
 ---
-# Secrets
+# Secrets — all credentials live here, referenced via secretKeyRef above
 apiVersion: v1
 kind: Secret
 metadata:
@@ -186,6 +222,8 @@ metadata:
     app: rept-backend
 type: Opaque
 stringData:
-  DB_USER: <DB_USER>
-  DB_PWD: <DB_PWD>
-  KEYSTORE_SECRET: <KEYSTORE_SECRET>
+  DATABASE_USER: ${DATABASE_USER}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+  J_USERNAME: ${J_USERNAME}
+  J_PASSWORD: ${J_PASSWORD}
+  KEYSTORE_SECRET: ${KEYSTORE_SECRET}

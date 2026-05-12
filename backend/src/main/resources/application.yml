@@ -1,10 +1,10 @@
 # General application
 server:
   servlet:
-    context-path: ${SERVER_CONTEXT_PATH:/pub/rept}
+    context-path: /pub/rept
   error:
     include-message: always
-  port: ${SERVER_PORT:3000}
+  port: 3000
   shutdown: graceful
   max-http-request-header-size: 16KB
 
@@ -96,7 +96,7 @@ ca:
   bc:
     gov:
       nrs:
-        self-uri: ${SELF_URI:http://localhost:3000}
+        self-uri: http://localhost:3000
         identity-lookup:
           base-url: ${IDENTITY_LOOKUP_BASE_URL}
           default-page-size: 10
@@ -105,7 +105,7 @@ ca:
         cognito:
           userinfo-uri: ${COGNITO_USERINFO_URI}
         frontend:
-          url: ${ALLOWED_ORIGINS:http://localhost:3000}
+          url: http://localhost:3000
           cors:
             headers:
               - x-requested-with
@@ -145,11 +145,6 @@ ca:
             connect-timeout: ${J_CONNECT_TIMEOUT:10s}
             read-timeout: ${J_READ_TIMEOUT:60s}
 
-info:
-  app:
-    name: ${spring.application.name}
-    zone: ${APP_ZONE:local}
-    version: ${APP_VERSION:0.0.1-SNAPSHOT}
 # Logging — levels are still honoured by Spring Boot's Log4j2 auto-config;
 # patterns are configured in log4j2-spring.xml.
 logging:

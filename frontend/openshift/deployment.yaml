@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
         - name: rept-frontend
-          # Updated by the CI pipeline via kustomize / sed
-          image: <IMAGE_PLACEHOLDER>
+          # Updated by the CI pipeline via envsubst
+          image: ${FRONTEND_IMAGE}
           ports:
             - containerPort: 2015
           resources:
