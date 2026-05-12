@@ -56,7 +56,7 @@ spec:
           env:
             # ── Spring profile + server ───────────────────────
             - name: SPRING_PROFILES_ACTIVE
-              value: oracle,container
+              value: oracle
             - name: SERVER_PORT
               value: "8080"
 
@@ -101,7 +101,7 @@ spec:
                   key: DATABASE_PASSWORD
 
             # ── Logging ───────────────────────────────────────
-            - name: LOGGING_LEVEL
+            - name: APP_LOG_LEVEL
               value: ${APP_LOG_LEVEL}
             - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
               value: ${SPRING_SECURITY_LOG_LEVEL}

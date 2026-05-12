@@ -57,6 +57,10 @@ spring:
 # Actuator and ops
 management:
   enable-native-support: true
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
   endpoint:
     metrics:
       enabled: false
@@ -152,43 +156,18 @@ ca:
             connect-timeout: ${J_CONNECT_TIMEOUT:10s}
             read-timeout: ${J_READ_TIMEOUT:60s}
 
-# Logging — levels are still honoured by Spring Boot's Log4j2 auto-config;
+# Logging — levels are honoured by Spring Boot's Log4j2 auto-config;
 # patterns are configured in log4j2-spring.xml.
+#
+# Defaults to INFO across the board. Override per-area at runtime via env vars
+# (Spring's relaxed binding), e.g.:
+#   APP_LOG_LEVEL                                      → ca.bc.gov.nrs.rept
+#   LOGGING_LEVEL_ROOT                                 → root logger
+#   LOGGING_LEVEL_ORG_HIBERNATE_SQL                    → SQL statements
+#   LOGGING_LEVEL_ORG_HIBERNATE_ORM_JDBC_BIND          → SQL bind params
+#   LOGGING_LEVEL_COM_ZAXXER_HIKARI                    → connection pool
+#   LOGGING_LEVEL_ORACLE_JDBC                          → Oracle driver
+#   LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY         → Spring Security
 logging:
   level:
-    # Application logging — controls verbosity of all internal code
-    ca.bc.gov.nrs.rept: ${LOGGING_LEVEL:INFO}
-    # HikariCP — logs the actual JDBC URL and pool lifecycle events at DEBUG
-    com.zaxxer.hikari: DEBUG
-    com.zaxxer.hikari.HikariConfig: DEBUG
-    # Hibernate — logs SQL and connection acquisition
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.hibernate.engine.jdbc.connections: DEBUG
-    # Oracle JDBC driver — logs connection negotiation (SSL vs plain)
-    oracle.jdbc: DEBUG
-    # Spring Security
-    org.springframework.security: INFO
-
-# Profile Specific Properties
----
-spring:
-  config:
-    activate:
-      on-profile: container
-  sleuth:
-    propagation-keys:
-      - X-TRACE-ID
-      - X-USER
-    baggage-keys:
-      - X-TRACE-ID
-      - X-USER
-    log:
-      slf4j:
-        whitelisted-mdc-keys:
-          - X-TRACE-ID
-          - X-USER
-
-logging:
-  level:
-    root: DEBUG
+    ca.bc.gov.nrs.rept: ${APP_LOG_LEVEL:INFO}
