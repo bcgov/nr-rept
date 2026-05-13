@@ -6,6 +6,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Oracle-profile configuration. Spring Boot's standard DataSourceAutoConfiguration
@@ -13,9 +14,15 @@ import org.springframework.context.annotation.Profile;
  * and {@code PlatformTransactionManager} from {@code spring.datasource.*} in
  * application-oracle.yml (URL, credentials, Hikari pool tuning, TCPS truststore properties).
  *
- * <p>The only thing this class adds on top is {@link #warmOraclePool}, which forces eager
- * pool initialization at startup so connectivity failures are caught at boot rather than
- * deferred to the first request.</p>
+ * <p>This class adds two things on top:
+ * <ul>
+ *   <li>{@link #warmOraclePool} — forces eager pool initialization at startup so
+ *       connectivity failures are caught at boot rather than deferred to the first request.</li>
+ *   <li>{@link #oracleJdbcTemplate} — a named {@code JdbcTemplate} alias that repositories
+ *       and {@code OracleSmokeController} inject via {@code @Qualifier("oracleJdbcTemplate")}.
+ *       Wraps the same auto-configured {@code DataSource} that the default {@code jdbcTemplate}
+ *       bean uses.</li>
+ * </ul>
  */
 @Configuration
 @Profile("oracle")
@@ -35,5 +42,15 @@ public class OracleJpaConfiguration {
         throw new IllegalStateException("Failed to validate Oracle DataSource at startup", ex);
       }
     };
+  }
+
+  /**
+   * Named JdbcTemplate exposed for {@code @Qualifier("oracleJdbcTemplate")} consumers
+   * (the repositories under {@code repository.rept} and {@code OracleSmokeController}).
+   * Shares the auto-configured Hikari DataSource — there is no second pool.
+   */
+  @Bean(name = "oracleJdbcTemplate")
+  public JdbcTemplate oracleJdbcTemplate(DataSource dataSource) {
+    return new JdbcTemplate(dataSource);
   }
 }
