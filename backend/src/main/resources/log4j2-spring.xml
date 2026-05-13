@@ -53,27 +53,28 @@
       <AppenderRef ref="Console"/>
     </Logger>
 
-    <!-- HikariCP connection pool -->
-    <Logger name="com.zaxxer.hikari" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
-    </Logger>
-    <Logger name="com.zaxxer.hikari.HikariConfig" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
-    </Logger>
-
-    <!-- Hibernate SQL / binding -->
-    <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
-    </Logger>
-    <Logger name="org.hibernate.orm.jdbc.bind" level="TRACE" additivity="false">
-      <AppenderRef ref="Console"/>
-    </Logger>
-    <Logger name="org.hibernate.engine.jdbc.connections" level="DEBUG" additivity="false">
+    <!--
+      HikariCP, Hibernate, and Oracle JDBC loggers — INFO by default so production
+      stays quiet (and so HikariConfig's DEBUG-only dump of dataSourceProperties,
+      which leaks the truststore password in plaintext, doesn't fire). Override any
+      specific category to DEBUG/TRACE via env var when debugging a connectivity or
+      query issue. Example: HIKARI_LOG_LEVEL=DEBUG, HIBERNATE_SQL_LOG_LEVEL=DEBUG.
+    -->
+    <Logger name="com.zaxxer.hikari" level="${env:HIKARI_LOG_LEVEL:-INFO}" additivity="false">
       <AppenderRef ref="Console"/>
     </Logger>
 
-    <!-- Oracle JDBC -->
-    <Logger name="oracle.jdbc" level="DEBUG" additivity="false">
+    <Logger name="org.hibernate.SQL" level="${env:HIBERNATE_SQL_LOG_LEVEL:-INFO}" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="org.hibernate.orm.jdbc.bind" level="${env:HIBERNATE_BIND_LOG_LEVEL:-INFO}" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="org.hibernate.engine.jdbc.connections" level="${env:HIBERNATE_CONNECTIONS_LOG_LEVEL:-INFO}" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <Logger name="oracle.jdbc" level="${env:ORACLE_JDBC_LOG_LEVEL:-INFO}" additivity="false">
       <AppenderRef ref="Console"/>
     </Logger>
 
