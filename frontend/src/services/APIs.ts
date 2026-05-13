@@ -1,4 +1,5 @@
-import { getAccessTokenFromCookie } from '@/context/auth/authUtils';
+import { fetchAuthSession } from 'aws-amplify/auth';
+
 import { env } from '@/env';
 import { UserService } from '@/services/users.service';
 
@@ -9,13 +10,18 @@ import type { APIConfig } from '@/config/api/types';
 const basePath = (env.VITE_BASE_PATH ?? '').replace(/\/$/, '');
 
 // Central API configuration shared by all service classes.
-// The TOKEN getter refreshes the Cognito accessToken from cookies on every request.
+//
+// TOKEN is sourced from Amplify's auth session rather than parsing document.cookie
+// directly. This works regardless of where the configured token storage (cookies,
+// localStorage, etc.) actually lands — Amplify reads from its own storage and
+// returns the current accessToken. Refreshes on every request so a stale token
+// from an expired session isn't sent.
 export const BackendApiConfig: APIConfig = {
   BASE: env.VITE_BACKEND_URL || `${basePath}/api`,
   VERSION: '0',
   WITH_CREDENTIALS: true,
   CREDENTIALS: 'include',
-  TOKEN: getAccessTokenFromCookie(),
+  TOKEN: undefined,
   USERNAME: undefined,
   PASSWORD: undefined,
   HEADERS: undefined,
@@ -23,7 +29,12 @@ export const BackendApiConfig: APIConfig = {
 };
 
 BackendApiConfig.TOKEN = async () => {
-  return getAccessTokenFromCookie() ?? '';
+  try {
+    const { tokens } = (await fetchAuthSession()) ?? {};
+    return tokens?.accessToken?.toString() ?? '';
+  } catch {
+    return '';
+  }
 };
 
 // Register all services here
