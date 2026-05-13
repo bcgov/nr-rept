@@ -19,16 +19,13 @@
   flex-direction: column;
   gap: 1.5rem;
 
-  // Sit on the "next layer up" surface so the tile contrasts with the page
-  // background in both light and dark themes (white in light, lighter dark
-  // gray in dark). Bumping --cds-layer / --cds-field / --cds-layer-accent
-  // together nests the children (inputs, zebra-striped DataTable) onto the
-  // same elevated layer so the row stripes still contrast in dark theme.
-  background: var(--cds-layer-02);
-  --cds-layer: var(--cds-layer-02);
+  // Match the in-tab edit-pane styling: leave the tile on its default surface
+  // (layer-01, gray) and bump only --cds-field to field-02 so each widget
+  // sits on a contrasting white background. Without this contrast the tile
+  // and widgets both rendered white and the inputs looked like Carbon's
+  // default underlined-only style.
   --cds-field: var(--cds-field-02);
-  --cds-layer-accent: var(--cds-layer-accent-02);
-  --cds-layer-hover: var(--cds-layer-hover-02);
+  --cds-field-hover: var(--cds-field-hover-02);
 }
 
 .project-search__form {

@@ -163,25 +163,23 @@ export const HistoryTab: FC<HistoryTabProps> = ({ projectId, project }) => {
   // Read-only mode
   if (!isEditing) {
     return (
-      <div className="project-tab-panel">
-        <Tile className="project-tile project-tile--full">
-          <div className="project-tile__header">
-            <h2 className="section-title">Project History</h2>
-            <div className="project-tile__actions">
-              {canEdit && (
-                <Button
-                  kind="tertiary"
-                  size="sm"
-                  renderIcon={Edit}
-                  onClick={handleStartEdit}
-                  disabled={Boolean(editDisabledReason)}
-                  title={editDisabledReason ?? undefined}
-                >
-                  Edit
-                </Button>
-              )}
-            </div>
+      <div className="project-summary-readonly">
+        {canEdit && (
+          <div className="project-summary-readonly__actions">
+            <Button
+              kind="tertiary"
+              size="sm"
+              renderIcon={Edit}
+              onClick={handleStartEdit}
+              disabled={Boolean(editDisabledReason)}
+              title={editDisabledReason ?? 'Edit project history'}
+            >
+              Edit
+            </Button>
           </div>
+        )}
+        <Tile className="project-tile project-tile--full">
+          <h2 className="section-title">Project History</h2>
           <div className="field-list--horizontal">
             <FieldList fields={historyFields} keyPrefix="project-history" />
           </div>
