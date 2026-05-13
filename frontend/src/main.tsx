@@ -32,7 +32,11 @@ cognitoUserPoolsTokenProvider.setKeyValueStorage(
   new CookieStorage({
     domain: window.location.hostname,
     path: env.VITE_BASE_PATH || '/',
-    secure: true, // HTTPS only
+    // Match the page protocol. Forcing `secure: true` on http://localhost
+    // makes the browser silently refuse to store the OAuth state/PKCE
+    // cookies, so the code-exchange fails on redirect-back and the SPA
+    // stays in the unauthenticated branch.
+    secure: window.location.protocol === 'https:',
     sameSite: 'strict', // no cross-site sending
     expires: undefined, // session cookie — dies when browser closes
   }),

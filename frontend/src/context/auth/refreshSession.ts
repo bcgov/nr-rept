@@ -75,6 +75,6 @@ export async function ensureSessionFresh(): Promise<void> {
     // eslint-disable-next-line no-console
     console.warn('[ensureSessionFresh] Session expired — signing out.');
     await signOut();
-    window.location.href = window.location.origin + (import.meta.env.VITE_BASE_PATH || '/pub/rept');
+    window.location.href = window.location.origin + (import.meta.env.VITE_BASE_PATH || '/');
   }
 }

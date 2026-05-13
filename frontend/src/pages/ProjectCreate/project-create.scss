@@ -31,6 +31,11 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  // Carbon's TextInput / DatePickerInput wrappers don't stretch their content
+  // the same way Select does, so in a mixed row a TextInput's input sits a few
+  // pixels higher than the surrounding Selects. Anchoring all cells to the row
+  // bottom keeps the input edges aligned regardless of internal wrapper.
+  align-items: end;
 }
 
 .project-create__requestor-field {

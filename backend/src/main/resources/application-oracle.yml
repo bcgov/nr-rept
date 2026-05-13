@@ -19,11 +19,16 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-      # Truststore for TCPS handshake — the init container (bcgov/nr-forest-client/common)
-      # writes a JKS truststore to /cert/jssecacerts using KEYSTORE_SECRET as the password.
+      # Truststore for TCPS handshake. In the cluster, the init container
+      # (bcgov/nr-forest-client/common) writes a JKS truststore to /cert/jssecacerts
+      # using KEYSTORE_SECRET as the password — that's the production default. For
+      # local dev, copy the file out of a running pod and set TRUSTSTORE_PATH to
+      # its absolute path on your machine:
+      #   oc cp $(oc get pod -l app=rept-backend -o name | head -1 | cut -d/ -f2):/cert/jssecacerts ./jssecacerts
+      #   export TRUSTSTORE_PATH=$(pwd)/jssecacerts
       data-source-properties:
         javax.net.ssl.trustStoreType: JKS
-        javax.net.ssl.trustStore: /cert/jssecacerts
+        javax.net.ssl.trustStore: ${TRUSTSTORE_PATH:/cert/jssecacerts}
         javax.net.ssl.trustStorePassword: ${KEYSTORE_SECRET}
 
   jpa:

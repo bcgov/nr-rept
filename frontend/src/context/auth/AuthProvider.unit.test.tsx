@@ -13,7 +13,7 @@ vi.mock('aws-amplify/auth', () => ({
 vi.mock('@/env', () => ({ env: { VITE_ZONE: 'TEST', NODE_ENV: 'test' } }));
 vi.mock('@/config/fam/config', () => ({
   redirectSignOut:
-    'https://logontest7.gov.bc.ca/clp-cgi/logoff.cgi?retnow=1&returl=https://dev.loginproxy.gov.bc.ca/auth/realms/standard/protocol/openid-connect/logout?redirect_uri=http://localhost:3000/pub/rept',
+    'https://logontest7.gov.bc.ca/clp-cgi/logoff.cgi?retnow=1&returl=https://dev.loginproxy.gov.bc.ca/auth/realms/standard/protocol/openid-connect/logout?redirect_uri=http://localhost:3000/',
   default: {},
 }));
 vi.mock('./authUtils', () => ({

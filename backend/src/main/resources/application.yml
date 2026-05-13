@@ -4,7 +4,10 @@ server:
     context-path: /
   error:
     include-message: always
-  port: 3000
+  # Use the SERVER_PORT placeholder so application-local.yml's SERVER_PORT
+  # value (and the OpenShift env var) can override the default. Local dev
+  # needs 8080 because Vite's dev server claims 3000.
+  port: ${SERVER_PORT:3000}
   shutdown: graceful
   max-http-request-header-size: 16KB
   # Honor X-Forwarded-* from the Caddy reverse proxy when reconstructing the
@@ -152,7 +155,9 @@ ca:
               - PUT
               - DELETE
             age: 5m
-        # Proxy is configured at the Tomcat JVM level via CATALINA_OPTS — not via Spring.
+        # Jasper lives on a BC Gov internal hostname that isn't resolvable from the
+        # cluster's DNS. The pod must reach it through the BC Gov egress proxy, set
+        # via JAVA_TOOL_OPTIONS (-Dhttps.proxyHost=... etc.) in deployment.yaml.
         reporting:
           jasper:
             base-url: ${J_URL_FETCH}

@@ -21,7 +21,7 @@ const AppRoutes: FC = () => {
     return !isLoggedIn ? getPublicRoutes() : getProtectedRoutes();
   }, [isLoggedIn]);
 
-  const basename = env.VITE_BASE_PATH || '/pub/rept';
+  const basename = env.VITE_BASE_PATH || '/';
   const browserRouter = useMemo(
     () => createBrowserRouter(routesToUse, { basename }),
     [routesToUse, basename],

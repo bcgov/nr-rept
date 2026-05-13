@@ -352,47 +352,29 @@ $types: "error", "info", "success", "warning";
   }
 }
 
-.#{variables.$bcgov-prefix}--pagination,
+// Inline selects inside pagination (items-per-page and page-number) — drop the
+// 1px border and round the corners so they match the rest of the toolbar.
+// Scoped under `.cds--pagination` so we don't strip borders off every other
+// Select in the app.
+.#{variables.$bcgov-prefix}--pagination {
   .#{variables.$bcgov-prefix}--select__item-count,
-  .#{variables.$bcgov-prefix}--select-input__wrapper,
-  select.#{variables.$bcgov-prefix}--select-input,
-.#{variables.$bcgov-prefix}--pagination,
   .#{variables.$bcgov-prefix}--select__page-number,
   .#{variables.$bcgov-prefix}--select-input__wrapper,
   select.#{variables.$bcgov-prefix}--select-input {
-  border-radius: 0.25rem;
-  border: 0;
-}
+    border-radius: 0.25rem;
+    border: 0;
+  }
 
-.#{variables.$bcgov-prefix}--pagination,
   .#{variables.$bcgov-prefix}--select__item-count,
-  .#{variables.$bcgov-prefix}--select-input__wrapper,
-.#{variables.$bcgov-prefix}--pagination,
   .#{variables.$bcgov-prefix}--select__page-number,
   .#{variables.$bcgov-prefix}--select-input__wrapper {
-  margin: 0.25rem;
-}
+    margin: 0.25rem;
+  }
 
-.#{variables.$bcgov-prefix}--pagination,
-  .#{variables.$bcgov-prefix}--select__item-count,
-  .#{variables.$bcgov-prefix}--select-input--inline__wrapper {
-  border-right: 0.063rem solid var(--#{variables.$bcgov-prefix}-border-subtle);
-}
-
-// Divider between pagination segments. The `.cds--popover-container` selector is
-// scoped under `.cds--pagination` because that class is also Carbon's wrapper for
-// every tooltip (icon-button tooltips in DataTable action columns, the
-// ThemeToggle in the header, etc.). Without the ancestor scope, this border-left
-// rule paints a 1px line beside every tooltip-wrapped element in the app.
-.#{variables.$bcgov-prefix}--pagination__control-buttons,
-.#{variables.$bcgov-prefix}--pagination .#{variables.$bcgov-prefix}--popover-container {
-  border-left: 0.063rem solid var(--#{variables.$bcgov-prefix}-border-subtle);
-}
-
-.#{variables.$bcgov-prefix}--pagination__control-buttons,
   .#{variables.$bcgov-prefix}--pagination__button {
-  margin: 0.25rem;
-  border: 0;
+    margin: 0.25rem;
+    border: 0;
+  }
 }
 
 /* ------------------ Overflow Menu ---------------------------

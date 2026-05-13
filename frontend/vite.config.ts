@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [react(), tsconfigPaths()],
-    base: env.VITE_BASE_PATH || '/pub/rept/',
+    base: env.VITE_BASE_PATH || '/',
     build: {
       chunkSizeWarningLimit: 1024,
       outDir: 'dist',
@@ -53,12 +53,6 @@ export default defineConfig(({ mode }) => {
         port: hmrPort,
       },
       proxy: {
-        '/pub/rept/api': {
-          target: backendTarget,
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/pub\/rept/, ''),
-        },
         '/api': {
           target: backendTarget,
           changeOrigin: true,
