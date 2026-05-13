@@ -46,13 +46,14 @@ const DashboardPage: FC = () => {
     setHasError(false);
 
     ensureSessionFresh()
-      .then(() =>
-        fetch(buildApiUrl('/rept/welcome/recent?size=8'), {
+      .then(async () => {
+        const headers = await buildAuthorizedHeaders();
+        return fetch(buildApiUrl('/rept/welcome/recent?size=8'), {
           signal: controller.signal,
           credentials: 'include',
-          headers: buildAuthorizedHeaders(),
-        }),
-      )
+          headers,
+        });
+      })
       .then((response) => {
         if (response.status === 204) {
           setProjects([]);

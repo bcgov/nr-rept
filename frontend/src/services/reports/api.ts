@@ -75,7 +75,7 @@ export const requestReport = async (
   const response = await fetch(buildUrl(reportId), {
     method: 'POST',
     credentials: 'include',
-    headers: buildAuthorizedHeaders(JSON_HEADERS),
+    headers: await buildAuthorizedHeaders(JSON_HEADERS),
     body: JSON.stringify(sanitizePayload(payload)),
   });
 

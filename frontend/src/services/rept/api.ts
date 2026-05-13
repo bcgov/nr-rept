@@ -86,7 +86,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
   const response = await fetch(buildUrl(path), {
     credentials: 'include',
     ...init,
-    headers: buildAuthorizedHeaders(JSON_HEADERS, init?.headers),
+    headers: await buildAuthorizedHeaders(JSON_HEADERS, init?.headers),
   });
 
   if (response.status === 204) {

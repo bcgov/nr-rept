@@ -1,4 +1,4 @@
-import { getAccessTokenFromCookie } from '@/context/auth/authUtils';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 export type HeaderRecord = Record<string, string>;
 
@@ -37,16 +37,32 @@ const getCsrfToken = (): string | null => {
   return match ? decodeURIComponent(match[1]) : null;
 };
 
+/**
+ * Reads the current Cognito access token from Amplify's auth session.
+ * Returns the token regardless of whether Amplify stores it in cookies,
+ * localStorage, memory, or anywhere else — parsing document.cookie directly
+ * was fragile because the configured CookieStorage doesn't always write the
+ * tokens as DOM-visible cookies (depending on Amplify's internal flow).
+ */
+const getAccessToken = async (): Promise<string | undefined> => {
+  try {
+    const { tokens } = (await fetchAuthSession()) ?? {};
+    return tokens?.accessToken?.toString();
+  } catch {
+    return undefined;
+  }
+};
+
 // Builds headers for backend API calls: merges custom headers, injects the
 // Cognito Bearer token and Spring Security's XSRF-TOKEN (CSRF protection).
-export const buildAuthorizedHeaders = (
+export const buildAuthorizedHeaders = async (
   ...headerSets: Array<HeadersInit | undefined>
-): HeaderRecord => {
+): Promise<HeaderRecord> => {
   const merged = headerSets.reduce<HeaderRecord>((acc, headerSet) => {
     return { ...acc, ...normalizeHeaders(headerSet) };
   }, {});
 
-  const token = getAccessTokenFromCookie();
+  const token = await getAccessToken();
   if (token) {
     merged.Authorization = `Bearer ${token}`;
   }
