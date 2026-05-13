@@ -11,11 +11,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import ca.bc.gov.nrs.rept.security.ApiAuthorizationCustomizer;
+import ca.bc.gov.nrs.rept.security.CsrfCookieFilter;
 import ca.bc.gov.nrs.rept.security.CsrfSecurityCustomizer;
 import ca.bc.gov.nrs.rept.security.HeadersSecurityCustomizer;
 import ca.bc.gov.nrs.rept.security.Oauth2SecurityCustomizer;
@@ -40,6 +42,7 @@ public class SecurityConfiguration {
       HttpSecurity http,
       HeadersSecurityCustomizer headersCustomizer,
       CsrfSecurityCustomizer csrfCustomizer,
+      CsrfCookieFilter csrfCookieFilter,
       ApiAuthorizationCustomizer apiCustomizer,
       Oauth2SecurityCustomizer oauth2Customizer
   ) throws Exception {
@@ -53,10 +56,14 @@ public class SecurityConfiguration {
       return http.build();
     }
 
-    // Normal behavior: apply custom security wiring and CORS
+    // Normal behavior: apply custom security wiring and CORS.
+    // CsrfCookieFilter forces Spring 6's lazy CsrfToken to materialise on every request,
+    // so the XSRF-TOKEN cookie is set on GET responses and the SPA can read it for
+    // subsequent POST/PUT/DELETE calls.
     http
         .headers(headersCustomizer)
         .csrf(csrfCustomizer)
+        .addFilterAfter(csrfCookieFilter, BasicAuthenticationFilter.class)
         .cors(Customizer.withDefaults())
         .authorizeHttpRequests(apiCustomizer)
         .httpBasic(AbstractHttpConfigurer::disable)

@@ -327,25 +327,29 @@ $types: "error", "info", "success", "warning";
   border-bottom-right-radius: 0.25rem;
 }
 
-.#{variables.$bcgov-prefix}--pagination--sm,
-.#{variables.$bcgov-prefix}--pagination--sm,
+// Pagination size variants. Each rule scopes its inner selectors under the size
+// variant so heights only apply to pagination internals, not every
+// `.cds--popover-container` in the app (which Carbon uses as a tooltip wrapper
+// for icon buttons everywhere).
+.#{variables.$bcgov-prefix}--pagination--sm {
   .#{variables.$bcgov-prefix}--pagination__control-buttons,
   .#{variables.$bcgov-prefix}--popover-container {
-  height: 2.5rem;
+    height: 2.5rem;
+  }
 }
 
-.#{variables.$bcgov-prefix}--pagination--md,
-.#{variables.$bcgov-prefix}--pagination--md,
+.#{variables.$bcgov-prefix}--pagination--md {
   .#{variables.$bcgov-prefix}--pagination__control-buttons,
   .#{variables.$bcgov-prefix}--popover-container {
-  height: 3rem;
+    height: 3rem;
+  }
 }
 
-.#{variables.$bcgov-prefix}--pagination--lg,
-.#{variables.$bcgov-prefix}--pagination--lg,
+.#{variables.$bcgov-prefix}--pagination--lg {
   .#{variables.$bcgov-prefix}--pagination__control-buttons,
   .#{variables.$bcgov-prefix}--popover-container {
-  height: 3.5rem;
+    height: 3.5rem;
+  }
 }
 
 .#{variables.$bcgov-prefix}--pagination,
@@ -375,8 +379,13 @@ $types: "error", "info", "success", "warning";
   border-right: 0.063rem solid var(--#{variables.$bcgov-prefix}-border-subtle);
 }
 
+// Divider between pagination segments. The `.cds--popover-container` selector is
+// scoped under `.cds--pagination` because that class is also Carbon's wrapper for
+// every tooltip (icon-button tooltips in DataTable action columns, the
+// ThemeToggle in the header, etc.). Without the ancestor scope, this border-left
+// rule paints a 1px line beside every tooltip-wrapped element in the app.
 .#{variables.$bcgov-prefix}--pagination__control-buttons,
-  .#{variables.$bcgov-prefix}--popover-container {
+.#{variables.$bcgov-prefix}--pagination .#{variables.$bcgov-prefix}--popover-container {
   border-left: 0.063rem solid var(--#{variables.$bcgov-prefix}-border-subtle);
 }
 
