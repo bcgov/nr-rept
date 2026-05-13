@@ -1,23 +1,31 @@
 spring:
   autoconfigure:
-    # Re-enable datasource autoconfiguration for oracle profile (override POC default exclusion)
+    # Re-enable datasource autoconfiguration for oracle profile
+    # (overrides the DataSourceAutoConfiguration exclusion in application.yml)
     exclude: []
 
-  oracle:
-    jdbcUrl: "jdbc:oracle:thin:@//${DATABASE_HOST}:1521/${DATABASE_SERVICE_NAME}"
+  # Standard Spring Boot datasource config.
+  # TCPS (TLS) is mandatory on BC Gov silver — the DB listener exposes only port 1543
+  # and requires the full Oracle Net Connect Descriptor (not the EZConnect form). The
+  # host and service name come from env vars so the same template works across envs.
+  datasource:
+    url: "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=${DATABASE_HOST})(PORT=${DATABASE_PORT:1543}))(CONNECT_DATA=(SERVICE_NAME=${DATABASE_SERVICE_NAME})(SERVER=DEDICATED)))"
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
     hikari:
-      # The Hikari binding expects properties like jdbc-url, username, password, and pool tuning
-      jdbc-url: ${spring.oracle.jdbcUrl}
-      username: ${DATABASE_USER}
-      password: ${DATABASE_PASSWORD}
-      driver-class-name: oracle.jdbc.OracleDriver
       maximum-pool-size: 10
       minimum-idle: 1
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      # Truststore for TCPS handshake — the init container (bcgov/nr-forest-client/common)
+      # writes a JKS truststore to /cert/jssecacerts using KEYSTORE_SECRET as the password.
+      data-source-properties:
+        javax.net.ssl.trustStoreType: JKS
+        javax.net.ssl.trustStore: /cert/jssecacerts
+        javax.net.ssl.trustStorePassword: ${KEYSTORE_SECRET}
 
-  # Optional JPA / Hibernate overrides when using the EntityManagerFactory
   jpa:
     properties:
       hibernate:

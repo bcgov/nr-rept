@@ -85,6 +85,7 @@ spec:
                   key: J_PASSWORD
 
             # ── Oracle DB (consumed by application-oracle.yml) ─
+            # application-oracle.yml builds the full TCPS TNS descriptor from these.
             - name: DATABASE_HOST
               value: ${DATABASE_HOST}
             - name: DATABASE_SERVICE_NAME
