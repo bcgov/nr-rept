@@ -7,6 +7,11 @@ server:
   port: 3000
   shutdown: graceful
   max-http-request-header-size: 16KB
+  # Honor X-Forwarded-* from the Caddy reverse proxy when reconstructing the
+  # request URL. Without this, Spring sees Host=rept-backend:8080 and the
+  # browser-issued Origin=https://rept-a582fc-dev... is treated as cross-origin,
+  # triggering a CORS allow-list check on every POST/PUT/DELETE.
+  forward-headers-strategy: framework
 
 spring:
   application:
