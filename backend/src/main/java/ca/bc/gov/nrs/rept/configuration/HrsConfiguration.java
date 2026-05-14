@@ -20,8 +20,6 @@ public class HrsConfiguration {
 
   @NestedConfigurationProperty
   private FrontEndConfiguration frontend;
-  @NestedConfigurationProperty
-  private ReportingConfiguration reporting;
 
   /**
    * The Front end configuration.
@@ -50,31 +48,6 @@ public class HrsConfiguration {
     private List<String> headers;
     private List<String> methods;
     private Duration age;
-  }
-
-  @Data
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class ReportingConfiguration {
-
-    @NestedConfigurationProperty
-    private JasperConfiguration jasper;
-  }
-
-  @Data
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class JasperConfiguration {
-
-    private String baseUrl;
-    private String username;
-    private String password;
-    @Builder.Default
-    private Duration connectTimeout = Duration.ofSeconds(10);
-    @Builder.Default
-    private Duration readTimeout = Duration.ofSeconds(60);
   }
 
 }

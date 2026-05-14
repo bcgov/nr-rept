@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="REPORT_2161.rpt" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="588" leftMargin="12" rightMargin="12" topMargin="12" bottomMargin="12" uuid="982a4ecd-79fb-4ca3-bef3-0e91c87bd598">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="6"/>
+	<parameter name="IN_PAYMENT_ID" class="java.math.BigDecimal"/>
+	<parameter name="ORACLE_REF_CURSOR" class="java.sql.ResultSet" isForPrompting="false"/>
+	<parameter name="p_report_id" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["REPORT_2161.rpt"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[($P{REPORT_CONTEXT} != null) ? "repo:" : ""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_EXT" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[($P{REPORT_CONTEXT} != null) ? ".jrxml" : ".jasper"]]></defaultValueExpression>
+	</parameter>
+	<queryString language="plsql">
+		<![CDATA[{call REPT_REPORTS.REPORT_2161(
+$P{ORACLE_REF_CURSOR},
+IN_PAYMENT_ID => $P{IN_PAYMENT_ID}
+)}]]>
+	</queryString>
+	<field name="REQUISITION_NUMBER" class="java.math.BigDecimal"/>
+	<field name="REQUISITION_DATE" class="java.sql.Timestamp"/>
+	<field name="PROJECT_FILE" class="java.lang.String"/>
+	<field name="REGION" class="java.lang.String"/>
+	<field name="DISTRICT" class="java.lang.String"/>
+	<field name="INSTRUCTIONS" class="java.lang.String"/>
+	<field name="PAYEE_ADDRESS" class="java.lang.String"/>
+	<field name="PAYEE_CITY" class="java.lang.String"/>
+	<field name="PAYEE_PROVINCE" class="java.lang.String"/>
+	<field name="PAYEE_POSTAL_CODE" class="java.lang.String"/>
+	<field name="PAYEE" class="java.lang.String"/>
+	<field name="REQUISITION_AMOUNT" class="java.math.BigDecimal"/>
+	<field name="SERVICE_LINE" class="java.lang.String"/>
+	<field name="RESPONSIBILITY_CENTRE_ID" class="java.lang.String"/>
+	<field name="STOB" class="java.lang.String"/>
+	<field name="CLIENT" class="java.lang.String"/>
+	<field name="AP" class="java.lang.String"/>
+	<field name="EA" class="java.lang.String"/>
+	<field name="QR" class="java.lang.String"/>
+	<field name="GSTAMOUNT" class="java.math.BigDecimal"/>
+	<field name="TOTALAMOUNT" class="java.math.BigDecimal"/>
+	<field name="GST" class="java.math.BigDecimal"/>
+	<pageHeader>
+		<band height="301" splitType="Prevent">
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<line>
+				<reportElement x="0" y="90" width="588" height="1" uuid="f375c895-f946-44b5-ae8d-a8ed13f1dff8"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="66" width="588" height="1" uuid="34d50535-051c-4e7f-a3f4-779ee97c3418"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="126" y="12" width="66" height="48" forecolor="#000000" uuid="c63fdd65-d4b7-4315-898f-39925763c3a4"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Province of
+British
+Columbia]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="276" y="12" width="312" height="48" forecolor="#000000" uuid="81039e25-10c8-4e1d-b2c4-8be0a35fb0f0"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Forest Land Acquisitions Group, Forest Tenures Branch, Ministry of Forests]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="0" y="72" width="588" height="15" forecolor="#000000" uuid="b48d568e-15e5-4b3f-8cb6-237daf126014"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA["PAYMENT REQUEST No. " + ( $F{REQUISITION_NUMBER} == null ? "" : new DecimalFormat("###0").format($F{REQUISITION_NUMBER}) )]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="30" y="246" width="546" height="30" forecolor="#000000" uuid="887955d9-0499-4a7a-a977-e03ceaa7611c"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{INSTRUCTIONS}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="30" y="222" width="164" height="15" forecolor="#000000" uuid="a0383397-189c-489a-90e7-3cbaf4091fa5"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Instructions for Processing:]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="246" y="132" width="198" height="45" forecolor="#000000" uuid="3bd63d4c-d80e-47bf-9c75-12d162d9771b"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[( $F{PROJECT_FILE} == null || $F{PROJECT_FILE}.isEmpty() ? "" : $F{PROJECT_FILE} + System.getProperty("line.separator") ) +
+( $F{REGION}       == null || $F{REGION}.isEmpty()       ? "" : $F{REGION}       + System.getProperty("line.separator") ) +
+( $F{DISTRICT}     == null || $F{DISTRICT}.isEmpty()     ? "" : $F{DISTRICT} )]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="174" y="132" width="66" height="45" forecolor="#000000" uuid="ed27d303-a562-4b44-bcd9-a45c1965575b"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Project File:
+Region:
+District:]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="464" y="102" width="118" height="18" forecolor="#000000" uuid="190d5b4e-080c-4b6d-a9a4-670844259dde"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{REQUISITION_DATE}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="428" y="102" width="32" height="18" forecolor="#000000" uuid="6e16fcb1-4336-4cdc-986e-f0980acd49d7"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Date:]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="396" y="280" width="114" height="14" forecolor="#000000" uuid="443c8cce-fc06-4626-9da2-c17dd3babf86"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{REQUISITION_AMOUNT}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="343" y="280" width="48" height="15" forecolor="#000000" uuid="20eafc60-bc6c-4956-80c3-fb839a3e5dc9"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Amount:]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="16" splitType="Prevent">
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="30" y="0" width="348" height="15" forecolor="#000000" uuid="d2be5793-5e18-419b-9916-13f5d51bd2c9"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PAYEE}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="300" splitType="Prevent">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<line>
+				<reportElement x="275" y="243" width="190" height="1" uuid="af99ab0f-c262-49ed-b771-744aa986097e"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="23" y="243" width="190" height="1" uuid="d7e8a3b8-c1e7-4d54-b8bf-73bd2e4b0b2f"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="29" y="63" width="102" height="18" forecolor="#000000" uuid="5af42232-47c8-47f1-9340-adf0b871c4e7"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Account Coding:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="29" y="87" width="114" height="48" forecolor="#000000" uuid="4e2d798e-7456-496e-8b04-c9ba0be1473b"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[RC:
+Service Line:
+STOB:]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="161" y="87" width="180" height="48" forecolor="#000000" uuid="007e4c47-8dfd-4eaa-9526-51da483cc52d"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[( $F{RESPONSIBILITY_CENTRE_ID} == null || $F{RESPONSIBILITY_CENTRE_ID}.isEmpty() ? "" : $F{RESPONSIBILITY_CENTRE_ID} + System.getProperty("line.separator") ) +
+( $F{SERVICE_LINE}             == null || $F{SERVICE_LINE}.isEmpty()             ? "" : $F{SERVICE_LINE}             + System.getProperty("line.separator") ) +
+( $F{STOB}                     == null || $F{STOB}.isEmpty()                     ? "" : $F{STOB} )]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="29" y="153" width="547" height="60" forecolor="#000000" uuid="af4cda5c-0eae-43f1-b5ec-627bc842ef88"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[The following signature certifies that the amount to be paid hereon is correct, is in accordance with the appropriate statute or other authority and/or contract and that the work has been performed, goods supplied, services rendered and/or other conditions met. No qualified receiver signature is required.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="72" y="249" width="120" height="15" forecolor="#000000" uuid="e8a2792a-1abf-4637-9139-99b693d818ba"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Spending Authority]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="341" y="249" width="102" height="15" forecolor="#000000" uuid="86fd524e-38e6-4295-9a28-d5a53c4b5717"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Date Signed]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="342" y="71" width="52" height="60" forecolor="#000000" uuid="0ec24fd8-445b-40e2-8284-adc87ab118db"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Client:
+AP:
+EA:
+QR:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="149" y="276" width="222" height="15" forecolor="#000000" uuid="32cbda01-ba6d-4f50-a126-46f7ecc870fd"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[GOODS AND SERVICES RECEIVED]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="396" y="71" width="191" height="60" forecolor="#000000" uuid="429ce293-5d7f-456c-a0a1-3d09fdf571cf"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[( $F{CLIENT} == null || $F{CLIENT}.isEmpty() ? "" : $F{CLIENT} + System.getProperty("line.separator") ) +
+( $F{AP}             == null || $F{AP}.isEmpty()             ? "" : $F{AP}             + System.getProperty("line.separator") ) +
+( $F{EA}                     == null || $F{EA}.isEmpty()                     ? "" : $F{EA}  + System.getProperty("line.separator") ) +
+ ( $F{QR}                     == null || $F{QR}.isEmpty()                     ? "" : $F{QR} )]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="310" y="131" width="246" height="15" forecolor="#000000" uuid="094d55c0-4340-4242-8843-c4d1c82a5100">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[( "$"+new DecimalFormat("#,##0.00").format($F{REQUISITION_AMOUNT})+" + "+new DecimalFormat("#,##0.00").format($F{GSTAMOUNT})+ " ("+ $F{GST}+"% GST) = $"+new DecimalFormat("#,##0.00").format($F{TOTALAMOUNT}))]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="30" y="3" width="546" height="60" forecolor="#000000" uuid="5c2607b9-fb9c-4568-b1ed-3642055ffc6b"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[( $F{PAYEE_ADDRESS}     == null || $F{PAYEE_ADDRESS}.isEmpty()     ? "" : $F{PAYEE_ADDRESS}       + System.getProperty("line.separator") ) +
+( $F{PAYEE_CITY}        == null || $F{PAYEE_CITY}.isEmpty()        ? "" : $F{PAYEE_CITY} + ", " ) +
+( $F{PAYEE_PROVINCE}    == null || $F{PAYEE_PROVINCE}.isEmpty()    ? "" : $F{PAYEE_PROVINCE}    ) + System.getProperty("line.separator") +
+( $F{PAYEE_POSTAL_CODE} == null || $F{PAYEE_POSTAL_CODE}.isEmpty() ? "" : $F{PAYEE_POSTAL_CODE} )]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

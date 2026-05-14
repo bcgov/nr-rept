@@ -1,139 +1,146 @@
 package ca.bc.gov.nrs.rept.service.rept.report;
 
 import ca.bc.gov.nrs.rept.dto.rept.report.ReptReportRequestDto;
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Objects;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 @Component
 public class ReptReportParameterProvider {
 
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
   private static final LocalDate DEFAULT_START_DATE = LocalDate.of(1900, 1, 1);
   private static final LocalDate DEFAULT_END_DATE = LocalDate.of(9999, 12, 31);
 
-  public MultiValueMap<String, String> buildParameters(
+  public Map<String, Object> buildJasperParameters(
       ReptReportDefinition definition,
-      ReptReportRequestDto request,
-      String userId
+      ReptReportRequestDto request
   ) {
-    MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-    params.add("user", Objects.requireNonNullElse(userId, ""));
-    params.add("RPT_CURSOR", "0");
+    return switch (definition) {
+      case REPORT_2100 -> params2100(request);
+      case REPORT_2101 -> params2101(request);
+      case REPORT_2102 -> params2102(request);
+      case REPORT_2103 -> params2103(request);
+      case REPORT_2104 -> params2104(request);
+      case REPORT_2105 -> params2105(request);
+      case REPORT_2106 -> params2106(request);
+      case REPORT_2107 -> params2107(request);
+      case REPORT_2109 -> params2109(request);
+      case REPORT_2161 -> params2161(request);
+    };
+  }
 
-    switch (definition) {
-      case REPORT_2100 -> populate2100(params, request);
-      case REPORT_2101 -> populate2101(params, request);
-      case REPORT_2102 -> populate2102(params, request);
-      case REPORT_2103 -> populate2103(params, request);
-      case REPORT_2104 -> populate2104(params, request);
-      case REPORT_2105 -> populate2105(params, request);
-      case REPORT_2106 -> populate2106(params, request);
-      case REPORT_2107 -> populate2107(params, request);
-      case REPORT_2109 -> populate2109(params, request);
-      case REPORT_2161 -> populate2161(params, request);
-      default -> throw new IllegalArgumentException("Unsupported report: " + definition.getId());
-    }
-
+  private Map<String, Object> params2100(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    putDateRange(params, request);
+    params.put("IN_AGREEMENT_TYPE", trimToEmpty(request.agreementType()));
+    params.put("IN_AGREEMENT_ACTIVE", trimToEmpty(request.agreementActive()));
+    params.put("IN_RESCIND_IND", "");
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "project_name"));
     return params;
   }
 
-  private void populate2100(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    addDateRange(params, request);
-    params.add("IN_AGREEMENT_TYPE", defaultString(request.agreementType()));
-    params.add("IN_AGREEMENT_ACTIVE", defaultString(request.agreementActive()));
-    params.add("IN_RESCIND_IND", "");
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "project_name"));
+  private Map<String, Object> params2101(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    putDateRange(params, request);
+    params.put("IN_AGREEMENT_ACTIVE", trimToEmpty(request.agreementActive()));
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "project_name"));
+    return params;
   }
 
-  private void populate2101(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    addDateRange(params, request);
-    params.add("IN_AGREEMENT_ACTIVE", defaultString(request.agreementActive()));
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "project_name"));
+  private Map<String, Object> params2102(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    putDateRange(params, request);
+    params.put("IN_AGREEMENT_ACTIVE", trimToEmpty(request.agreementActive()));
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "project_name"));
+    return params;
   }
 
-  private void populate2102(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    addDateRange(params, request);
-    params.add("IN_AGREEMENT_ACTIVE", defaultString(request.agreementActive()));
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "project_name"));
+  private Map<String, Object> params2103(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    putDateRange(params, request);
+    params.put("IN_AGREEMENT_ACTIVE", trimToEmpty(request.agreementActive()));
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "project_name"));
+    return params;
   }
 
-  private void populate2103(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    addDateRange(params, request);
-    params.add("IN_AGREEMENT_ACTIVE", defaultString(request.agreementActive()));
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "project_name"));
+  private Map<String, Object> params2104(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    putDateRange(params, request);
+    params.put("IN_AGREEMENT_TYPE", trimToEmpty(request.agreementType()));
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "service_line"));
+    return params;
   }
 
-  private void populate2104(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    addDateRange(params, request);
-    params.add("IN_AGREEMENT_TYPE", defaultString(request.agreementType()));
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "service_line"));
+  private Map<String, Object> params2105(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    params.put("IN_REGION_NO", trimToEmpty(request.region()));
+    params.put("IN_DISTRICT_NO", trimToEmpty(request.district()));
+    params.put("IN_BCTS_NO", trimToEmpty(request.bctsOffice()));
+    putDateRange(params, request);
+    params.put("IN_AGREEMENT_ACTIVE", trimToEmpty(request.agreementActive()));
+    params.put("IN_AGREEMENT_EXISTS", Boolean.TRUE.equals(request.agreementExists()) ? "Y" : "");
+    return params;
   }
 
-  private void populate2105(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    params.add("IN_REGION_NO", defaultString(request.region()));
-    params.add("IN_DISTRICT_NO", defaultString(request.district()));
-    params.add("IN_BCTS_NO", defaultString(request.bctsOffice()));
-    addDateRange(params, request);
-    params.add("IN_AGREEMENT_ACTIVE", defaultString(request.agreementActive()));
-    params.add("IN_AGREEMENT_EXISTS", Boolean.TRUE.equals(request.agreementExists()) ? "Y" : "");
+  private Map<String, Object> params2106(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    params.put("IN_REGION_NO", trimToEmpty(request.region()));
+    params.put("IN_DISTRICT_NO", trimToEmpty(request.district()));
+    params.put("IN_BCTS_NO", trimToEmpty(request.bctsOffice()));
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "project_file"));
+    return params;
   }
 
-  private void populate2106(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    params.add("IN_REGION_NO", defaultString(request.region()));
-    params.add("IN_DISTRICT_NO", defaultString(request.district()));
-    params.add("IN_BCTS_NO", defaultString(request.bctsOffice()));
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "project_file"));
+  private Map<String, Object> params2107(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    params.put("IN_REGION_NO", trimToEmpty(request.region()));
+    params.put("IN_DISTRICT_NO", trimToEmpty(request.district()));
+    params.put("IN_BCTS_NO", trimToEmpty(request.bctsOffice()));
+    params.put("IN_STATUS", trimToEmpty(request.projectStatus()));
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "project_manager_name"));
+    return params;
   }
 
-  private void populate2107(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    params.add("IN_REGION_NO", defaultString(request.region()));
-    params.add("IN_DISTRICT_NO", defaultString(request.district()));
-    params.add("IN_BCTS_NO", defaultString(request.bctsOffice()));
-    params.add("IN_STATUS", defaultString(request.projectStatus()));
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "project_manager_name"));
+  private Map<String, Object> params2109(ReptReportRequestDto request) {
+    Map<String, Object> params = new HashMap<>();
+    putDateRange(params, request);
+    params.put("IN_AGREEMENT_TYPE", trimToEmpty(request.agreementType()));
+    params.put("IN_AGREEMENT_ACTIVE", trimToEmpty(request.agreementActive()));
+    params.put("IN_SORT_COLUMN", defaultIfBlank(request.sortColumn(), "source_name"));
+    return params;
   }
 
-  private void populate2109(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    addDateRange(params, request);
-    params.add("IN_AGREEMENT_TYPE", defaultString(request.agreementType()));
-    params.add("IN_AGREEMENT_ACTIVE", defaultString(request.agreementActive()));
-    params.add("IN_SORT_COLUMN", defaultString(request.sortColumn(), "source_name"));
-  }
-
-  private void populate2161(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    // Payment invoice report - requires payment ID
+  private Map<String, Object> params2161(ReptReportRequestDto request) {
     Long paymentId = request.paymentId();
     if (paymentId == null || paymentId <= 0) {
       throw new IllegalArgumentException("Payment ID is required for report 2161");
     }
-    params.add("IN_PAYMENT_ID", String.valueOf(paymentId));
+    Map<String, Object> params = new HashMap<>();
+    params.put("IN_PAYMENT_ID", BigDecimal.valueOf(paymentId));
+    return params;
   }
 
-  private void addDateRange(MultiValueMap<String, String> params, ReptReportRequestDto request) {
-    params.add("IN_START_DATE", formatStart(request.startDate()));
-    params.add("IN_END_DATE", formatEnd(request.endDate()));
+  private void putDateRange(Map<String, Object> params, ReptReportRequestDto request) {
+    LocalDate start = request.startDate() != null ? request.startDate() : DEFAULT_START_DATE;
+    LocalDate end = request.endDate() != null ? request.endDate() : DEFAULT_END_DATE;
+    params.put("IN_START_DATE", toDate(start));
+    params.put("IN_END_DATE", toDate(end));
   }
 
-  private String formatStart(LocalDate value) {
-    LocalDate effective = value != null ? value : DEFAULT_START_DATE;
-    return DATE_FORMATTER.format(effective);
+  private static Date toDate(LocalDate date) {
+    return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
   }
 
-  private String formatEnd(LocalDate value) {
-    LocalDate effective = value != null ? value : DEFAULT_END_DATE;
-    return DATE_FORMATTER.format(effective);
-  }
-
-  private String defaultString(String value) {
+  private static String trimToEmpty(String value) {
     return value == null ? "" : value.trim();
   }
 
-  private String defaultString(String value, String fallback) {
-    String trimmed = value == null ? "" : value.trim();
+  private static String defaultIfBlank(String value, String fallback) {
+    String trimmed = trimToEmpty(value);
     return trimmed.isEmpty() ? fallback : trimmed;
   }
 }

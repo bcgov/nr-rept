@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="REPORT_2106.rpt" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="588" leftMargin="12" rightMargin="12" topMargin="12" bottomMargin="12" uuid="34a00314-0d74-43ba-aa88-c5cd35b51cb3">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="IN_REGION_NO" class="java.lang.String"/>
+	<parameter name="IN_DISTRICT_NO" class="java.lang.String"/>
+	<parameter name="IN_BCTS_NO" class="java.lang.String"/>
+	<parameter name="IN_SORT_COLUMN" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="ORACLE_REF_CURSOR" class="java.sql.ResultSet" isForPrompting="false"/>
+	<parameter name="p_report_id" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["REPORT_2106.rpt"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[($P{REPORT_CONTEXT} != null) ? "repo:" : ""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_EXT" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[($P{REPORT_CONTEXT} != null) ? ".jrxml" : ".jasper"]]></defaultValueExpression>
+	</parameter>
+	<queryString language="plsql">
+		<![CDATA[{call REPT_REPORTS.REPORT_2106(
+$P{ORACLE_REF_CURSOR},
+IN_REGION_NO => $P{IN_REGION_NO},
+IN_DISTRICT_NO => $P{IN_DISTRICT_NO},
+IN_BCTS_NO => $P{IN_BCTS_NO},
+IN_SORT_COLUMN => $P{IN_SORT_COLUMN}
+)}]]>
+	</queryString>
+	<field name="PROJECT_FILE" class="java.lang.String"/>
+	<field name="PROJECT_NUMBER" class="java.lang.String"/>
+	<field name="PROJECT_NAME" class="java.lang.String"/>
+	<field name="REGION_NAME" class="java.lang.String"/>
+	<field name="DISTRICT_BCTS_NAME" class="java.lang.String"/>
+	<pageHeader>
+		<band height="103" splitType="Prevent">
+			<line>
+				<reportElement uuid="9b31de65-340b-462d-9bfd-b4727ba2ae53" x="0" y="78" width="588" height="1"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="010f4e3a-7ffe-429a-9865-ea0a91c18285" x="0" y="102" width="588" height="1"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement uuid="7fed0392-0635-4dd9-8e69-15391f134a4a" x="6" y="24" width="576" height="14" forecolor="#000000"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="11" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[MOF/RTEB/Property Services Section]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="7b36bc7d-a5ca-4b75-9553-64c9cc667b4b" x="6" y="6" width="576" height="14" forecolor="#000000"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="11" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[REAL ESTATE PROJECT TRACKING]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="47f82151-7eda-463a-8231-340118050737" x="6" y="42" width="576" height="18" forecolor="#000000"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[ACTIVE PROJECT LISTING REPORT]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="b94d335a-4f21-4a29-a199-3ee96c5180e2" x="6" y="84" width="54" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Project File]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="57c6664f-4603-478d-bc69-34b93580a01b" x="60" y="84" width="60" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Project Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="9aebe492-7d57-4a41-945e-84e884977471" x="120" y="84" width="216" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Project Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="ca03e152-4c4b-4604-a4a4-96299576b674" x="336" y="84" width="120" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Region]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="03ef51d0-89e4-4309-ae16-52daac588182" x="456" y="84" width="126" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Left">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[District/BCTS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="cd16f48d-e1cd-4030-a3b8-3a9fc32ce413" x="473" y="6" width="36" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[DATE:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="dce78ba6-66a3-417d-96cd-4134dcadbaa6" x="473" y="28" width="36" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[PAGE:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="cd16f48d-e1cd-4030-a3b8-3a9fc32ce413" x="473" y="17" width="36" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[TIME:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="05d42e19-07da-4538-88f1-b78cd3a84cdb" x="541" y="28" width="12" height="11"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8"/>
+				</textElement>
+				<text><![CDATA[OF]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" pattern="dd MMM yyyy" isBlankWhenNull="true">
+				<reportElement uuid="d2271fa2-9d1f-4a61-8898-17d2ec2131fe" x="515" y="6" width="66" height="11" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" pattern="HH:mm:ss" isBlankWhenNull="true">
+				<reportElement uuid="d2271fa2-9d1f-4a61-8898-17d2ec2131fe" x="515" y="17" width="66" height="11" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement uuid="62670b25-ed96-4ffa-9b97-8096be403715" x="515" y="28" width="26" height="11" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="62670b25-ed96-4ffa-9b97-8096be403715" x="553" y="28" width="27" height="11" forecolor="#000000"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="16" splitType="Prevent">
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement uuid="0e96f401-4b0d-4577-9d06-78e919889cc0" x="6" y="4" width="54" height="12" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PROJECT_FILE}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement uuid="1637bf39-037d-4597-bd4b-b463b4441b0b" x="60" y="4" width="60" height="12" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PROJECT_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement uuid="d091817a-81f4-4b1d-ad33-5458ed82ed13" x="120" y="4" width="216" height="12" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PROJECT_NAME}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement uuid="4ca506e5-df17-4ff4-a13c-e8fa4d0d3da0" x="336" y="4" width="120" height="12" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{REGION_NAME}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement uuid="07aad034-df49-4413-aa5c-cf82518af09c" x="456" y="4" width="126" height="12" forecolor="#000000"/>
+				<textElement>
+					<font fontName="Times New Roman" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DISTRICT_BCTS_NAME}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

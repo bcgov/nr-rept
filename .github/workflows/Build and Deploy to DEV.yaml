@@ -148,9 +148,6 @@ jobs:
       AWS_COGNITO_ISSUER_URI:   ${{ secrets.AWS_COGNITO_ISSUER_URI }}
       COGNITO_USERINFO_URI:     ${{ secrets.COGNITO_USERINFO_URI }}
       IDENTITY_LOOKUP_BASE_URL: ${{ secrets.IDENTITY_LOOKUP_BASE_URL }}
-      J_URL_FETCH:              ${{ secrets.J_URL_FETCH }}
-      J_USERNAME:               ${{ secrets.J_USERNAME }}
-      J_PASSWORD:               ${{ secrets.J_PASSWORD }}
       DATABASE_HOST:            ${{ secrets.DATABASE_HOST }}
       DATABASE_SERVICE_NAME:    ${{ secrets.DATABASE_SERVICE_NAME }}
       DATABASE_USER:            ${{ secrets.DATABASE_USER }}
@@ -185,7 +182,6 @@ jobs:
                     $APP_LOG_LEVEL $SPRING_SECURITY_LOG_LEVEL $SPRING_WEB_LOG_LEVEL
                     $SPRING_BOOT_AUTOCONFIG_LOG_LEVEL $SPRING_JPA_SHOW_SQL
                     $AWS_COGNITO_ISSUER_URI $COGNITO_USERINFO_URI $IDENTITY_LOOKUP_BASE_URL
-                    $J_URL_FETCH $J_USERNAME $J_PASSWORD
                     $DATABASE_HOST $DATABASE_SERVICE_NAME $DATABASE_USER $DATABASE_PASSWORD
                     $KEYSTORE_SECRET' \
             < backend/openshift/deployment.yaml \

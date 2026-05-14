@@ -146,16 +146,6 @@ ca:
               - PUT
               - DELETE
             age: 5m
-        # Jasper lives on a BC Gov internal hostname that isn't resolvable from the
-        # cluster's DNS. The pod must reach it through the BC Gov egress proxy, set
-        # via JAVA_TOOL_OPTIONS (-Dhttps.proxyHost=... etc.) in deployment.yaml.
-        reporting:
-          jasper:
-            base-url: ${J_URL_FETCH}
-            username: ${J_USERNAME}
-            password: ${J_PASSWORD}
-            connect-timeout: ${J_CONNECT_TIMEOUT:10s}
-            read-timeout: ${J_READ_TIMEOUT:60s}
 
 # Logging — Spring Boot default stack (SLF4j + Logback).
 #

@@ -4,94 +4,77 @@ import ca.bc.gov.nrs.rept.dto.rept.report.ReptReportFormat;
 import ca.bc.gov.nrs.rept.dto.rept.report.ReptReportRequestDto;
 import ca.bc.gov.nrs.rept.exception.ReportGenerationException;
 import ca.bc.gov.nrs.rept.exception.ReportNotFoundException;
-import ca.bc.gov.nrs.rept.exception.UserNotFoundException;
-import ca.bc.gov.nrs.rept.security.LoggedUserHelper;
-import java.util.Optional;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
 
 @Service
 public class ReptReportService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReptReportService.class);
 
-  private final RestClient jasperReportClient;
+  private final DataSource dataSource;
   private final ReptReportParameterProvider parameterProvider;
-  private final LoggedUserHelper loggedUserHelper;
-  public ReptReportService(
-      @Qualifier("jasperReportClient") RestClient jasperReportClient,
-      ReptReportParameterProvider parameterProvider,
-      LoggedUserHelper loggedUserHelper
-  ) {
-    this.jasperReportClient = jasperReportClient;
+  private final ConcurrentHashMap<String, JasperReport> compiledCache = new ConcurrentHashMap<>();
+
+  public ReptReportService(DataSource dataSource, ReptReportParameterProvider parameterProvider) {
+    this.dataSource = dataSource;
     this.parameterProvider = parameterProvider;
-    this.loggedUserHelper = loggedUserHelper;
   }
 
   public ReptReportResult generateReport(String reportId, ReptReportRequestDto request) {
     ReptReportDefinition definition = ReptReportDefinition.fromId(reportId);
     ReptReportFormat format = ReptReportFormat.fromNullable(request.format());
-
-    String userId = resolveUserId();
-    validateRequest(definition, request);
-    MultiValueMap<String, String> params = parameterProvider.buildParameters(definition, request, userId);
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Requesting Jasper report [{}] with params {}", reportId, params);
+    if (format != ReptReportFormat.PDF) {
+      throw new IllegalArgumentException(
+          "Embedded engine currently supports PDF only; requested " + format.name());
     }
+    validateRequest(definition, request);
 
-    try {
-    ResponseEntity<byte[]> responseEntity = jasperReportClient
-          .get()
-          .uri(builder -> {
-            builder.path(definition.buildTargetPath(format));
-            params.forEach((key, values) -> values.forEach(value -> builder.queryParam(key, value)));
-            return builder.build();
-      })
-          .retrieve()
-          .toEntity(byte[].class);
+    Map<String, Object> params = parameterProvider.buildJasperParameters(definition, request);
+    JasperReport jasperReport = compiledCache.computeIfAbsent(definition.getId(), id -> compileTemplate(definition));
 
-      byte[] body = responseEntity.getBody();
-      if (body == null || body.length == 0) {
-        throw new ReportGenerationException("Report response was empty for id " + reportId);
+    try (Connection connection = dataSource.getConnection()) {
+      JasperPrint print = JasperFillManager.fillReport(jasperReport, params, connection);
+      byte[] pdf = JasperExportManager.exportReportToPdf(print);
+      if (pdf == null || pdf.length == 0) {
+        throw new ReportGenerationException("Empty PDF produced for report " + reportId);
       }
-
-      MediaType mediaType = Optional.ofNullable(responseEntity.getHeaders().getContentType())
-          .orElse(format.getMediaType());
-      String filename = Optional
-          .ofNullable(responseEntity.getHeaders().getContentDisposition())
-          .map(ContentDisposition::getFilename)
-          .filter(StringUtils::hasText)
-          .orElse(definition.resolveFilename(format));
-
-      return new ReptReportResult(body, filename, mediaType);
-    } catch (HttpClientErrorException.NotFound ex) {
-      throw new ReportNotFoundException(reportId, ex);
-    } catch (RestClientResponseException ex) {
-      LOGGER.error("Jasper report request failed [{}]: {}", reportId, ex.getStatusText(), ex);
-      throw new ReportGenerationException("Report request failed with status " + ex.getStatusCode(), ex);
-    } catch (ResourceAccessException ex) {
-      LOGGER.error("Unable to reach Jasper reporting service for [{}]", reportId, ex);
-      throw new ReportGenerationException("Unable to reach Jasper reporting service", ex);
+      return new ReptReportResult(pdf, definition.resolveFilename(format), format.getMediaType());
+    } catch (JRException ex) {
+      LOGGER.error("Jasper fill/export failed for [{}]", reportId, ex);
+      throw new ReportGenerationException("Failed to render report " + reportId, ex);
+    } catch (SQLException ex) {
+      LOGGER.error("Database connection failed for report [{}]", reportId, ex);
+      throw new ReportGenerationException("Database connection failed for report " + reportId, ex);
     }
   }
 
-  private String resolveUserId() {
-    try {
-      return loggedUserHelper.getLoggedUserId();
-    } catch (UserNotFoundException ex) {
-      return "";
+  private JasperReport compileTemplate(ReptReportDefinition definition) {
+    String path = "reports/" + definition.name() + ".jrxml";
+    ClassPathResource resource = new ClassPathResource(path);
+    if (!resource.exists()) {
+      throw new ReportNotFoundException(definition.getId(),
+          new IllegalStateException("No JRXML template at classpath:" + path));
+    }
+    try (InputStream is = resource.getInputStream()) {
+      return JasperCompileManager.compileReport(is);
+    } catch (JRException | IOException ex) {
+      throw new ReportGenerationException("Failed to compile JRXML for " + definition.getId(), ex);
     }
   }
 

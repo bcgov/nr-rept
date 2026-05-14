@@ -130,6 +130,12 @@
   margin-top: 1.5rem;
 }
 
+.report-form__generating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .report-form__fieldset {
   border: none;
   padding: 0;

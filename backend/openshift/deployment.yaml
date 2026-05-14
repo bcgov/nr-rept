@@ -70,20 +70,6 @@ spec:
             - name: IDENTITY_LOOKUP_BASE_URL
               value: ${IDENTITY_LOOKUP_BASE_URL}
 
-            # ── Jasper / reporting ────────────────────────────
-            - name: J_URL_FETCH
-              value: ${J_URL_FETCH}
-            - name: J_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: rept-backend-secret
-                  key: J_USERNAME
-            - name: J_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: rept-backend-secret
-                  key: J_PASSWORD
-
             # ── Oracle DB (consumed by application-oracle.yml) ─
             # application-oracle.yml builds the full TCPS TNS descriptor from these.
             - name: DATABASE_HOST
@@ -225,8 +211,6 @@ type: Opaque
 stringData:
   DATABASE_USER: ${DATABASE_USER}
   DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-  J_USERNAME: ${J_USERNAME}
-  J_PASSWORD: ${J_PASSWORD}
   KEYSTORE_SECRET: ${KEYSTORE_SECRET}
 ---
 # NetworkPolicy: allow ingress into backend from

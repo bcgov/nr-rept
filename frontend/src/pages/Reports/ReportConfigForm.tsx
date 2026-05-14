@@ -3,6 +3,7 @@ import {
   DatePicker,
   DatePickerInput,
   InlineNotification,
+  Loading,
   Select,
   SelectItem,
   Stack,
@@ -424,7 +425,14 @@ const ReportConfigForm: FC<ReportConfigFormProps> = ({ definition }) => {
               onClick={() => void generate('pdf')}
               disabled={reportMutation.isPending}
             >
-              {reportMutation.isPending ? 'Generating…' : 'Generate PDF'}
+              {reportMutation.isPending ? (
+                <span className="report-form__generating">
+                  <Loading small withOverlay={false} description="Generating" />
+                  <span>Generating…</span>
+                </span>
+              ) : (
+                'Generate PDF'
+              )}
             </Button>
           )}
         </div>
