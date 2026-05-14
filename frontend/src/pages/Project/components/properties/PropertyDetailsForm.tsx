@@ -9,6 +9,14 @@ const blockNonNumericKeys = (event: ReactKeyboardEvent<HTMLInputElement>) => {
   }
 };
 
+const formatParcelIdentifier = (raw: string): string => {
+  const cleaned = raw.replace(/[^0-9-]/g, '');
+  if (/^\d{9}$/.test(cleaned)) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 9)}`;
+  }
+  return cleaned;
+};
+
 const PropertyDetailsForm: React.FC<PropertyDetailsEditFormProps> = ({
   formState,
   onChange,
@@ -18,21 +26,19 @@ const PropertyDetailsForm: React.FC<PropertyDetailsEditFormProps> = ({
   <div className="property-edit-form">
     <div className="form-row">
       <TextInput
+        id="parcelIdentifier"
+        labelText="Parcel Identifier (PID) *"
+        value={formState.parcelIdentifier}
+        onChange={(e) => onChange('parcelIdentifier', formatParcelIdentifier(e.target.value))}
+        invalid={Boolean(validationErrors.parcelIdentifier)}
+        invalidText={validationErrors.parcelIdentifier}
+        maxLength={25}
+      />
+      <TextInput
         id="titleNumber"
         labelText="Title Number"
         value={formState.titleNumber}
         onChange={(e) => onChange('titleNumber', e.target.value)}
-      />
-      <NumberInput
-        id="parcelIdentifier"
-        label="PID *"
-        value={formState.parcelIdentifier}
-        onChange={(_, { value }) => onChange('parcelIdentifier', String(value ?? ''))}
-        onKeyDown={blockNonNumericKeys}
-        invalid={Boolean(validationErrors.parcelIdentifier)}
-        invalidText={validationErrors.parcelIdentifier}
-        allowEmpty
-        hideSteppers
       />
     </div>
     <div className="form-row">

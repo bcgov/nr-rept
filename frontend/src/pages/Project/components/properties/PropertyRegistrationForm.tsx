@@ -7,7 +7,7 @@ const PropertyRegistrationForm: React.FC<PropertyRegistrationEditFormProps> = ({
   onChange,
 }) => (
   <div className="property-edit-form">
-    <div className="form-row">
+    <div className="form-row form-row--quad">
       <TextInput
         id="ltoPlanNumber"
         labelText="LTO Plan Number"
@@ -20,8 +20,6 @@ const PropertyRegistrationForm: React.FC<PropertyRegistrationEditFormProps> = ({
         value={formState.ltoDocumentNumber}
         onChange={(e) => onChange('ltoDocumentNumber', e.target.value)}
       />
-    </div>
-    <div className="form-row">
       <TextInput
         id="surveyTubeNumber"
         labelText="Survey Tube Number"

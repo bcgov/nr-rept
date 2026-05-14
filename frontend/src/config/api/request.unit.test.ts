@@ -1,14 +1,12 @@
-
-
 import FormData from 'form-data';
 import { describe, it, expect, vi } from 'vitest';
 
+import type { OnCancel } from './CancelablePromise';
 import * as requestModule from './request';
 import { ApiError, type APIConfig, type ApiRequestOptions, type HttpMethod } from './types';
 
-import type { AxiosResponse } from 'axios';
+import type { AxiosInstance, AxiosResponse } from 'axios';
 
-// Helpers for valid options/config/response
 const validConfig: APIConfig = {
   BASE: 'http://api',
   VERSION: 'v1',
@@ -25,7 +23,21 @@ const fullAxiosResponse = {
   statusText: 'OK',
   headers: { foo: 'bar' },
   config: {},
-};
+} as unknown as AxiosResponse;
+
+const onCancelMock = (() => {}) as unknown as OnCancel;
+
+const makeAxiosMock = (
+  request: ReturnType<typeof vi.fn> = vi.fn(),
+): AxiosInstance =>
+  ({
+    request,
+    CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
+    interceptors: {
+      request: { use: vi.fn(), eject: vi.fn() },
+      response: { use: vi.fn(), eject: vi.fn() },
+    },
+  }) as unknown as AxiosInstance;
 
 describe('isDefined', () => {
   it('returns true for non-null/undefined', () => {
@@ -154,15 +166,7 @@ describe('getHeaders edge cases', () => {
 
 describe('sendRequest', () => {
   it('calls axiosClient.request and returns response', async () => {
-    const axiosClient = {
-      request: vi.fn().mockResolvedValue(fullAxiosResponse),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
-    const onCancel = () => {};
+    const axiosClient = makeAxiosMock(vi.fn().mockResolvedValue(fullAxiosResponse));
     const res = await requestModule.sendRequest(
       validConfig,
       validOptions,
@@ -170,22 +174,14 @@ describe('sendRequest', () => {
       undefined,
       undefined,
       {},
-      onCancel,
+      onCancelMock,
       axiosClient,
     );
     expect(res).toBe(fullAxiosResponse);
   });
   it('returns error response if axios throws with response', async () => {
     const error = { response: fullAxiosResponse };
-    const axiosClient = {
-      request: vi.fn().mockRejectedValue(error),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
-    const onCancel = () => {};
+    const axiosClient = makeAxiosMock(vi.fn().mockRejectedValue(error));
     const res = await requestModule.sendRequest(
       validConfig,
       validOptions,
@@ -193,21 +189,13 @@ describe('sendRequest', () => {
       undefined,
       undefined,
       {},
-      onCancel,
+      onCancelMock,
       axiosClient,
     );
     expect(res).toBe(fullAxiosResponse);
   });
   it('throws if axios throws without response', async () => {
-    const axiosClient = {
-      request: vi.fn().mockRejectedValue(new Error('fail')),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
-    const onCancel = () => {};
+    const axiosClient = makeAxiosMock(vi.fn().mockRejectedValue(new Error('fail')));
     await expect(
       requestModule.sendRequest(
         validConfig,
@@ -216,7 +204,7 @@ describe('sendRequest', () => {
         undefined,
         undefined,
         {},
-        onCancel,
+        onCancelMock,
         axiosClient,
       ),
     ).rejects.toThrow('fail');
@@ -225,43 +213,27 @@ describe('sendRequest', () => {
 
 describe('request (CancelablePromise)', () => {
   it('resolves with response body', async () => {
-    const axiosClient = {
-      request: vi.fn().mockResolvedValue({ ...fullAxiosResponse, data: 'abc' }),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
+    const axiosClient = makeAxiosMock(
+      vi.fn().mockResolvedValue({ ...fullAxiosResponse, data: 'abc' }),
+    );
     const p = requestModule.request(validConfig, validOptions, axiosClient);
     await expect(p).resolves.toBe('abc');
   });
   it('rejects on error', async () => {
-    const axiosClient = {
-      request: vi.fn().mockRejectedValue(new Error('fail')),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
+    const axiosClient = makeAxiosMock(vi.fn().mockRejectedValue(new Error('fail')));
     const p = requestModule.request(validConfig, validOptions, axiosClient);
     await expect(p).rejects.toThrow('fail');
   });
   it('does not resolve if onCancel.isCancelled', async () => {
-    const axiosClient = {
-      request: vi.fn(),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
+    const axiosClient = makeAxiosMock();
     const options = { ...validOptions };
-    // Patch CancelablePromise to simulate cancel
-    const CancelablePromise = requestModule.request.__proto__.constructor;
+    const CancelablePromise = Object.getPrototypeOf(requestModule.request).constructor;
     const orig = CancelablePromise.prototype.then;
-    CancelablePromise.prototype.then = function (onFulfilled: any, onRejected: any) {
+    CancelablePromise.prototype.then = function (
+      this: { cancel: () => void },
+      onFulfilled: unknown,
+      onRejected: unknown,
+    ) {
       setTimeout(() => this.cancel(), 10);
       return orig.call(this, onFulfilled, onRejected);
     };
@@ -275,14 +247,7 @@ describe('private getUrl via request', () => {
   it('replaces {api-version} and path params', async () => {
     const config = { ...validConfig, VERSION: 'v2', BASE: 'http://b' };
     const options = { ...validOptions, url: '/foo/{id}/{api-version}', path: { id: 42 } };
-    const axiosClient = {
-      request: vi.fn().mockResolvedValue(fullAxiosResponse),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
+    const axiosClient = makeAxiosMock(vi.fn().mockResolvedValue(fullAxiosResponse));
     await requestModule.request(config, options, axiosClient);
     expect(axiosClient.request).toHaveBeenCalledWith(
       expect.objectContaining({ url: 'http://b/foo/42/v2' }),
@@ -291,14 +256,7 @@ describe('private getUrl via request', () => {
   it('appends query string', async () => {
     const config = { ...validConfig };
     const options = { ...validOptions, url: '/foo', query: { a: 1 } };
-    const axiosClient = {
-      request: vi.fn().mockResolvedValue(fullAxiosResponse),
-      CancelToken: { source: () => ({ token: 1, cancel: vi.fn() }) },
-      interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() },
-      },
-    };
+    const axiosClient = makeAxiosMock(vi.fn().mockResolvedValue(fullAxiosResponse));
     await requestModule.request(config, options, axiosClient);
     expect(axiosClient.request).toHaveBeenCalledWith(
       expect.objectContaining({ url: expect.stringContaining('?a=1') }),
@@ -308,19 +266,18 @@ describe('private getUrl via request', () => {
 
 describe('resolve', () => {
   it('resolves value if not function', async () => {
-    expect(await requestModule.resolve({}, 'x')).toBe('x');
+    expect(await requestModule.resolve(validOptions, 'x')).toBe('x');
   });
   it('resolves function if resolver is function', async () => {
     const fn = vi.fn().mockResolvedValue('y');
-    expect(await requestModule.resolve({}, fn)).toBe('y');
+    expect(await requestModule.resolve(validOptions, fn)).toBe('y');
   });
 });
 
 describe('getHeaders', () => {
   it('returns headers with defaults', async () => {
-    const config = { BASE: '', VERSION: '', WITH_CREDENTIALS: false, CREDENTIALS: 'omit' };
-    const options = {};
-    const headers = await requestModule.getHeaders(config, options);
+    const config: APIConfig = { BASE: '', VERSION: '', WITH_CREDENTIALS: false, CREDENTIALS: 'omit' };
+    const headers = await requestModule.getHeaders(config, validOptions);
     expect(headers['Content-Type']).toBe('application/json');
     expect(headers['Accept']).toBe('application/json');
   });
@@ -328,35 +285,37 @@ describe('getHeaders', () => {
 
 describe('getRequestBody', () => {
   it('returns body if present', () => {
-    expect(requestModule.getRequestBody({ body: 123 })).toBe(123);
+    expect(requestModule.getRequestBody({ ...validOptions, body: 123 })).toBe(123);
   });
   it('returns undefined if no body', () => {
-    expect(requestModule.getRequestBody({})).toBeUndefined();
+    expect(requestModule.getRequestBody(validOptions)).toBeUndefined();
   });
 });
 
 describe('getResponseHeader', () => {
   it('returns header if present and string', () => {
-    const res = { headers: { foo: 'bar' } };
+    const res = { ...fullAxiosResponse, headers: { foo: 'bar' } } as unknown as AxiosResponse;
     expect(requestModule.getResponseHeader(res, 'foo')).toBe('bar');
   });
   it('returns undefined if not present', () => {
-    const res = { headers: {} };
+    const res = { ...fullAxiosResponse, headers: {} } as unknown as AxiosResponse;
     expect(requestModule.getResponseHeader(res, 'foo')).toBeUndefined();
   });
 });
 
 describe('getResponseBody', () => {
   it('returns data if status not 204', () => {
-    expect(requestModule.getResponseBody({ status: 200, data: 123 })).toBe(123);
+    const res = { ...fullAxiosResponse, status: 200, data: 123 } as unknown as AxiosResponse;
+    expect(requestModule.getResponseBody(res)).toBe(123);
   });
   it('returns undefined if status 204', () => {
-    const response: AxiosResponse = {
+    const response = {
+      ...fullAxiosResponse,
       data: undefined,
       status: 204,
       statusText: '',
       headers: {},
-    };
+    } as unknown as AxiosResponse;
     expect(requestModule.getResponseBody(response)).toBeUndefined();
   });
 });

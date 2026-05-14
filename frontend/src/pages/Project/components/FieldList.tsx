@@ -5,6 +5,7 @@ import type { FC, ReactNode } from 'react';
 type Field = {
   label: string;
   value: ReactNode;
+  fullWidth?: boolean;
 };
 
 export type DetailField = Field;
@@ -27,7 +28,10 @@ export const FieldList: FC<FieldListProps> = ({
   return (
     <dl className="field-list">
       {fields.map((field) => (
-        <div className="field-item" key={`${keyPrefix}-${field.label}`}>
+        <div
+          className={`field-item${field.fullWidth ? ' field-item--full' : ''}`}
+          key={`${keyPrefix}-${field.label}`}
+        >
           <dt>{field.label}</dt>
           <dd>{field.value ?? MISSING_VALUE}</dd>
         </div>

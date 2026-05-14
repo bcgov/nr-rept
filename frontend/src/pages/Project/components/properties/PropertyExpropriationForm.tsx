@@ -8,7 +8,7 @@ const PropertyExpropriationForm: React.FC<PropertyExpropriationEditFormProps> = 
   validationErrors = {},
 }) => (
   <div className="property-edit-form">
-    <div className="form-row">
+    <div className="form-row form-row--quad">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -38,11 +38,11 @@ const PropertyExpropriationForm: React.FC<PropertyExpropriationEditFormProps> = 
         <DatePickerInput
           id="consensualServiceDate"
           labelText="Consensual Service Date"
+          invalid={Boolean(validationErrors.consensualServiceDate)}
+          invalidText={validationErrors.consensualServiceDate}
           placeholder="YYYY-MM-DD"
         />
       </DatePicker>
-    </div>
-    <div className="form-row">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -55,6 +55,8 @@ const PropertyExpropriationForm: React.FC<PropertyExpropriationEditFormProps> = 
         <DatePickerInput
           id="noticeAdvancePaymentDate"
           labelText="Notice of Advance Payment Date"
+          invalid={Boolean(validationErrors.noticeAdvancePaymentDate)}
+          invalidText={validationErrors.noticeAdvancePaymentDate}
           placeholder="YYYY-MM-DD"
         />
       </DatePicker>

@@ -454,7 +454,7 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                   <TableRow>
                     <TableHeader>Name</TableHeader>
                     <TableHeader>Type</TableHeader>
-                    <TableHeader>PID</TableHeader>
+                    <TableHeader>Parcel Identifier (PID)</TableHeader>
                     <TableHeader>Title Number</TableHeader>
                     <TableHeader>Phone</TableHeader>
                     <TableHeader>Email</TableHeader>
@@ -748,7 +748,7 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                             <TableHeader scope="col">Select</TableHeader>
                             <TableHeader scope="col">Name</TableHeader>
                             <TableHeader scope="col">Type</TableHeader>
-                            <TableHeader scope="col">PID</TableHeader>
+                            <TableHeader scope="col">Parcel Identifier (PID)</TableHeader>
                             <TableHeader scope="col">Title Number</TableHeader>
                             <TableHeader scope="col">Phone</TableHeader>
                             <TableHeader scope="col">Email</TableHeader>

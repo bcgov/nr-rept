@@ -46,6 +46,11 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
   const [selectedAgreementId, setSelectedAgreementId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgreementTabKey>('details');
   const [isAddingAgreement, setIsAddingAgreement] = useState(false);
+  const [isEditingBelow, setIsEditingBelow] = useState(false);
+
+  useEffect(() => {
+    setIsEditingBelow(false);
+  }, [activeTab, selectedAgreementId]);
 
   useEffect(() => {
     if (agreementsQuery.isError) {
@@ -98,10 +103,17 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
             projectId={projectId}
             agreementId={selectedAgreementId}
             agreement={selectedAgreement}
+            onEditingChange={setIsEditingBelow}
           />
         );
       case 'properties':
-        return <AgreementPropertiesTab projectId={projectId} agreementId={selectedAgreementId} />;
+        return (
+          <AgreementPropertiesTab
+            projectId={projectId}
+            agreementId={selectedAgreementId}
+            onEditingChange={setIsEditingBelow}
+          />
+        );
       case 'payments':
         return <AgreementPaymentsTab projectId={projectId} agreementId={selectedAgreementId} />;
       default:
@@ -190,14 +202,21 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
               <TableBody>
                 {agreements.map((agreement) => {
                   const isSelected = String(agreement.id) === selectedAgreementId;
+                  const rowLocked = isEditingBelow;
                   return (
                     <TableRow
                       key={agreement.id}
-                      onClick={() => {
-                        setSelectedAgreementId(String(agreement.id));
-                        setIsAddingAgreement(false);
-                      }}
-                      className={`property-row${isSelected ? ' property-row--selected' : ''}`}
+                      onClick={
+                        rowLocked
+                          ? undefined
+                          : () => {
+                              setSelectedAgreementId(String(agreement.id));
+                              setIsAddingAgreement(false);
+                            }
+                      }
+                      className={`property-row${isSelected ? ' property-row--selected' : ''}${
+                        rowLocked ? ' property-row--locked' : ''
+                      }`}
                     >
                       <TableSelectRow
                         radio
@@ -205,6 +224,7 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
                         name="agreement-selection"
                         ariaLabel={`Select agreement ${agreement.agreementLabel ?? agreement.id}`}
                         checked={isSelected}
+                        disabled={rowLocked}
                         onSelect={() => {
                           setSelectedAgreementId(String(agreement.id));
                           setIsAddingAgreement(false);

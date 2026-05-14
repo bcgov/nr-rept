@@ -33,6 +33,7 @@ type AgreementDetailsTabProps = {
   projectId: string;
   agreementId?: string | null;
   agreement?: ReptAgreement | null;
+  onEditingChange?: (editing: boolean) => void;
 };
 
 type AgreementDetailsFormState = {
@@ -173,6 +174,7 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
   projectId,
   agreementId,
   agreement,
+  onEditingChange,
 }) => {
   const { canEdit } = useAuthorization();
   const { display } = useNotification();
@@ -211,6 +213,10 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
       });
     }
   }, [mutation.isError, mutation.error, display]);
+
+  useEffect(() => {
+    onEditingChange?.(isEditing);
+  }, [isEditing, onEditingChange]);
 
   const handleCoUserSelection = useCallback((selection: { id: number | null; name: string }) => {
     setFormState((prev) => ({

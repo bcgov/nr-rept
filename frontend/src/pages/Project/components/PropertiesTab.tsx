@@ -164,7 +164,7 @@ const buildPropertyDetails = (
   const detail = isDetail ? (property as ReptPropertyDetail) : undefined;
 
   return [
-    { label: 'PID', value: displayValue(property.parcelIdentifier) },
+    { label: 'Parcel Identifier (PID)', value: displayValue(property.parcelIdentifier) },
     { label: 'Title Number', value: displayValue(property.titleNumber) },
     {
       label: 'LTO Code',
@@ -203,7 +203,7 @@ const buildPropertyDetails = (
   ];
 };
 
-const buildPropertyMilestones = (milestones?: ReptPropertyMilestones | null): DetailField[] => {
+const buildAssessmentMilestones = (milestones?: ReptPropertyMilestones | null): DetailField[] => {
   if (!milestones) return [];
   return [
     { label: 'Owner Contact Date', value: formatDate(milestones.ownerContactDate) },
@@ -214,14 +214,38 @@ const buildPropertyMilestones = (milestones?: ReptPropertyMilestones | null): De
     { label: 'Funding Approved', value: formatDate(milestones.fundingApprovedDate) },
     { label: 'Survey Requested', value: formatDate(milestones.surveyRequestedDate) },
     { label: 'Survey Received', value: formatDate(milestones.surveyReceivedDate) },
+    {
+      label: 'Assessment Comment',
+      value: displayValue(milestones.assessmentComment),
+      fullWidth: true,
+    },
+  ];
+};
+
+const buildNegotiationMilestones = (milestones?: ReptPropertyMilestones | null): DetailField[] => {
+  if (!milestones) return [];
+  return [
     { label: 'Fee Appraisal Requested', value: formatDate(milestones.feeAppraisalRequestedDate) },
     { label: 'Fee Appraisal Received', value: formatDate(milestones.feeAppraisalReceivedDate) },
     { label: 'Offer Date', value: formatDate(milestones.offerDate) },
+    {
+      label: 'Negotiation Comment',
+      value: displayValue(milestones.negotiationComment),
+      fullWidth: true,
+    },
+  ];
+};
+
+const buildAcquisitionMilestones = (milestones?: ReptPropertyMilestones | null): DetailField[] => {
+  if (!milestones) return [];
+  return [
     { label: 'Offer Accepted', value: formatDate(milestones.offerAcceptedDate) },
     { label: 'Completion Date', value: formatDate(milestones.completionDate) },
-    { label: 'Assessment Comment', value: displayValue(milestones.assessmentComment) },
-    { label: 'Negotiation Comment', value: displayValue(milestones.negotiationComment) },
-    { label: 'Acquisition Comment', value: displayValue(milestones.acquisitionComment) },
+    {
+      label: 'Acquisition Comment',
+      value: displayValue(milestones.acquisitionComment),
+      fullWidth: true,
+    },
     {
       label: 'Expropriation Recommended',
       value: formatBoolean(milestones.expropriationRecommended),
@@ -265,7 +289,7 @@ const validateDetailsForm = (form: PropertyDetailsFormState): Record<string, str
     errors.city = 'City is required.';
   }
   if (!normalizeNullableString(form.parcelIdentifier)) {
-    errors.parcelIdentifier = 'PID is required.';
+    errors.parcelIdentifier = 'Parcel Identifier (PID) is required.';
   }
   if (!normalizeNullableString(form.legalDescription)) {
     errors.legalDescription = 'Legal description is required.';
@@ -299,6 +323,15 @@ const validateExpropriationForm = (
 
   if (!normalizeNullableString(form.executiveApprovalDate)) {
     errors.executiveApprovalDate = 'Executive approval date is required.';
+  }
+
+  const hasConsensual = Boolean(normalizeNullableString(form.consensualServiceDate));
+  const hasNotice = Boolean(normalizeNullableString(form.noticeAdvancePaymentDate));
+  if (hasConsensual && hasNotice) {
+    const message =
+      'Enter either Consensual Service Date or Notice of Advance Payment Date — not both.';
+    errors.consensualServiceDate = message;
+    errors.noticeAdvancePaymentDate = message;
   }
 
   return errors;
@@ -387,6 +420,7 @@ type PropertyDetailTabsProps = {
   propertyCompositeReturn: ReturnType<typeof useReptPropertyComposite>;
   selectedSummary?: ReptPropertySummary;
   options?: ReptPropertyOptions | null;
+  onEditingChange?: (editing: boolean) => void;
 };
 
 const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
@@ -395,6 +429,7 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
   propertyCompositeReturn,
   selectedSummary,
   options,
+  onEditingChange,
 }) => {
   const { canEdit, canDelete } = useAuthorization();
   const { display } = useNotification();
@@ -493,6 +528,10 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
       });
     }
   }, [removePropertyContactMutation.isError, removePropertyContactMutation.error, display]);
+
+  useEffect(() => {
+    onEditingChange?.(editingTab !== null);
+  }, [editingTab, onEditingChange]);
 
   useEffect(() => {
     if (detail.isError) {
@@ -819,8 +858,16 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
     [detail.data, selectedSummary],
   );
 
-  const propertyMilestoneFields = useMemo(
-    () => buildPropertyMilestones(milestones.data ?? null),
+  const assessmentMilestoneFields = useMemo(
+    () => buildAssessmentMilestones(milestones.data ?? null),
+    [milestones.data],
+  );
+  const negotiationMilestoneFields = useMemo(
+    () => buildNegotiationMilestones(milestones.data ?? null),
+    [milestones.data],
+  );
+  const acquisitionMilestoneFields = useMemo(
+    () => buildAcquisitionMilestones(milestones.data ?? null),
     [milestones.data],
   );
 
@@ -934,7 +981,23 @@ const PropertyDetailTabs: FC<PropertyDetailTabsProps> = ({
                 </Button>
               )}
             </div>
-            <FieldList fields={propertyMilestoneFields} keyPrefix="property-milestones" />
+            <div className="milestones-readonly">
+              <h4 className="milestones-section-title">Assessment Milestones</h4>
+              <FieldList
+                fields={assessmentMilestoneFields}
+                keyPrefix="property-milestones-assessment"
+              />
+              <h4 className="milestones-section-title">Negotiation Milestones</h4>
+              <FieldList
+                fields={negotiationMilestoneFields}
+                keyPrefix="property-milestones-negotiation"
+              />
+              <h4 className="milestones-section-title">Acquisition Milestones</h4>
+              <FieldList
+                fields={acquisitionMilestoneFields}
+                keyPrefix="property-milestones-acquisition"
+              />
+            </div>
           </>
         );
 
@@ -1263,6 +1326,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
   const propertySummaries = useMemo(() => propertiesQuery.data ?? [], [propertiesQuery.data]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isDetailsEditing, setIsDetailsEditing] = useState(false);
   const [createForm, setCreateForm] = useState<PropertyDetailsFormState>(() =>
     createDetailsFormState(null),
   );
@@ -1294,6 +1358,12 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
       });
     }
   }, [propertiesQuery.isError, propertiesQuery.error, display]);
+
+  useEffect(() => {
+    if (!selectedPropertyId) {
+      setIsDetailsEditing(false);
+    }
+  }, [selectedPropertyId]);
 
   useEffect(() => {
     if (!propertySummaries.length) {
@@ -1474,18 +1544,23 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                 <TableHead>
                   <TableRow>
                     <TableHeader aria-label="Selected property" />
-                    <TableHeader>PID</TableHeader>
+                    <TableHeader>Parcel Identifier (PID)</TableHeader>
                     <TableHeader>Actions</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {propertySummaries.map((property) => {
                     const isSelected = String(property.id) === selectedPropertyId;
+                    const rowLocked = isDetailsEditing;
                     return (
                       <TableRow
                         key={property.id}
-                        onClick={() => setSelectedPropertyId(String(property.id))}
-                        className={`property-row${isSelected ? ' property-row--selected' : ''}`}
+                        onClick={
+                          rowLocked ? undefined : () => setSelectedPropertyId(String(property.id))
+                        }
+                        className={`property-row${isSelected ? ' property-row--selected' : ''}${
+                          rowLocked ? ' property-row--locked' : ''
+                        }`}
                       >
                         <TableSelectRow
                           radio
@@ -1493,6 +1568,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                           name="property-selection"
                           ariaLabel={`Select property ${buildPropertyOptionLabel(property)}`}
                           checked={isSelected}
+                          disabled={rowLocked}
                           onSelect={() => setSelectedPropertyId(String(property.id))}
                         />
                         <TableCell>{buildPropertyOptionLabel(property)}</TableCell>
@@ -1501,7 +1577,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                             kind="ghost"
                             size="sm"
                             label="Delete property"
-                            disabled={!canDelete || deletePropertyMutation.isPending}
+                            disabled={!canDelete || deletePropertyMutation.isPending || rowLocked}
                             onClick={(event) => {
                               event.stopPropagation();
                               setPropertyToDelete(property);
@@ -1527,6 +1603,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                   propertyCompositeReturn={propertyComposite}
                   selectedSummary={selectedSummary}
                   options={optionsQuery.data}
+                  onEditingChange={setIsDetailsEditing}
                 />
               </div>
             </Tile>

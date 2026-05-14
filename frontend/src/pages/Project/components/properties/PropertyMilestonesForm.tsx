@@ -15,8 +15,8 @@ const PropertyMilestonesForm: React.FC<PropertyMilestonesEditFormProps> = ({
   onChange,
 }) => (
   <div className="property-edit-form">
-    <h4 style={{ marginBottom: '1rem' }}>Assessment Phase</h4>
-    <div className="form-row">
+    <h4 className="milestones-section-title">Assessment Milestones</h4>
+    <div className="form-row form-row--quad">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -47,8 +47,6 @@ const PropertyMilestonesForm: React.FC<PropertyMilestonesEditFormProps> = ({
           placeholder="YYYY-MM-DD"
         />
       </DatePicker>
-    </div>
-    <div className="form-row">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -79,19 +77,6 @@ const PropertyMilestonesForm: React.FC<PropertyMilestonesEditFormProps> = ({
           placeholder="YYYY-MM-DD"
         />
       </DatePicker>
-    </div>
-    <div className="form-row form-row--full">
-      <TextArea
-        id="assessmentComment"
-        labelText="Assessment Comment"
-        value={formState.assessmentComment}
-        onChange={(e) => onChange('assessmentComment', e.target.value)}
-        rows={2}
-      />
-    </div>
-
-    <h4 style={{ marginBottom: '1rem', marginTop: '1.5rem' }}>Negotiation Phase</h4>
-    <div className="form-row">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -122,8 +107,6 @@ const PropertyMilestonesForm: React.FC<PropertyMilestonesEditFormProps> = ({
           placeholder="YYYY-MM-DD"
         />
       </DatePicker>
-    </div>
-    <div className="form-row">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -155,7 +138,18 @@ const PropertyMilestonesForm: React.FC<PropertyMilestonesEditFormProps> = ({
         />
       </DatePicker>
     </div>
-    <div className="form-row">
+    <div className="form-row form-row--full">
+      <TextArea
+        id="assessmentComment"
+        labelText="Assessment Comment"
+        value={formState.assessmentComment}
+        onChange={(e) => onChange('assessmentComment', e.target.value)}
+        rows={2}
+      />
+    </div>
+
+    <h4 className="milestones-section-title">Negotiation Milestones</h4>
+    <div className="form-row form-row--quad">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -186,8 +180,6 @@ const PropertyMilestonesForm: React.FC<PropertyMilestonesEditFormProps> = ({
           placeholder="YYYY-MM-DD"
         />
       </DatePicker>
-    </div>
-    <div className="form-row">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"
@@ -210,8 +202,8 @@ const PropertyMilestonesForm: React.FC<PropertyMilestonesEditFormProps> = ({
       />
     </div>
 
-    <h4 style={{ marginBottom: '1rem', marginTop: '1.5rem' }}>Acquisition Phase</h4>
-    <div className="form-row">
+    <h4 className="milestones-section-title">Acquisition Milestones</h4>
+    <div className="form-row form-row--quad">
       <DatePicker
         datePickerType="single"
         dateFormat="Y-m-d"

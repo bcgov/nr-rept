@@ -11,7 +11,7 @@ import {
   Tabs,
 } from '@carbon/react';
 import { useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { useNotification } from '@/context/notification/useNotification';
 import { usePageTitle } from '@/context/pageTitle/usePageTitle';
@@ -65,6 +65,7 @@ const ProjectDetailPage: FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { setPageTitle } = usePageTitle();
   const { display } = useNotification();
+  const navigate = useNavigate();
 
   const projectQuery = useReptProject(projectId);
   const project = projectQuery.data ?? null;
@@ -107,10 +108,10 @@ const ProjectDetailPage: FC = () => {
   return (
     <Grid fullWidth className="default-grid project-detail-grid">
       <Column sm={4} md={8} lg={16}>
-        <Link to="/projects" className="back-link">
+        <button type="button" onClick={() => navigate(-1)} className="back-link">
           <ArrowLeft size={16} />
-          <span>Back to Project Search</span>
-        </Link>
+          <span>Back</span>
+        </button>
       </Column>
 
       {projectQuery.isPending && (

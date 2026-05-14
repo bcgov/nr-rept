@@ -28,6 +28,7 @@ import type { ReptAgreementProperty, ReptPropertySummary } from '@/services/rept
 type AgreementPropertiesTabProps = {
   projectId: string;
   agreementId?: string | null;
+  onEditingChange?: (editing: boolean) => void;
 };
 
 type PropertyOption = {
@@ -70,6 +71,7 @@ const mapAgreementPropertyToOption = (property: ReptAgreementProperty): Property
 export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
   projectId,
   agreementId,
+  onEditingChange,
 }) => {
   const { canEdit } = useAuthorization();
   const { display } = useNotification();
@@ -127,6 +129,10 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
   const [isEditingProperties, setIsEditingProperties] = useState(false);
   const [propertySearch, setPropertySearch] = useState('');
   const [draftPropertyIds, setDraftPropertyIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    onEditingChange?.(isEditingProperties);
+  }, [isEditingProperties, onEditingChange]);
 
   useEffect(() => {
     setIsEditingProperties(false);
@@ -325,7 +331,7 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
               <TextInput
                 id="agreement-property-search"
                 labelText="Filter properties"
-                placeholder="Search by PID, title, or city"
+                placeholder="Search by Parcel Identifier (PID), title, or city"
                 value={propertySearch}
                 onChange={(event) => setPropertySearch(event.target.value)}
               />
@@ -388,7 +394,7 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
             <TableHead>
               <TableRow>
                 <TableHeader>Title Number</TableHeader>
-                <TableHeader>PID</TableHeader>
+                <TableHeader>Parcel Identifier (PID)</TableHeader>
                 <TableHeader>Acquisition Type</TableHeader>
                 <TableHeader>LTO</TableHeader>
                 <TableHeader>Legal Description</TableHeader>

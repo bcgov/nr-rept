@@ -180,9 +180,7 @@ export const HistoryTab: FC<HistoryTabProps> = ({ projectId, project }) => {
         )}
         <Tile className="project-tile project-tile--full">
           <h2 className="section-title">Project History</h2>
-          <div className="field-list--horizontal">
-            <FieldList fields={historyFields} keyPrefix="project-history" />
-          </div>
+          <FieldList fields={historyFields} keyPrefix="project-history" />
         </Tile>
       </div>
     );

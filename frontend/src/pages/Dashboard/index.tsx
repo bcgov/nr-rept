@@ -111,7 +111,7 @@ const DashboardPage: FC = () => {
           <TableHead>
             <TableRow>
               <TableHeader>File ID</TableHeader>
-              <TableHeader>Project</TableHeader>
+              <TableHeader>Project name</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>

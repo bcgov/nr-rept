@@ -101,6 +101,12 @@ const buildAssignmentDetails = (
   },
 ];
 
+const sanitizeUserId = (value: string | null | undefined): string => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed || trimmed.toLowerCase() === 'undefined') return '';
+  return trimmed;
+};
+
 const createFormState = (project: ReptProjectDetail): ProjectFormState => ({
   projectName: project.projectName ?? '',
   statusCode: project.statusCode ?? '',
@@ -110,7 +116,7 @@ const createFormState = (project: ReptProjectDetail): ProjectFormState => ({
   bctsOfficeNumber: project.bctsOfficeNumber != null ? String(project.bctsOfficeNumber) : '',
   requestingSourceId: project.requestingSourceId != null ? String(project.requestingSourceId) : '',
   requestDate: project.requestDate ?? '',
-  requestorUserId: project.requestorUserId ?? '',
+  requestorUserId: sanitizeUserId(project.requestorUserId),
   projectManagerUserId: project.projectManagerUserId ?? '',
   projectManagerName: project.projectManagerName ?? '',
   projectManagerAssignedDate: project.projectManagerAssignedDate ?? '',
@@ -343,6 +349,9 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
     if (isBlank(formState.requestDate)) {
       errors.requestDate = 'Provide a request date.';
     }
+    if (!sanitizeUserId(formState.requestorUserId)) {
+      errors.requestorUserId = 'Requestor IDIR is required.';
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -395,7 +404,7 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
   const requestorViewValue = isRequestorLoading ? (
     <InlineLoading description="Looking up user…" />
   ) : (
-    resolvedRequestor || displayValue(project.requestorUserId)
+    resolvedRequestor || displayValue(sanitizeUserId(project.requestorUserId) || null)
   );
 
   const projectManagerViewValue = isProjectManagerLoading ? (
@@ -548,9 +557,11 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
             <div className="user-lookup-field">
               <TextInput
                 id="requestorUserId"
-                labelText="Requestor IDIR"
+                labelText="Requestor IDIR *"
                 className="user-lookup-field__input"
                 value={resolvedRequestor}
+                invalid={Boolean(validationErrors.requestorUserId)}
+                invalidText={validationErrors.requestorUserId}
                 readOnly
               />
               {isRequestorLoading && <InlineLoading description="Looking up user…" />}
