@@ -7,8 +7,8 @@ import ca.bc.gov.nrs.rept.exception.ReportNotFoundException;
 import ca.bc.gov.nrs.rept.exception.UserNotFoundException;
 import ca.bc.gov.nrs.rept.security.LoggedUserHelper;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
@@ -24,7 +24,7 @@ import org.springframework.web.client.RestClientResponseException;
 @Service
 public class ReptReportService {
 
-  private static final Logger LOGGER = LogManager.getLogger(ReptReportService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReptReportService.class);
 
   private final RestClient jasperReportClient;
   private final ReptReportParameterProvider parameterProvider;

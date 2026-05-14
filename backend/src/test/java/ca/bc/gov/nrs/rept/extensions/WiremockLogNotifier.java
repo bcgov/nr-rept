@@ -1,12 +1,12 @@
 package ca.bc.gov.nrs.rept.extensions;
 
 import com.github.tomakehurst.wiremock.common.Notifier;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A notifier implementation that logs messages using SLF4J.
  */
-@Log4j2
+@Slf4j
 public class WiremockLogNotifier implements Notifier {
 
   /**

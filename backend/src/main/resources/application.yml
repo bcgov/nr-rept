@@ -33,19 +33,10 @@ spring:
   # Postgres-specific settings were removed for this POC.
   jpa:
     show-sql: false
-    properties:
-      hibernate:
-        # Dialect should be set via environment or profile when connecting to the chosen DB.
-        boot.allow_jdbc_metadata_access: false
-        #hikari.connection.provider_class: org.hibernate.hikaricp.internal.HikariCPConnectionProvider
+
   mvc:
     problemdetails:
       enabled: true
-  http:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
   sleuth:
     propagation-keys:
       - X-TRACE-ID
@@ -166,18 +157,38 @@ ca:
             connect-timeout: ${J_CONNECT_TIMEOUT:10s}
             read-timeout: ${J_READ_TIMEOUT:60s}
 
-# Logging — levels are honoured by Spring Boot's Log4j2 auto-config;
-# patterns are configured in log4j2-spring.xml.
+# Logging — Spring Boot default stack (SLF4j + Logback).
 #
-# Defaults to INFO across the board. Override per-area at runtime via env vars
-# (Spring's relaxed binding), e.g.:
-#   APP_LOG_LEVEL                                      → ca.bc.gov.nrs.rept
-#   LOGGING_LEVEL_ROOT                                 → root logger
-#   LOGGING_LEVEL_ORG_HIBERNATE_SQL                    → SQL statements
-#   LOGGING_LEVEL_ORG_HIBERNATE_ORM_JDBC_BIND          → SQL bind params
-#   LOGGING_LEVEL_COM_ZAXXER_HIKARI                    → connection pool
-#   LOGGING_LEVEL_ORACLE_JDBC                          → Oracle driver
-#   LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY         → Spring Security
+# Per-category levels default to INFO; override at runtime via env vars
+# (Spring's relaxed binding maps UPPERCASE_WITH_UNDERSCORES → dot.case):
+#   APP_LOG_LEVEL                              → ca.bc.gov.nrs.rept
+#   HIKARI_LOG_LEVEL                           → com.zaxxer.hikari
+#   HIBERNATE_SQL_LOG_LEVEL                    → org.hibernate.SQL
+#   HIBERNATE_BIND_LOG_LEVEL                   → org.hibernate.orm.jdbc.bind
+#   HIBERNATE_CONNECTIONS_LOG_LEVEL            → org.hibernate.engine.jdbc.connections
+#   ORACLE_JDBC_LOG_LEVEL                      → oracle.jdbc
+#   LOGGING_LEVEL_ROOT                         → root logger
+#   LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY → Spring Security
+#
+# Console pattern includes X-TRACE-ID and X-USER MDC keys populated by the
+# request filter, plus PID and app name. To switch to structured JSON output
+# (e.g. in containers), set the env var directly:
+#   LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs   (Elastic Common Schema)
+#   LOGGING_STRUCTURED_FORMAT_CONSOLE=logstash
+# Setting it via relaxed binding lets Spring Boot 3.4+ install the right
+# structured layout. Don't wire an empty-default placeholder here — Spring
+# treats "" as "structured logging on, no format" and fails layout init.
 logging:
   level:
     ca.bc.gov.nrs.rept: ${APP_LOG_LEVEL:INFO}
+    com.zaxxer.hikari: ${HIKARI_LOG_LEVEL:INFO}
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:INFO}
+    org.hibernate.orm.jdbc.bind: ${HIBERNATE_BIND_LOG_LEVEL:INFO}
+    org.hibernate.engine.jdbc.connections: ${HIBERNATE_CONNECTIONS_LOG_LEVEL:INFO}
+    oracle.jdbc: ${ORACLE_JDBC_LOG_LEVEL:INFO}
+    # Suppress Hibernate 6's "Database info: ... undefined/unknown ..." block.
+    # Those fields read as undefined when Spring (not Hibernate) owns the
+    # HikariCP pool, so the line is noise rather than diagnostic.
+    org.hibernate.orm.connections.pooling: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [${spring.application.name}] [%X{X-TRACE-ID:-},${PID:-}] [%t] %logger:%L - %m%n%wEx"

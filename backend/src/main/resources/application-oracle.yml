@@ -34,5 +34,6 @@ spring:
   jpa:
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.OracleDialect
+        # Dialect is auto-detected from the Oracle JDBC connection in
+        # Hibernate 6 — setting it explicitly produces HHH90000025.
         format_sql: false
