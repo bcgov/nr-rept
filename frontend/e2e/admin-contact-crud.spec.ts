@@ -1,19 +1,28 @@
 import { expect, test } from '@playwright/test';
 
-import { createAdminContact, deleteAdminContact } from './helpers/admin-contact';
+import {
+  adminContactDisplayName,
+  createAdminContact,
+  deleteAdminContact,
+  type CreateAdminContactOpts,
+} from './helpers/admin-contact';
 import { uniqueSuffix } from './utils';
 
 test('admin contact: create then delete', async ({ page }) => {
-  const suffix = uniqueSuffix();
-  const firstName = 'E2ETest';
-  const lastName = suffix;
-  const displayName = `${firstName} ${lastName}`;
+  // validateContactName enforces XOR: (firstName + lastName) OR companyName,
+  // never all three. We use the person-name branch here.
+  const opts: CreateAdminContactOpts = {
+    kind: 'person',
+    firstName: 'E2ETest',
+    lastName: uniqueSuffix(),
+  };
+  const displayName = adminContactDisplayName(opts);
 
   try {
-    await createAdminContact(page, { firstName, lastName, companyName: `Co ${suffix}` });
+    await createAdminContact(page, opts);
     // Sanity: row really did land in the table.
     await expect(page.locator('tr', { hasText: displayName }).first()).toBeVisible();
   } finally {
-    await deleteAdminContact(page, displayName);
+    await deleteAdminContact(page, opts);
   }
 });

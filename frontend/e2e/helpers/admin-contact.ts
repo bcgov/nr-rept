@@ -20,12 +20,19 @@ const openAdminContactsTab = async (page: Page): Promise<void> => {
 };
 
 /**
- * Create a contact via Admin → Contacts. Returns the displayName the row
- * shows so callers can find it later.
+ * Create a contact via Admin → Contacts. The form's validator enforces XOR
+ * on the name: either (firstName + lastName) OR companyName — never all
+ * three — so the discriminated `kind` field forces a choice.
+ *
+ * Returns the displayName the row shows so callers can find it later.
  */
+export type CreateAdminContactOpts =
+  | { kind: 'person'; firstName: string; lastName: string }
+  | { kind: 'company'; companyName: string };
+
 export const createAdminContact = async (
   page: Page,
-  opts: { firstName: string; lastName: string; companyName?: string },
+  opts: CreateAdminContactOpts,
 ): Promise<string> => {
   await openAdminContactsTab(page);
 
@@ -36,9 +43,10 @@ export const createAdminContact = async (
   const modal = page.getByRole('dialog', { name: /add contact/i });
   await expect(modal).toBeVisible({ timeout: 10_000 });
 
-  await modal.locator('#contact-first').fill(opts.firstName);
-  await modal.locator('#contact-last').fill(opts.lastName);
-  if (opts.companyName) {
+  if (opts.kind === 'person') {
+    await modal.locator('#contact-first').fill(opts.firstName);
+    await modal.locator('#contact-last').fill(opts.lastName);
+  } else {
     await modal.locator('#contact-company').fill(opts.companyName);
   }
   await modal.locator('#contact-address').fill('123 E2E Lane');
@@ -50,7 +58,10 @@ export const createAdminContact = async (
   await modal.getByRole('button', { name: /^create$/i }).click();
   await expect(modal).toBeHidden({ timeout: 30_000 });
 
-  const displayName = `${opts.firstName} ${opts.lastName}`;
+  // Backend formats person contacts as "LastName, FirstName" (used in the
+  // table cell and in the row's delete-button aria-label).
+  const displayName =
+    opts.kind === 'person' ? `${opts.lastName}, ${opts.firstName}` : opts.companyName;
   await expect(page.locator('tr', { hasText: displayName }).first()).toBeVisible({
     timeout: 30_000,
   });
@@ -58,15 +69,25 @@ export const createAdminContact = async (
   return displayName;
 };
 
+/** "LastName, FirstName" / "CompanyName" — matches the backend's format. */
+export const adminContactDisplayName = (opts: CreateAdminContactOpts): string =>
+  opts.kind === 'person' ? `${opts.lastName}, ${opts.firstName}` : opts.companyName;
+
 /**
- * Delete a contact from Admin → Contacts by its displayName. Idempotent —
- * silently returns if the page is already closed (cleanup-in-finally after
- * the test failed) or the row isn't currently in the list.
+ * Delete an admin contact. Takes the original create-opts so it can both
+ * derive the right displayName format AND narrow the list with the correct
+ * filter field. Idempotent — silently returns if the page is already closed
+ * (cleanup-in-finally after the test failed) or the row isn't present.
  */
-export const deleteAdminContact = async (page: Page, displayName: string): Promise<void> => {
+export const deleteAdminContact = async (
+  page: Page,
+  opts: CreateAdminContactOpts,
+): Promise<void> => {
   if (page.isClosed()) {
     return;
   }
+
+  const displayName = adminContactDisplayName(opts);
 
   try {
     if (!page.url().includes('/admin')) {
@@ -74,9 +95,11 @@ export const deleteAdminContact = async (page: Page, displayName: string): Promi
     }
 
     // Narrow the list to the contact so the row is on-screen.
-    const lastName = displayName.split(' ').slice(1).join(' ');
-    if (lastName) {
-      await page.locator('#contact-filter-last').fill(lastName);
+    if (opts.kind === 'person') {
+      await page.locator('#contact-filter-last').fill(opts.lastName);
+    } else {
+      // No filter selector wired for company-only contacts here; rely on the
+      // displayName match.
     }
 
     const row = page.locator('tr', { hasText: displayName }).first();
@@ -88,7 +111,9 @@ export const deleteAdminContact = async (page: Page, displayName: string): Promi
 
     const confirmDialog = page.getByRole('dialog', { name: /delete contact/i });
     await expect(confirmDialog).toBeVisible({ timeout: 10_000 });
-    await confirmDialog.getByRole('button', { name: /^delete$/i }).click();
+    // Carbon's danger button has accessible name "danger Delete" (visually-
+    // hidden icon label), so we can't anchor the regex to `^delete$`.
+    await confirmDialog.getByRole('button', { name: /\bdelete$/i }).click();
 
     await expect(row).toHaveCount(0, { timeout: 30_000 });
   } catch (err) {

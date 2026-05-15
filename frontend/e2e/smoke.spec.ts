@@ -74,16 +74,9 @@ test.describe('page coverage', () => {
     }
   });
 
-  test('first report builder renders', async ({ page }) => {
-    await page.goto('/reports');
-    // Click the first report row/link in the landing list.
-    const firstReportLink = page.locator('a[href^="/reports/"]').first();
-    if ((await firstReportLink.count()) === 0) {
-      test.skip(true, 'No reports listed on the target environment');
-      return;
-    }
-    await firstReportLink.click();
-    await page.waitForURL(/\/reports\/[^/]+/);
-    await assertNoGlobalError(page);
-  });
+  // Note: /reports/:reportId isn't actually reachable from the UI right now
+  // (the landing page uses an accordion that inlines ReportConfigForm rather
+  // than linking out). Coverage for the report-generation flow lives in
+  // reports.spec.ts, which exercises every report on the landing page end
+  // to end and verifies the API returns a real PDF.
 });

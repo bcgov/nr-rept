@@ -50,7 +50,9 @@ export const deleteProperty = async (page: Page, pidFormatted: string): Promise<
 
     const confirmDialog = page.getByRole('dialog', { name: /delete property/i });
     await expect(confirmDialog).toBeVisible({ timeout: 10_000 });
-    await confirmDialog.getByRole('button', { name: /^delete$/i }).click();
+    // Carbon's danger button has accessible name "danger Delete" (visually-
+    // hidden icon label), so we can't anchor the regex to `^delete$`.
+    await confirmDialog.getByRole('button', { name: /\bdelete$/i }).click();
 
     await expect(row).toHaveCount(0, { timeout: 30_000 });
   } catch (err) {
