@@ -1,4 +1,4 @@
-name: Build & Deploy to OpenShift
+name: Build & Deploy to OpenShift DEV & TEST
 
 on:
   push:
@@ -100,9 +100,9 @@ jobs:
         # frontend/.env.production is overwritten here so DEV/PROD share the same
         # source tree but get env-specific values per environment.
         env:
-          VITE_USER_POOLS_ID:            ${{ secrets.VITE_USER_POOLS_ID }}
-          VITE_USER_POOLS_WEB_CLIENT_ID: ${{ secrets.VITE_USER_POOLS_WEB_CLIENT_ID }}
-          VITE_REDIRECT_SIGN_OUT:        ${{ secrets.VITE_REDIRECT_SIGN_OUT }}
+          VITE_USER_POOLS_ID:            ${{ vars.VITE_USER_POOLS_ID }}
+          VITE_USER_POOLS_WEB_CLIENT_ID: ${{ vars.VITE_USER_POOLS_WEB_CLIENT_ID }}
+          VITE_REDIRECT_SIGN_OUT:        ${{ vars.VITE_REDIRECT_SIGN_OUT }}
           VITE_BACKEND_URL:              ${{ vars.VITE_BACKEND_URL }}
           VITE_APP_NAME:                 ${{ vars.VITE_APP_NAME }}
           VITE_ZONE:                     ${{ vars.VITE_ZONE }}
@@ -139,15 +139,20 @@ jobs:
 
   # ────────────────────────────────────────────────────────
   deploy:
-    name: Deploy to OpenShift
+    name: Deploy to OpenShift DEV
     runs-on: ubuntu-24.04
     needs: [build-and-push-frontend, build-and-push-backend]
     environment: dev
     env:
+      # OC_TOKEN and OC_NAMESPACE are per-environment; rebind at job level so the
+      # `environment: dev` scope is in effect when the secrets are resolved
+      # (workflow-level env can't see environment-scoped secrets).
+      OC_TOKEN:                 ${{ secrets.OC_TOKEN }}
+      OC_NAMESPACE:             ${{ secrets.OC_NAMESPACE }}
       # ── App config / credentials, scoped to deploy only ──
-      AWS_COGNITO_ISSUER_URI:   ${{ secrets.AWS_COGNITO_ISSUER_URI }}
-      COGNITO_USERINFO_URI:     ${{ secrets.COGNITO_USERINFO_URI }}
-      IDENTITY_LOOKUP_BASE_URL: ${{ secrets.IDENTITY_LOOKUP_BASE_URL }}
+      AWS_COGNITO_ISSUER_URI:   ${{ vars.AWS_COGNITO_ISSUER_URI }}
+      COGNITO_USERINFO_URI:     ${{ vars.COGNITO_USERINFO_URI }}
+      IDENTITY_LOOKUP_BASE_URL: ${{ vars.IDENTITY_LOOKUP_BASE_URL }}
       DATABASE_HOST:            ${{ secrets.DATABASE_HOST }}
       DATABASE_SERVICE_NAME:    ${{ secrets.DATABASE_SERVICE_NAME }}
       DATABASE_USER:            ${{ secrets.DATABASE_USER }}
@@ -225,3 +230,93 @@ jobs:
         uses: zaproxy/action-api-scan@v0.10.0
         with:
           target: 'https://${{ env.APP_NAME }}-${{ env.OC_NAMESPACE }}.apps.silver.devops.gov.bc.ca/v3/api-docs'
+
+  # ────────────────────────────────────────────────────────
+  # Only runs when the DEV deploy above succeeds. Promotes the exact same
+  # image tags into the TEST namespace on the same cluster.
+  promote-to-test:
+    name: Deploy to OpenShift TEST
+    runs-on: ubuntu-24.04
+    needs: [deploy, build-and-push-frontend, build-and-push-backend]
+    environment: test
+    env:
+      # OC_TOKEN and OC_NAMESPACE are per-environment; rebind at job level so the
+      # `environment: test` scope picks up the TEST cluster token + namespace secrets.
+      OC_TOKEN:                 ${{ secrets.OC_TOKEN }}
+      OC_NAMESPACE:             ${{ secrets.OC_NAMESPACE }}
+      # App config / credentials, scoped to deploy only.
+      AWS_COGNITO_ISSUER_URI:   ${{ vars.AWS_COGNITO_ISSUER_URI }}
+      COGNITO_USERINFO_URI:     ${{ vars.COGNITO_USERINFO_URI }}
+      IDENTITY_LOOKUP_BASE_URL: ${{ vars.IDENTITY_LOOKUP_BASE_URL }}
+      DATABASE_HOST:            ${{ secrets.DATABASE_HOST }}
+      DATABASE_SERVICE_NAME:    ${{ secrets.DATABASE_SERVICE_NAME }}
+      DATABASE_USER:            ${{ secrets.DATABASE_USER }}
+      DATABASE_PASSWORD:        ${{ secrets.DATABASE_PASSWORD }}
+      KEYSTORE_SECRET:          ${{ secrets.KEYSTORE_SECRET }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+
+      - name: Log in to OpenShift (TEST)
+        run: |
+          oc login "$OPENSHIFT_URL" --token="$OC_TOKEN" --insecure-skip-tls-verify=false
+          oc project "$OC_NAMESPACE"
+
+      - name: Tag backend image into OpenShift (TEST)
+        env:
+          REGISTRY_PATH_BACKEND: ${{ needs.build-and-push-backend.outputs.registry-path }}
+        run: |
+          oc tag --source=docker "$REGISTRY_PATH_BACKEND" "${APP_NAME}-backend:${IMAGE_TAG}" \
+            --reference-policy=local
+
+      - name: Render backend manifest with envsubst
+        run: |
+          mkdir -p /tmp/manifests
+          export BACKEND_IMAGE="image-registry.openshift-image-registry.svc:5000/${OC_NAMESPACE}/${APP_NAME}-backend:${IMAGE_TAG}"
+          envsubst '$BACKEND_IMAGE $MIN_REPLICAS $MAX_REPLICAS $MIN_CPU $MIN_MEM
+                    $APP_LOG_LEVEL $SPRING_SECURITY_LOG_LEVEL $SPRING_WEB_LOG_LEVEL
+                    $SPRING_BOOT_AUTOCONFIG_LOG_LEVEL $SPRING_JPA_SHOW_SQL
+                    $AWS_COGNITO_ISSUER_URI $COGNITO_USERINFO_URI $IDENTITY_LOOKUP_BASE_URL
+                    $DATABASE_HOST $DATABASE_SERVICE_NAME $DATABASE_USER $DATABASE_PASSWORD
+                    $KEYSTORE_SECRET' \
+            < backend/openshift/deployment.yaml \
+            > /tmp/manifests/backend.yaml
+
+      - name: Apply backend manifest
+        run: oc apply -f /tmp/manifests/backend.yaml
+
+      - name: Perform backend rollout
+        run: oc rollout restart deployment/rept-backend
+
+      - name: Wait for backend rollout
+        run: oc rollout status deployment/rept-backend
+
+      - name: Tag frontend image into OpenShift (TEST)
+        env:
+          REGISTRY_PATH_FRONTEND: ${{ needs.build-and-push-frontend.outputs.registry-path }}
+        run: |
+          oc tag --source=docker "$REGISTRY_PATH_FRONTEND" "${APP_NAME}-frontend:${IMAGE_TAG}" \
+            --reference-policy=local
+
+      - name: Render frontend manifest with envsubst
+        run: |
+          mkdir -p /tmp/manifests
+          export FRONTEND_IMAGE="image-registry.openshift-image-registry.svc:5000/${OC_NAMESPACE}/${APP_NAME}-frontend:${IMAGE_TAG}"
+          export FRONTEND_HOST="${APP_NAME}-${OC_NAMESPACE}.apps.silver.devops.gov.bc.ca"
+          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL $FRONTEND_HOST' \
+            < frontend/openshift/deployment.yaml \
+            > /tmp/manifests/frontend.yaml
+
+      - name: Apply frontend manifest
+        run: oc apply -f /tmp/manifests/frontend.yaml
+
+      - name: Perform frontend rollout
+        run: oc rollout restart deployment/rept-frontend
+
+      - name: Wait for frontend rollout
+        run: oc rollout status deployment/rept-frontend
