@@ -27,11 +27,16 @@ COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
 COPY --from=static /app/dist /srv
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY coraza.conf /etc/caddy/coraza.conf
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Set permissions for static files (OpenShift-compatible)
-# OpenShift uses random UIDs but assigns them to root group (GID 0)
+# OpenShift uses random UIDs but assigns them to root group (GID 0). We make
+# /srv/config.js group-writable so the entrypoint can replace it at startup
+# from VITE_* env vars; everything else stays read-only.
 RUN chown -R 1001:0 /srv && \
-    chmod -R 755 /srv
+    chmod -R 755 /srv && \
+    chmod g+w /srv/config.js && \
+    chmod 755 /usr/local/bin/docker-entrypoint.sh
 
 # Create directories for Coraza WAF with restricted permissions
 RUN mkdir -p /tmp/coraza && \
@@ -46,5 +51,5 @@ EXPOSE 3000 3001
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://127.0.0.1:3001/health || exit 1
 
 USER 1001
-ENTRYPOINT ["/usr/bin/caddy"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

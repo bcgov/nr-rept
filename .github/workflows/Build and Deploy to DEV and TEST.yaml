@@ -95,27 +95,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Write .env.production from GitHub Actions secrets/vars
-        # Baked into the image at build time as `import.meta.env.X`. The committed
-        # frontend/.env.production is overwritten here so DEV/PROD share the same
-        # source tree but get env-specific values per environment.
-        env:
-          VITE_USER_POOLS_ID:            ${{ vars.VITE_USER_POOLS_ID }}
-          VITE_USER_POOLS_WEB_CLIENT_ID: ${{ vars.VITE_USER_POOLS_WEB_CLIENT_ID }}
-          VITE_REDIRECT_SIGN_OUT:        ${{ vars.VITE_REDIRECT_SIGN_OUT }}
-          VITE_BACKEND_URL:              ${{ vars.VITE_BACKEND_URL }}
-          VITE_APP_NAME:                 ${{ vars.VITE_APP_NAME }}
-          VITE_ZONE:                     ${{ vars.VITE_ZONE }}
-        run: |
-          cat > frontend/.env.production <<EOF
-          VITE_BASE_PATH=/
-          VITE_APP_NAME=${VITE_APP_NAME:-REPT}
-          VITE_ZONE=${VITE_ZONE:-dev}
-          VITE_USER_POOLS_ID=${VITE_USER_POOLS_ID}
-          VITE_USER_POOLS_WEB_CLIENT_ID=${VITE_USER_POOLS_WEB_CLIENT_ID}
-          VITE_REDIRECT_SIGN_OUT=${VITE_REDIRECT_SIGN_OUT}
-          VITE_BACKEND_URL=${VITE_BACKEND_URL}
-          EOF
+      # No .env.production rewrite: VITE_* values are now injected at runtime
+      # by frontend/docker-entrypoint.sh (into /srv/config.js) from the
+      # OpenShift Deployment env, so a single image serves DEV/TEST/PROD.
 
       - name: Build Frontend from Dockerfile
         id: build-image-frontend
@@ -158,6 +140,14 @@ jobs:
       DATABASE_USER:            ${{ secrets.DATABASE_USER }}
       DATABASE_PASSWORD:        ${{ secrets.DATABASE_PASSWORD }}
       KEYSTORE_SECRET:          ${{ secrets.KEYSTORE_SECRET }}
+      # ── Frontend runtime config (rendered into the frontend Deployment env;
+      # the container entrypoint writes these to /srv/config.js at startup) ──
+      VITE_USER_POOLS_ID:            ${{ vars.VITE_USER_POOLS_ID }}
+      VITE_USER_POOLS_WEB_CLIENT_ID: ${{ vars.VITE_USER_POOLS_WEB_CLIENT_ID }}
+      VITE_REDIRECT_SIGN_OUT:        ${{ vars.VITE_REDIRECT_SIGN_OUT }}
+      VITE_BACKEND_URL:              ${{ vars.VITE_BACKEND_URL }}
+      VITE_APP_NAME:                 ${{ vars.VITE_APP_NAME }}
+      VITE_ZONE:                     ${{ vars.VITE_ZONE }}
 
     steps:
       - uses: actions/checkout@v6
@@ -213,7 +203,9 @@ jobs:
           mkdir -p /tmp/manifests
           export FRONTEND_IMAGE="image-registry.openshift-image-registry.svc:5000/${OC_NAMESPACE}/${APP_NAME}-frontend:${IMAGE_TAG}"
           export FRONTEND_HOST="${APP_NAME}-${OC_NAMESPACE}.apps.silver.devops.gov.bc.ca"
-          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL $FRONTEND_HOST' \
+          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL $FRONTEND_HOST
+                    $VITE_USER_POOLS_ID $VITE_USER_POOLS_WEB_CLIENT_ID
+                    $VITE_REDIRECT_SIGN_OUT $VITE_BACKEND_URL $VITE_APP_NAME $VITE_ZONE' \
             < frontend/openshift/deployment.yaml \
             > /tmp/manifests/frontend.yaml
 
@@ -253,6 +245,14 @@ jobs:
       DATABASE_USER:            ${{ secrets.DATABASE_USER }}
       DATABASE_PASSWORD:        ${{ secrets.DATABASE_PASSWORD }}
       KEYSTORE_SECRET:          ${{ secrets.KEYSTORE_SECRET }}
+      # ── Frontend runtime config (rendered into the frontend Deployment env;
+      # the container entrypoint writes these to /srv/config.js at startup) ──
+      VITE_USER_POOLS_ID:            ${{ vars.VITE_USER_POOLS_ID }}
+      VITE_USER_POOLS_WEB_CLIENT_ID: ${{ vars.VITE_USER_POOLS_WEB_CLIENT_ID }}
+      VITE_REDIRECT_SIGN_OUT:        ${{ vars.VITE_REDIRECT_SIGN_OUT }}
+      VITE_BACKEND_URL:              ${{ vars.VITE_BACKEND_URL }}
+      VITE_APP_NAME:                 ${{ vars.VITE_APP_NAME }}
+      VITE_ZONE:                     ${{ vars.VITE_ZONE }}
 
     steps:
       - uses: actions/checkout@v6
@@ -308,7 +308,9 @@ jobs:
           mkdir -p /tmp/manifests
           export FRONTEND_IMAGE="image-registry.openshift-image-registry.svc:5000/${OC_NAMESPACE}/${APP_NAME}-frontend:${IMAGE_TAG}"
           export FRONTEND_HOST="${APP_NAME}-${OC_NAMESPACE}.apps.silver.devops.gov.bc.ca"
-          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL $FRONTEND_HOST' \
+          envsubst '$FRONTEND_IMAGE $FRONTEND_LOG_LEVEL $BACKEND_URL $FRONTEND_HOST
+                    $VITE_USER_POOLS_ID $VITE_USER_POOLS_WEB_CLIENT_ID
+                    $VITE_REDIRECT_SIGN_OUT $VITE_BACKEND_URL $VITE_APP_NAME $VITE_ZONE' \
             < frontend/openshift/deployment.yaml \
             > /tmp/manifests/frontend.yaml
 
