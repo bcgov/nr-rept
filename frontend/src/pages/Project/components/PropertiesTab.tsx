@@ -21,12 +21,14 @@ import {
   Tile,
   Button,
 } from '@carbon/react';
+import { useQueries } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import DestructiveModal from '@/components/core/DestructiveModal';
 import { Modal } from '@/components/Modal';
 import { useNotification } from '@/context/notification/useNotification';
 import { useAuthorization } from '@/hooks/useAuthorization';
+import { getPropertyContacts } from '@/services/rept/api';
 import {
   useReptPropertyComposite,
   useReptPropertySummaries,
@@ -1382,6 +1384,42 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
 
   const propertyComposite = useReptPropertyComposite(projectId, selectedPropertyId ?? undefined);
 
+  const propertyContactsQueries = useQueries({
+    queries: propertySummaries.map((property) => ({
+      queryKey: [
+        'rept',
+        'project',
+        projectId,
+        'property',
+        String(property.id),
+        'contacts',
+      ] as const,
+      queryFn: () => getPropertyContacts(projectId, String(property.id)),
+      enabled: Boolean(projectId),
+    })),
+  });
+
+  const propertyOwnersById = useMemo(() => {
+    const map = new Map<string, { isLoading: boolean; owners: string[] }>();
+    propertySummaries.forEach((property, idx) => {
+      const query = propertyContactsQueries[idx];
+      const contacts = (query?.data ?? []) as ReptContact[];
+      const owners = contacts
+        .filter((c) => {
+          const code = c.contactTypeCode?.toLowerCase() ?? '';
+          const label = c.contactTypeLabel?.toLowerCase() ?? '';
+          return code.includes('owner') || label.includes('owner');
+        })
+        .map((c) => c.displayName?.trim() || c.companyName?.trim() || '')
+        .filter((name): name is string => Boolean(name));
+      map.set(String(property.id), {
+        isLoading: Boolean(query?.isPending),
+        owners,
+      });
+    });
+    return map;
+  }, [propertySummaries, propertyContactsQueries]);
+
   const selectedSummary = useMemo(() => {
     if (!selectedPropertyId) {
       return undefined;
@@ -1545,6 +1583,7 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                   <TableRow>
                     <TableHeader aria-label="Selected property" />
                     <TableHeader>Parcel Identifier (PID)</TableHeader>
+                    <TableHeader>Owners</TableHeader>
                     <TableHeader>Actions</TableHeader>
                   </TableRow>
                 </TableHead>
@@ -1572,6 +1611,21 @@ export const PropertiesTab: FC<PropertiesTabProps> = ({ projectId }) => {
                           onSelect={() => setSelectedPropertyId(String(property.id))}
                         />
                         <TableCell>{buildPropertyOptionLabel(property)}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const entry = propertyOwnersById.get(String(property.id));
+                            if (!entry) return MISSING_VALUE;
+                            if (entry.isLoading) return <SkeletonText width="80%" />;
+                            if (entry.owners.length === 0) return MISSING_VALUE;
+                            return (
+                              <div className="property-owners-list">
+                                {entry.owners.map((name, idx) => (
+                                  <div key={`${property.id}-owner-${idx}`}>{name}</div>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell>
                           <IconButton
                             kind="ghost"
