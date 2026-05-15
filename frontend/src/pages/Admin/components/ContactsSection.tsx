@@ -299,7 +299,7 @@ const ContactsSection: FC = () => {
 
   return (
     <Stack gap={6} className="admin-section">
-      <div className="admin-section__filters-actions" style={{ marginBottom: '1rem' }}>
+      <div className="admin-section__filters-actions" style={{ marginBottom: '-7px' }}>
         <Button
           kind="primary"
           renderIcon={Add}
