@@ -49,7 +49,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.13</version>
+    <version>3.5.14</version>
     <relativePath/>
   </parent>
 
@@ -154,10 +154,25 @@
       <version>3.13.1</version>
       <scope>test</scope>
     </dependency>
+    <!--
+      JasperReports 7.x restructured the artifact layout: PDF export was
+      extracted into `jasperreports-pdf` (now backed by OpenPDF instead of
+      the legacy iText 2.x). `JasperExportManager.exportReportToPdf` will
+      throw ClassNotFoundException at runtime if the pdf module isn't on
+      the classpath.
+      Upgraded to clear:
+        - CVE-2025-10492 (Jasper Java deserialization)
+        - CVE-2025-48734 (transitive commons-beanutils 1.9.x; 7.x ships 1.11+)
+    -->
     <dependency>
       <groupId>net.sf.jasperreports</groupId>
       <artifactId>jasperreports</artifactId>
-      <version>6.21.3</version>
+      <version>7.0.4</version>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.jasperreports</groupId>
+      <artifactId>jasperreports-pdf</artifactId>
+      <version>7.0.4</version>
     </dependency>
   </dependencies>
 
