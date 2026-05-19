@@ -139,6 +139,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [build-and-push-frontend, build-and-push-backend]
     environment: dev
+    permissions:
+      contents: read
+      issues: write # ZAP action files a tracking issue when warnings are found
     env:
       # OC_TOKEN and OC_NAMESPACE are per-environment; rebind at job level so the
       # `environment: dev` scope is in effect when the secrets are resolved
