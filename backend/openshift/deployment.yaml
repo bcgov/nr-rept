@@ -25,6 +25,15 @@ spec:
         prometheus.io/port: '8080'
         prometheus.io/scrape: 'true'
     spec:
+      # Pod-level security defaults. fsGroup and seccompProfile are
+      # intentionally omitted: OpenShift's restricted-v2 SCC enforces a
+      # MustRunAs fsGroup from the namespace's allocated GID range (setting
+      # one ourselves is rejected), and Silver translates seccompProfile
+      # into a deprecated alpha annotation that the SCC forbids. The SCC
+      # still injects fsGroup and enforces runtime/default seccomp at the
+      # SCC layer — we just can't declare them in the pod spec.
+      securityContext:
+        runAsNonRoot: true
       initContainers:
         - name: rept-backend-init
           image: ghcr.io/bcgov/nr-forest-client/common:prod
@@ -46,6 +55,11 @@ spec:
             requests:
               cpu: 200m
               memory: 300Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
       containers:
         - name: rept-backend
           image: ${BACKEND_IMAGE}
@@ -136,6 +150,11 @@ spec:
               mountPath: /logs
             - name: app-storage
               mountPath: /temp
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
       volumes:
         - name: tls-certs
           secret:
