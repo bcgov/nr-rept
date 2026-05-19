@@ -41,6 +41,25 @@
   cursor: default;
 }
 
+/* When the wrapper is in the invalid state (validation failed and the
+   field is empty), swap the underline to Carbon's support-error red.
+   Carbon's TextInput suppresses its own invalid styling when readOnly,
+   so we render this ourselves — same colour token, just applied via the
+   parent wrapper class. */
+.user-lookup-field--invalid .user-lookup-field__input input[readonly] {
+  border-bottom-color: var(--cds-support-error, #da1e28);
+}
+
+/* Mirrors Carbon's `.cds--form-requirement` style so the error message
+   below a read-only user-lookup field reads visually identical to native
+   Carbon validation messages elsewhere on the form. */
+.user-lookup-field__error {
+  margin: 0;
+  color: var(--cds-text-error, #da1e28);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
 .project-meta {
   display: flex;
   align-items: center;

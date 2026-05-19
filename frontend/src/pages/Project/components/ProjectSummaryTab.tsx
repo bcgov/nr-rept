@@ -554,16 +554,31 @@ export const ProjectSummaryTab: FC<ProjectSummaryTabProps> = ({ project }) => {
                 invalidText={validationErrors.requestDate}
               />
             </DatePicker>
-            <div className="user-lookup-field">
+            {/* Carbon's TextInput suppresses `invalid`/`invalidText` when
+                readOnly (see useNormalizedInputProps), so we drive the
+                invalid styling ourselves: a wrapper modifier class for the
+                red underline + a sibling error message element. */}
+            <div
+              className={`user-lookup-field${
+                validationErrors.requestorUserId ? ' user-lookup-field--invalid' : ''
+              }`}
+            >
               <TextInput
                 id="requestorUserId"
                 labelText="Requestor IDIR *"
                 className="user-lookup-field__input"
                 value={resolvedRequestor}
-                invalid={Boolean(validationErrors.requestorUserId)}
-                invalidText={validationErrors.requestorUserId}
                 readOnly
+                aria-invalid={Boolean(validationErrors.requestorUserId) || undefined}
+                aria-describedby={
+                  validationErrors.requestorUserId ? 'requestorUserId-error' : undefined
+                }
               />
+              {validationErrors.requestorUserId && (
+                <p id="requestorUserId-error" className="user-lookup-field__error" role="alert">
+                  {validationErrors.requestorUserId}
+                </p>
+              )}
               {isRequestorLoading && <InlineLoading description="Looking up user…" />}
               <Button
                 type="button"
