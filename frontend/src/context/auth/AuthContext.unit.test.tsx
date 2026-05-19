@@ -11,7 +11,7 @@ const TestComponent = () => {
       <span data-testid="is-logged-in">{isLoggedIn ? 'yes' : 'no'}</span>
       <span data-testid="is-loading">{isLoading ? 'yes' : 'no'}</span>
       <span data-testid="user">{user ? user.displayName || user.userName : 'none'}</span>
-      <button onClick={() => login('IDIR')}>Login</button>
+      <button onClick={() => login()}>Login</button>
       <button onClick={logout}>Logout</button>
     </>
   );

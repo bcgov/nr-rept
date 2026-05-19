@@ -5,4 +5,13 @@
     { "path": "./tsconfig.node.json" },
     { "path": "./tsconfig.e2e.json" }
   ]
+  /*
+   * tsconfig.test.json is deliberately NOT referenced here. The IDE
+   * (IntelliJ/VS Code) auto-discovers it and uses it to resolve `@/*`
+   * paths and Vitest globals when editing *.test.{ts,tsx} files. Putting
+   * it in this references list would also pull tests into `tsc -b`,
+   * which would block `npm run build` on pre-existing latent type errors
+   * inside test files (e.g. role typing in ProtectedRoute.browser.test).
+   * Address those separately if/when test type-checking moves into CI.
+   */
 }

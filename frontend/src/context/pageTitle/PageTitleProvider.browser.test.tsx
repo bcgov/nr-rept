@@ -1,8 +1,15 @@
 import { act, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PageTitleProvider } from './PageTitleProvider';
 import { usePageTitle } from './usePageTitle';
+
+// The component reads env.VITE_APP_NAME and joins it with the page title.
+// vite.config's `test.env` doesn't propagate into project-scoped browser
+// tests, so we mock the env module to provide a deterministic value.
+vi.mock('@/env', () => ({
+  env: { VITE_APP_NAME: 'Real Estate Project Tracking' },
+}));
 
 describe('PageTitleProvider', () => {
   function TestComponent() {

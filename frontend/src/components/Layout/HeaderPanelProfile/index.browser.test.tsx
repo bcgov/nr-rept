@@ -39,7 +39,8 @@ describe('HeaderPanelProfile', () => {
   it('renders user info and avatar', async () => {
     await renderWithProviders();
     expect(screen.getByText('Jane Doe')).toBeInTheDocument();
-    expect(screen.getByText('IDIR\\jdoe')).toBeInTheDocument();
+    // Component renders `IDIR: <userName>` (see HeaderPanelProfile/index.tsx).
+    expect(screen.getByText('IDIR: jdoe')).toBeInTheDocument();
     expect(screen.getByText('Email: jane@example.com')).toBeInTheDocument();
     expect(screen.getByTestId('avatar-image')).toHaveTextContent('Jane Doe-large');
   });
