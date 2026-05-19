@@ -32,6 +32,8 @@ jobs:
   deploy-test:
     name: TEST Deploys (${{ needs.init.outputs.pr }})
     needs: [init]
+    permissions:
+      contents: read
     uses: ./.github/workflows/reusable-deploy.yml
     secrets:
       oc_namespace: ${{ secrets.oc_namespace }}
@@ -49,6 +51,8 @@ jobs:
   tests:
     name: Tests
     needs: [deploy-test]
+    permissions:
+      contents: read
     uses: ./.github/workflows/reusable-tests.yml
     secrets:
       e2e_idir_user: ${{ secrets.E2E_IDIR_USER }}
@@ -59,6 +63,8 @@ jobs:
   deploy-prod:
     name: PROD Deploys (${{ needs.init.outputs.pr }})
     needs: [tests, init]
+    permissions:
+      contents: read
     uses: ./.github/workflows/reusable-deploy.yml
     secrets:
       oc_namespace: ${{ secrets.oc_namespace }}
