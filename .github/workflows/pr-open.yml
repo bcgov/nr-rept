@@ -10,7 +10,9 @@ concurrency:
 permissions: {}
 
 jobs:
-  # https://github.com/bcgov/action-builder-ghcr
+  # Build per-PR images tagged with the PR number. `tag_fallback: latest`
+  # means a frontend-only PR doesn't trigger a backend rebuild — the action
+  # aliases the existing :latest digest forward as :<PR#> instantly.
   builds:
     name: Builds
     permissions:
@@ -20,7 +22,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        package: [backend, frontend, migrations]
+        package: [backend, frontend]
     timeout-minutes: 10
     steps:
       - uses: bcgov/action-builder-ghcr@de3d575cf158e16f5dc2789630f6d587483b911c # v4.4.0
@@ -30,23 +32,35 @@ jobs:
           tag_fallback: latest
           triggers: ('${{ matrix.package }}/', '.github/workflows/')
 
+  # Deploy the PR's images to a preview environment in the dev namespace.
+  # `environment: dev` resolves secrets/vars from the dev GitHub Environment.
   deploys:
     name: Deploys (${{ github.event.number }})
     needs: [builds]
     uses: ./.github/workflows/reusable-deploy.yml
     secrets:
-      db_password: ${{ secrets.db_password }}
       oc_namespace: ${{ secrets.oc_namespace }}
       oc_token: ${{ secrets.oc_token }}
+      database_user: ${{ secrets.database_user }}
+      database_password: ${{ secrets.database_password }}
+      database_host: ${{ secrets.database_host }}
+      database_service_name: ${{ secrets.database_service_name }}
+      keystore_secret: ${{ secrets.keystore_secret }}
     with:
+      environment: dev
       target: ${{ github.event.number }}
-      triggers: ('backend/', 'frontend/', 'migrations/', 'common/', '.github/workflows/')
+      triggers: ('backend/', 'frontend/', '.github/workflows/')
 
   tests:
     name: Tests
     if: needs.deploys.outputs.triggered == 'true'
     needs: [deploys]
     uses: ./.github/workflows/reusable-tests.yml
+    secrets:
+      e2e_idir_user: ${{ secrets.E2E_IDIR_USER }}
+      e2e_idir_password: ${{ secrets.E2E_IDIR_PASSWORD }}
+    with:
+      target: ${{ github.event.number }}
 
   results:
     name: PR Results
