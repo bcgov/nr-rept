@@ -16,6 +16,44 @@ spec:
       labels:
         app: rept-frontend
     spec:
+      # Pod-level security defaults. fsGroup=0 makes the kubelet apply group-0
+      # ownership + group-write to the emptyDir mounts below, which is what
+      # lets a random OpenShift UID (always in group 0) write into them.
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      # Seed the writable /srv emptyDir from the image's static SPA bundle —
+      # we need /srv writable because docker-entrypoint.sh generates
+      # /srv/config.js at container start from VITE_* env vars (runtime
+      # config injection), but the rest of the root filesystem stays
+      # read-only (KSV-0014).
+      initContainers:
+        - name: seed-srv
+          image: ${FRONTEND_IMAGE}
+          command:
+            - sh
+            - -c
+            - 'cp -r /srv/. /srv-rw/'
+          volumeMounts:
+            - name: srv
+              mountPath: /srv-rw
+          resources:
+            requests:
+              cpu: "20m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
       containers:
         - name: rept-frontend
           # Updated by the CI pipeline via envsubst
@@ -30,6 +68,12 @@ spec:
               value: ${FRONTEND_LOG_LEVEL}
             - name: BACKEND_URL
               value: ${BACKEND_URL}
+            # Redirect Caddy state dirs onto the writable /tmp emptyDir so
+            # readOnlyRootFilesystem doesn't break Caddy startup.
+            - name: XDG_DATA_HOME
+              value: /tmp
+            - name: XDG_CONFIG_HOME
+              value: /tmp
             # VITE_* values are injected into /srv/config.js by docker-entrypoint.sh
             # at container start, so a single image works for DEV/TEST/PROD.
             - name: VITE_USER_POOLS_ID
@@ -44,6 +88,11 @@ spec:
               value: ${VITE_APP_NAME}
             - name: VITE_ZONE
               value: ${VITE_ZONE}
+          volumeMounts:
+            - name: srv
+              mountPath: /srv
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "50m"
@@ -66,10 +115,16 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
             seccompProfile:
               type: RuntimeDefault
+      volumes:
+        - name: srv
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
 ---
 # Service
 apiVersion: v1

@@ -6,6 +6,11 @@
 # OpenShift Deployment.
 set -eu
 
+# /tmp/coraza is created in the Dockerfile, but in Kubernetes it gets shadowed
+# by the emptyDir mount on /tmp (needed for readOnlyRootFilesystem=true).
+# Recreate it here so Coraza WAF has its scratch dir.
+mkdir -p /tmp/coraza
+
 CONFIG_FILE=/srv/config.js
 
 # JSON-escape for embedding in a double-quoted JS string. Values we inject are
