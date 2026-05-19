@@ -16,14 +16,20 @@ spec:
       labels:
         app: rept-frontend
     spec:
-      # Pod-level security defaults. fsGroup=0 makes the kubelet apply group-0
-      # ownership + group-write to the emptyDir mounts below, which is what
-      # lets a random OpenShift UID (always in group 0) write into them.
+      # Pod-level security defaults. OpenShift's restricted-v2 SCC injects an
+      # fsGroup from the namespace's pre-allocated GID range when one isn't
+      # specified here; the kubelet then chowns the emptyDir mounts below to
+      # that GID with setgid + group-write, so the random UID (which is in
+      # that group) can write into them. Setting fsGroup explicitly is
+      # rejected because the SCC's MustRunAs strategy limits it to the
+      # namespace range.
+      #
+      # seccompProfile is also intentionally omitted: BC Gov Silver
+      # translates the field into a deprecated alpha annotation that
+      # restricted-v2 forbids. The SCC enforces runtime/default at the SCC
+      # level regardless, so we don't lose protection by leaving it out.
       securityContext:
         runAsNonRoot: true
-        fsGroup: 0
-        seccompProfile:
-          type: RuntimeDefault
       # Seed the writable /srv emptyDir from the image's static SPA bundle —
       # we need /srv writable because docker-entrypoint.sh generates
       # /srv/config.js at container start from VITE_* env vars (runtime
@@ -52,8 +58,6 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-            seccompProfile:
-              type: RuntimeDefault
       containers:
         - name: rept-frontend
           # Updated by the CI pipeline via envsubst
@@ -118,8 +122,6 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-            seccompProfile:
-              type: RuntimeDefault
       volumes:
         - name: srv
           emptyDir: {}
