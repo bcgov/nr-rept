@@ -4,6 +4,14 @@ on:
   push:
     branches: [main]
 
+# Default scope for every job: just enough to `actions/checkout`. Jobs that
+# need more (e.g., GHCR push) re-declare their own permissions block below.
+# Without this, the workflow falls back to whatever the repo/org default is,
+# which on older orgs is read-write — flagged by Trivy as a least-privilege
+# violation.
+permissions:
+  contents: read
+
 env:
   # ── OpenShift / GHCR ──
   OPENSHIFT_URL:           ${{ vars.OC_SERVER }}       # https://api.<cluster>:6443
@@ -35,6 +43,9 @@ jobs:
   build-and-push-backend:
     name: Build Backend Image & Push
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write # push image to GHCR via ${{ github.token }}
     outputs:
       registry-path: ${{ steps.push-image-backend.outputs.registry-path }}
     steps:
@@ -88,6 +99,9 @@ jobs:
     needs: test-frontend
     # Only push on merges to main (not PRs)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write # push image to GHCR via ${{ github.token }}
 
     outputs:
       registry-path: ${{ steps.push-image-frontend.outputs.registry-path }}
