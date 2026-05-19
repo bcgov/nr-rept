@@ -32,6 +32,9 @@ jobs:
   deploy-test:
     name: TEST Deploys (${{ needs.init.outputs.pr }})
     needs: [init]
+    # contents:read here so the nested reusable-deploy jobs can checkout.
+    # Workflow-level `permissions: {}` above sets all scopes to none; the
+    # called workflow can't grant itself more than the caller has.
     permissions:
       contents: read
     uses: ./.github/workflows/reusable-deploy.yml

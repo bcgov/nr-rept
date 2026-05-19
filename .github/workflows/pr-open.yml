@@ -35,9 +35,11 @@ jobs:
   # Deploy the PR's images to a preview environment in the dev namespace.
   # `environment: dev` resolves secrets/vars from the dev GitHub Environment.
   #
-  # `permissions:` must be declared here even though the called workflow has
-  # its own — GitHub bounds the called workflow's permissions by the caller,
-  # so without `contents: read` here, the nested jobs can't even checkout.
+  # `permissions: contents: read` is required HERE on the calling job — GitHub
+  # bounds a called workflow's permissions by the caller. Without this, the
+  # workflow-level `permissions: {}` above propagates as contents=none and
+  # the nested deploy jobs error: "is requesting 'contents: read', but is
+  # only allowed 'contents: none'".
   deploys:
     name: Deploys (${{ github.event.number }})
     needs: [builds]
