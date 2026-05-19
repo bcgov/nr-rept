@@ -150,9 +150,15 @@ spec:
               mountPath: /logs
             - name: app-storage
               mountPath: /temp
+            # JVM scratch space — Tomcat work dir, JasperReports compile
+            # cache, JDBC driver temps. Required once the container's root
+            # filesystem goes read-only.
+            - name: tmp-storage
+              mountPath: /tmp
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
       volumes:
@@ -162,6 +168,8 @@ spec:
         - name: log-storage
           emptyDir: {}
         - name: app-storage
+          emptyDir: {}
+        - name: tmp-storage
           emptyDir: {}
         - name: rept-backend-api-cert
           persistentVolumeClaim:
