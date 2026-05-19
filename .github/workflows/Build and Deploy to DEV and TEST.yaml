@@ -1,8 +1,17 @@
-name: Build & Deploy to OpenShift DEV & TEST
+name: Build & Deploy to OpenShift DEV & TEST (legacy, manual)
 
+# Reference / manual fallback only. The active deployment flow is:
+#   - pr-open.yml         (per-PR preview environment, image tagged with PR#)
+#   - merge.yml           (TEST + PROD deploys on merge to main; image-promote)
+#   - pr-close.yml        (cleanup PR resources on close/merge)
+#   - reusable-deploy.yml / reusable-tests.yml  (shared building blocks)
+#
+# This workflow is kept intact in the repo for two reasons:
+#   1. Useful reference for how the envsubst-based deploy used to work.
+#   2. Manually triggerable as an emergency fallback if the new flow breaks.
+# It no longer auto-runs on push.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 # Default scope for every job: just enough to `actions/checkout`. Jobs that
 # need more (e.g., GHCR push) re-declare their own permissions block below.

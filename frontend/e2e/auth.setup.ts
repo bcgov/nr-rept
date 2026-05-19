@@ -5,32 +5,48 @@ import { test as setup, expect } from '@playwright/test';
 import { STORAGE_STATE } from './utils';
 
 /**
- * Auth setup — runs once per `playwright test` invocation, as a dependency
- * of every browser project. Behaviour:
+ * Auth setup. Runs once per `playwright test` invocation, as a dependency of
+ * every browser project. Three behaviours, in priority order:
  *
- *   • If e2e/.auth/user.json already exists, do nothing and let the browser
- *     projects load it via `storageState`. Cheap no-op on every CI/local run
- *     after the initial login.
- *   • Otherwise, drive the IDIR sign-in interactively and save the result.
- *     This branch only works when invoked headed (`npm run e2e:login`,
- *     which also wipes any stale state first via its `pree2e:login` hook).
+ *   1. e2e/.auth/user.json already exists → do nothing (cached state).
+ *   2. E2E_IDIR_USER + E2E_IDIR_PASSWORD env vars are set → drive IDIR
+ *      login programmatically. Used in CI (reusable-tests.yml passes these
+ *      from GitHub Actions secrets).
+ *   3. Neither of the above → fall back to the interactive flow: open the
+ *      headed browser and wait up to 5 minutes for a human to complete the
+ *      IDIR sign-in. Used locally via `npm run e2e:login`.
  *
- * Re-run `npm run e2e:login` whenever the Cognito tokens expire (symptom:
- * tests start bouncing to the IDIR domain or hit 401s).
+ * Re-run `npm run e2e:login` whenever the saved Cognito tokens expire
+ * (symptom: tests bouncing to the IDIR domain or hitting 401s).
  */
 setup('authenticate via IDIR', async ({ page }) => {
   if (existsSync(STORAGE_STATE)) {
     return;
   }
 
-  await page.goto('/');
+  const idirUser = process.env.E2E_IDIR_USER;
+  const idirPassword = process.env.E2E_IDIR_PASSWORD;
+  const programmatic = Boolean(idirUser && idirPassword);
 
+  await page.goto('/');
   await page.getByTestId('landing-button__idir').click();
 
-  // Hand control to the human — finish IDIR + MFA, app redirects to /dashboard.
-  // We wait up to 5 minutes for that to happen.
+  if (programmatic) {
+    // The BC Gov SSO login page is on a different origin than the SPA.
+    // Selectors below match the Logon7 / IDIR login form fields. If the
+    // upstream form ever changes its `name` attributes, this is the place
+    // to update them.
+    await page.waitForURL(/logon|loginproxy|amazoncognito/i, { timeout: 60_000 });
+
+    await page.locator('input[name="user"]').fill(idirUser!);
+    await page.locator('input[name="password"]').fill(idirPassword!);
+    await page.locator('input[type="submit"], button[type="submit"]').first().click();
+  }
+
+  // Whether interactive or programmatic, we wait for the redirect back to
+  // /dashboard. Interactive flow gets 5 min for human; programmatic gets 2.
   await page.waitForURL((url) => url.pathname.startsWith('/dashboard'), {
-    timeout: 5 * 60_000,
+    timeout: programmatic ? 2 * 60_000 : 5 * 60_000,
   });
 
   // Sanity check: the side menu should render once auth + roles resolve.
