@@ -106,10 +106,6 @@ docker run -p 8080:8080 \
 | `SERVICE_NAME` | Oracle service name     | - |
 | `DATABASE_USER` | DB username             | - |
 | `DATABASE_PASSWORD` | DB password             | - |
-| `J_URL_FETCH` | Jasper Reports URL      | - |
-| `J_USERNAME` | Jasper username         | - |
-| `J_PASSWORD` | Jasper password         | - |
-| `APP_SECURITY_DISABLED` | Disable auth (dev only) | false |
 | `ALLOWED_ORIGINS` | CORS origins            | http://localhost:3000 |
 
 ### Spring Profiles

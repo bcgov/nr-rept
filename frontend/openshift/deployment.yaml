@@ -16,6 +16,11 @@ spec:
       labels:
         app: rept-frontend
     spec:
+      # Neither Caddy nor the SPA shell needs to reach the Kubernetes API,
+      # so suppress the auto-mounted default service-account token. Closes
+      # the SonarCloud "Service account permissions should be restricted"
+      # finding without having to introduce a custom ServiceAccount + RBAC.
+      automountServiceAccountToken: false
       # Pod-level security defaults. OpenShift's restricted-v2 SCC injects an
       # fsGroup from the namespace's pre-allocated GID range when one isn't
       # specified here; the kubelet then chowns the emptyDir mounts below to
@@ -49,9 +54,11 @@ spec:
             requests:
               cpu: "20m"
               memory: "32Mi"
+              ephemeral-storage: "50Mi"
             limits:
               cpu: "100m"
               memory: "64Mi"
+              ephemeral-storage: "100Mi"
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
@@ -101,9 +108,13 @@ spec:
             requests:
               cpu: "50m"
               memory: "64Mi"
+              # Covers /srv (~5-20 MiB SPA bundle, copied in by initContainer)
+              # and /tmp (Caddy state + Coraza scratch).
+              ephemeral-storage: "100Mi"
             limits:
               cpu: "200m"
               memory: "128Mi"
+              ephemeral-storage: "200Mi"
           livenessProbe:
             httpGet:
               path: /health

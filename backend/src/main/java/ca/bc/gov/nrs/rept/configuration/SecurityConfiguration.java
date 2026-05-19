@@ -23,16 +23,13 @@ import ca.bc.gov.nrs.rept.security.HeadersSecurityCustomizer;
 import ca.bc.gov.nrs.rept.security.Oauth2SecurityCustomizer;
 
 /**
- * Main security configuration. Integrates existing customizers, but allows disabling security
- * for local development via the APP_SECURITY_DISABLED flag. Also provides a CORS configuration
- * that permits the frontend origin.
+ * Main security configuration. Wires the project's CSRF, CORS, header,
+ * authorization, and OAuth2 customizers into the Spring Security filter
+ * chain.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
-
-  @Value("${APP_SECURITY_DISABLED:false}")
-  private boolean securityDisabled;
 
   @Value("${ca.bc.gov.nrs.frontend.url:http://localhost:3000}")
   private String allowedOrigins;
@@ -47,16 +44,6 @@ public class SecurityConfiguration {
       Oauth2SecurityCustomizer oauth2Customizer
   ) throws Exception {
 
-    // If security is disabled (for POC/dev), permit all and skip the customizers.
-    if (securityDisabled) {
-      http
-          .cors(Customizer.withDefaults())
-          .csrf(AbstractHttpConfigurer::disable)
-          .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-      return http.build();
-    }
-
-    // Normal behavior: apply custom security wiring and CORS.
     // CsrfCookieFilter forces Spring 6's lazy CsrfToken to materialise on every request,
     // so the XSRF-TOKEN cookie is set on GET responses and the SPA can read it for
     // subsequent POST/PUT/DELETE calls.

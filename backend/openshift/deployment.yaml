@@ -25,6 +25,11 @@ spec:
         prometheus.io/port: '8080'
         prometheus.io/scrape: 'true'
     spec:
+      # The Spring Boot app talks to Oracle, Cognito, and the IDIR lookup
+      # service — never the Kubernetes API. Suppress the auto-mounted
+      # default service-account token to close the SonarCloud "Service
+      # account permissions should be restricted" finding.
+      automountServiceAccountToken: false
       # Pod-level security defaults. fsGroup and seccompProfile are
       # intentionally omitted: OpenShift's restricted-v2 SCC enforces a
       # MustRunAs fsGroup from the namespace's allocated GID range (setting
@@ -51,13 +56,25 @@ spec:
           volumeMounts:
             - name: rept-backend-api-cert
               mountPath: /cert
+            # keytool/openssl write intermediate files when assembling the
+            # Oracle TLS keystore; needed once readOnlyRootFilesystem=true.
+            # Distinct from the main container's tmp-storage so init's
+            # scratch material doesn't leak across.
+            - name: init-tmp-storage
+              mountPath: /tmp
           resources:
             requests:
               cpu: 200m
               memory: 300Mi
+              ephemeral-storage: "50Mi"
+            limits:
+              cpu: 500m
+              memory: 500Mi
+              ephemeral-storage: "100Mi"
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
       containers:
@@ -123,6 +140,15 @@ spec:
             requests:
               cpu: ${MIN_CPU}
               memory: ${MIN_MEM}
+              # /tmp scratch (JVM, Tomcat work dir, JasperReports compile
+              # cache, JDBC driver temps) + /logs + /temp emptyDir mounts.
+              ephemeral-storage: "200Mi"
+            limits:
+              # JVM args set -Xmx200m -XX:MaxMetaspaceSize=200m; 800Mi leaves
+              # generous headroom for native + Direct + Netty buffers.
+              cpu: "1000m"
+              memory: "800Mi"
+              ephemeral-storage: "500Mi"
           livenessProbe:
             httpGet:
               path: /actuator/health
@@ -170,6 +196,8 @@ spec:
         - name: app-storage
           emptyDir: {}
         - name: tmp-storage
+          emptyDir: {}
+        - name: init-tmp-storage
           emptyDir: {}
         - name: rept-backend-api-cert
           persistentVolumeClaim:
