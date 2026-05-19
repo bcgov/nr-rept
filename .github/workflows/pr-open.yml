@@ -34,9 +34,17 @@ jobs:
 
   # Deploy the PR's images to a preview environment in the dev namespace.
   # `environment: dev` resolves secrets/vars from the dev GitHub Environment.
+  #
+  # `permissions: contents: read` is required HERE on the calling job — GitHub
+  # bounds a called workflow's permissions by the caller. Without this, the
+  # workflow-level `permissions: {}` above propagates as contents=none and
+  # the nested deploy jobs error: "is requesting 'contents: read', but is
+  # only allowed 'contents: none'".
   deploys:
     name: Deploys (${{ github.event.number }})
     needs: [builds]
+    permissions:
+      contents: read
     uses: ./.github/workflows/reusable-deploy.yml
     secrets:
       oc_namespace: ${{ secrets.oc_namespace }}
@@ -55,6 +63,8 @@ jobs:
     name: Tests
     if: needs.deploys.outputs.triggered == 'true'
     needs: [deploys]
+    permissions:
+      contents: read
     uses: ./.github/workflows/reusable-tests.yml
     secrets:
       e2e_idir_user: ${{ secrets.E2E_IDIR_USER }}
