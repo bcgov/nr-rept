@@ -31,4 +31,13 @@ describe('routePaths', () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.some((r) => r.id === 'Dashboard')).toBe(true);
   });
+
+  it('getNoRoleRoutes returns the unauthorized route plus a catch-all redirect', () => {
+    const result = routePaths.getNoRoleRoutes();
+    expect(result.some((r) => r.id === 'Unauthorized')).toBe(true);
+    // Catch-all redirect ensures a no-role user never lands on a stale URL.
+    expect(result.some((r) => r.path === '*')).toBe(true);
+    // No-role users should not see protected pages like Dashboard.
+    expect(result.some((r) => r.id === 'Dashboard')).toBe(false);
+  });
 });
