@@ -572,6 +572,18 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+
+  // Carbon's DatePicker renders a flatpickr-wrapped input whose intrinsic
+  // width (~16rem) exceeds the grid track on smaller containers, causing
+  // the Expiry Date / Bring-forward / Anniversary / Negotiation fields to
+  // overflow the white tile to the right. Constrain the date picker chain
+  // (outer, container, input wrapper) to the cell width.
+  .cds--date-picker,
+  .cds--date-picker--single,
+  .cds--date-picker-container,
+  .cds--date-picker-input__wrapper {
+    width: 100%;
+  }
 }
 
 .agreement-details-form__checkbox {

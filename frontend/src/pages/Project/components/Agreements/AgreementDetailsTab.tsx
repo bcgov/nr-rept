@@ -59,7 +59,16 @@ const buildAgreementDetails = (agreement?: ReptAgreement | null): DetailField[] 
 
   return [
     {
-      label: 'Agreement Type',
+      label: 'Type',
+      value:
+        agreement.agreementType === 'ACQUISITION'
+          ? 'Acquisition'
+          : agreement.agreementType === 'DISPOSITION'
+            ? 'Disposition'
+            : displayValue(agreement.agreementType),
+    },
+    {
+      label: 'Acquisition / Disposition Method',
       value:
         agreement.agreementType === 'ACQUISITION'
           ? formatWithCode(agreement.acquisitionAgreementLabel, agreement.acquisitionAgreementCode)
@@ -75,7 +84,7 @@ const buildAgreementDetails = (agreement?: ReptAgreement | null): DetailField[] 
       value: formatBoolean(agreement.active),
     },
     {
-      label: 'Agreement Term (years)',
+      label: 'Agreement Term (months)',
       value: displayValue(agreement.agreementTerm ?? null),
     },
     {
@@ -105,10 +114,6 @@ const buildAgreementDetails = (agreement?: ReptAgreement | null): DetailField[] 
     {
       label: 'Co-use Partner',
       value: formatWithCode(agreement.coUserLabel, coUserCode),
-    },
-    {
-      label: 'Revision Count',
-      value: displayValue(agreement.revisionCount ?? null),
     },
     {
       label: 'Payment Terms',
@@ -397,33 +402,15 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
           <div className="agreement-details-form__grid">
             <TextInput
               id="agreement-type"
-              labelText="Agreement type"
+              labelText="Type"
               value={agreementTypeLabel}
               readOnly
               disabled
             />
             <TextInput
-              id="agreement-label"
-              labelText="Agreement label"
-              value={agreement.agreementLabel ?? ''}
-              readOnly
-              disabled
-            />
-            <TextInput
               id="agreement-method"
-              labelText="Acquisition/Disposition method"
+              labelText="Acquisition / Disposition Method"
               value={resolvedMethodLabel}
-              readOnly
-              disabled
-            />
-            <TextInput
-              id="agreement-revision"
-              labelText="Revision count"
-              value={
-                agreement.revisionCount !== null && agreement.revisionCount !== undefined
-                  ? String(agreement.revisionCount)
-                  : ''
-              }
               readOnly
               disabled
             />
@@ -455,7 +442,7 @@ export const AgreementDetailsTab: FC<AgreementDetailsTabProps> = ({
             {rules.showTerm && (
               <NumberInput
                 id="agreement-term"
-                label="Agreement term (years) *"
+                label="Agreement term (months) *"
                 value={formState.agreementTerm}
                 onChange={(_, { value }) =>
                   handleFieldChange('agreementTerm', value?.toString() ?? '')

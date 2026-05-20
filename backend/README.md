@@ -8,134 +8,73 @@ Spring Boot backend service for the Real Estate Project Tracking application.
 |------------|---------|---------|
 | Java | 21 | Runtime |
 | Spring Boot | 3.5.x | Framework |
-| Spring Security | 6.x | Authentication/Authorization |
-| Oracle JDBC | 21.x | Database connectivity |
-| Lombok | - | Boilerplate reduction |
-| Resilience4j | 2.3.x | Circuit breaker/retry |
+| Spring Security | 6.5.x | OAuth2 Resource Server + JWT |
+| Oracle JDBC | 21.3.x (ojdbc11) | Database connectivity (TCPS to BC Gov shared Oracle) |
+| Undertow | 2.3.x | Embedded HTTP server (Tomcat excluded) |
+| JasperReports | 6.21.5 | PDF report generation (embedded library) |
+| Lombok | 1.18.x | Boilerplate reduction |
+| Resilience4j | 2.3.x | Circuit breaker / retry |
 
-## 🚀 Quick Start
+## 🚀 Running Locally
 
-### Prerequisites
-
-- Java 21+
-- Maven 3.9+
-- Oracle Database access
-
-### Environment Setup
-
-1. **Copy environment file:**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Edit `.env` with your values:**
-   ```bash
-   # Required variables
-   DATABASE_HOST=your-oracle-host
-   DATABASE_PORT=1521
-   SERVICE_NAME=your-service
-   DATABASE_USER=your-user
-   DATABASE_PASSWORD=your-password
-   AWS_COGNITO_ISSUER_URI=https://cognito-idp.ca-central-1.amazonaws.com/YOUR_POOL_ID
-   IDENTITY_LOOKUP_BASE_URL=<FAM API URL>
-   J_URL_FETCH=https://testapps.nrs.bcgov/ext/jcrs/rest_v2/reports/JCRS/REPT/
-   J_USERNAME=your-jasper-user
-   J_PASSWORD=your-jasper-password
-   ```
-
-### Running Locally
-
-**Option 1: Using environment variables**
-```bash
-# Export all variables from .env
-export $(grep -v '^#' .env | xargs)
-
-# Run the application
-./mvnw spring-boot:run
-```
-
-**Option 2: Using shell script**
-```bash
-# Set environment variables
-export DATABASE_HOST='your-host'
-export SERVICE_NAME='your-service'
-export DATABASE_USER='your-user'
-export DATABASE_PASSWORD='your-password'
-export AWS_COGNITO_ISSUER_URI='https://cognito-idp.ca-central-1.amazonaws.com/YOUR_POOL_ID'
-export IDENTITY_LOOKUP_BASE_URL='FAM-API-URL'
-export SPRING_PROFILES_ACTIVE=oracle
-export J_URL_FETCH='https://testapps.nrs.bcgov/ext/jcrs/rest_v2/reports/JCRS/REPT/'
-export J_USERNAME='your-jasper-user'
-export J_PASSWORD='your-jasper-password'
-
-# Run
-./mvnw spring-boot:run
-```
-
-### Running with Docker
-
-```bash
-# Build the image
-docker build -t rept-backend .
-
-# Run with environment variables
-docker run -p 8080:8080 \
-  -e DATABASE_HOST=your-host \
-  -e SERVICE_NAME=your-service \
-  -e DATABASE_USER=your-user \
-  -e DATABASE_PASSWORD=your-password \
-  -e AWS_COGNITO_ISSUER_URI=https://cognito-idp.ca-central-1.amazonaws.com/YOUR_POOL_ID \
-  -e IDENTITY_LOOKUP_BASE_URL=fam-api-url \
-  -e J_URL_FETCH=https://testapps.nrs.bcgov/ext/jcrs/rest_v2/reports/JCRS/REPT/ \
-  -e J_USERNAME=your-jasper-user \
-  -e J_PASSWORD=your-jasper-password \
-  rept-backend
-```
+See the [root README's Local Development section](../README.md#local-development) — both the direct (`mvn spring-boot:run`) and Docker Compose workflows are documented there in one place, alongside the property-file setup (`application-local.yml`, `jssecacerts` truststore).
 
 ## 🔧 Configuration
 
 ### Environment Variables
+
+In OpenShift deployments these come from the K8s Secret built by `openshift.deploy.yml`. For local dev they live in `application-local.yml` (see root README for setup).
 
 | Variable | Description             | Default |
 |----------|-------------------------|---------|
 | `SERVER_PORT` | Server port             | 8080 |
 | `SPRING_PROFILES_ACTIVE` | Active profiles         | oracle |
 | `AWS_COGNITO_ISSUER_URI` | Cognito issuer URI      | - |
-| `IDENTITY_LOOKUP_BASE_URL` | FAM API URI             | - |
+| `COGNITO_USERINFO_URI` | Cognito /oauth2/userInfo endpoint | - |
+| `IDENTITY_LOOKUP_BASE_URL` | FAM IDIR lookup API     | - |
 | `DATABASE_HOST` | Oracle DB host          | - |
-| `SERVICE_NAME` | Oracle service name     | - |
+| `DATABASE_SERVICE_NAME` | Oracle service name     | - |
 | `DATABASE_USER` | DB username             | - |
 | `DATABASE_PASSWORD` | DB password             | - |
+| `TRUSTSTORE_PATH` | Path to `jssecacerts` JKS | - |
+| `KEYSTORE_SECRET` | Truststore passphrase   | - |
 | `ALLOWED_ORIGINS` | CORS origins            | http://localhost:3000 |
 
 ### Spring Profiles
 
 | Profile | Description |
 |---------|-------------|
-| `oracle` | Oracle database connection |
-| `container` | Container-optimized settings |
+| `oracle` | Oracle datasource + JPA dialect; required in all environments. |
+| `local`  | Local-dev only. Loads `application-local.yml` so credentials don't need to be exported as env vars. Activate alongside `oracle` (`SPRING_PROFILES_ACTIVE=local,oracle`). |
 
-##  API Endpoints
+## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/actuator/health` | GET | Health check |
-| `/api/rept/welcome/recent` | GET | Recent projects |
-| `/api/rept/projects` | GET | Project search |
-| `/api/rept/projects/{id}` | GET | Project details |
-| `/api/rept/reports/**` | GET | Report endpoints |
+Grouped by area; see the `controller/` package for full request/response shapes. All `/api/rept/*` routes are bearer-token-protected and require either `REPT_ADMIN` or `REPT_VIEWER` (writes are admin-only).
+
+| Area | Base path | Notes |
+|---|---|---|
+| Actuator | `/actuator/health`, `/actuator/prometheus` | Public; used by OpenShift probes + Prometheus scrape. |
+| Reports | `POST /api/reports/{reportId}` | Generates a PDF via the embedded JasperReports engine. |
+| Project search | `/api/rept/projects/search`, `.../options`, `.../file-suffixes` | List + filter-option lookups. |
+| Project properties | `/api/rept/projects/{projectId}/properties` and `.../{propertyId}/contacts` | Property list + per-property contact CRUD. |
+| Project contacts | `/api/rept/projects/{projectId}/contacts` (+`/options`, `/search`) | Per-project contact association CRUD. |
+| Acquisition requests | `/api/rept/projects/{projectId}/acquisition-request` (+`/options`) | GET/POST/PUT — per-project AR record. |
+| Admin: contacts | `/api/rept/admin/contacts` | CRUD; `REPT_ADMIN` only. |
+| Admin: co-users | `/api/rept/admin/co-users` | CRUD; `REPT_ADMIN` only. |
+| Admin: org units | `/api/rept/admin/org-units`, `.../{number}` | Read-only reference data. |
+| Users | `/api/rept/users/search` | IDIR user search via FAM API. |
 
 ## 🧪 Testing
 
 ```bash
 # Run all tests
-./mvnw test
+mvn test
 
 # Run with coverage
-./mvnw test -Pall-tests
+mvn test -Pcoverage
 
 # Skip tests during build
-./mvnw package -DskipTests
+mvn package -DskipTests
 ```
 
 ## 📁 Project Structure
@@ -143,31 +82,35 @@ docker run -p 8080:8080 \
 ```
 backend/
 ├── src/main/java/ca/bc/gov/nrs/rept/
-│   ├── configuration/    # Spring configuration
-│   ├── controller/       # REST controllers
-│   ├── dto/              # Data transfer objects
-│   ├── entity/           # JPA entities
-│   ├── exception/        # Custom exceptions
-│   ├── provider/         # External service providers
-│   ├── repository/       # Data repositories
-│   ├── security/         # Security customizers
-│   ├── service/          # Business logic
-│   └── util/             # Utilities
+│   ├── ReptApiApplication.java # Spring Boot entry point
+│   ├── ReptApiConstants.java   # Shared constants (role names, etc.)
+│   ├── configuration/          # Spring + Web + Security config beans
+│   ├── controller/             # REST controllers (see API Endpoints above)
+│   ├── dto/                    # Request / response records
+│   ├── entity/                 # JPA entities (Oracle-mapped)
+│   ├── exception/              # @ControllerAdvice + custom exceptions
+│   ├── repository/             # Spring Data repositories
+│   ├── security/               # CSRF cookie filter, role mapper
+│   ├── service/                # Business logic (incl. report.*)
+│   └── util/                   # Utilities
 └── src/main/resources/
-    ├── application.yml         # Main config
-    └── application-oracle.yml  # Oracle profile
+    ├── application.yml         # Main config (always loaded)
+    ├── application-oracle.yml  # `oracle` profile — datasource + JPA + TCPS
+    ├── application-local.yml   # `local` profile — credentials (gitignored)
+    ├── cert/jssecacerts        # Oracle TLS truststore (gitignored)
+    └── reports/                # JRXML report templates compiled at runtime
 ```
 
-<!-- README.md.tpl:START -->
+## Origins
 
-## Working With the Polaris Pipeline
+This repo was scaffolded from [bcgov/quickstart-openshift](https://github.com/bcgov/quickstart-openshift), then specialised for REPT's needs:
 
-This repository uses the Polaris Pipeline to build and deploy.
+- Database swapped from Postgres to BC Gov shared Oracle (TCPS connection, JKS truststore).
+- Reports run via the embedded JasperReports library — no remote Jasper server.
+- Per-PR Cognito callback URIs handled via slot bucketing (see root README).
 
-Refer to [nr-polaris-docs](https://github.com/bcgov/nr-polaris-docs) for more information about how to use the Polaris Pipeline.
+Upstream conventions for build/deploy actions, OpenShift templates, and PR preview environments still apply where unmodified; check the quickstart for context if something looks unfamiliar.
 
 ## Resources
 
 [NRM Architecture Confluence: GitHub Repository Best Practices](https://apps.nrs.gov.bc.ca/int/confluence/x/TZ_9CQ)
-
-<!-- README.md.tpl:END -->

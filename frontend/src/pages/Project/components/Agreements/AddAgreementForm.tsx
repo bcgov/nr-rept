@@ -181,7 +181,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
     if (rules.requireTerm) {
       const term = parseNumberOrNull(formState.agreementTerm);
       if (term === null || term <= 0) {
-        errors.agreementTerm = 'Enter a valid agreement term (whole years).';
+        errors.agreementTerm = 'Enter a valid agreement term (months).';
       }
     }
     if (rules.requireBringForward && !formState.bringForwardDate) {
@@ -255,7 +255,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
           {/* Type selector */}
           <Select
             id="new-agreement-type"
-            labelText="Agreement type *"
+            labelText="Type *"
             value={formState.agreementType}
             onChange={(e) => handleTypeChange(e.target.value as 'ACQUISITION' | 'DISPOSITION' | '')}
             disabled={isPending}
@@ -270,7 +270,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
           {/* Agreement method / code */}
           <Select
             id="new-agreement-code"
-            labelText="Acquisition / Disposition method *"
+            labelText="Acquisition / Disposition Method *"
             value={formState.agreementCode}
             onChange={(e) => handleFieldChange('agreementCode', e.target.value)}
             disabled={isPending || !formState.agreementType}
@@ -279,7 +279,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
           >
             <SelectItem value="" text={formState.agreementType ? 'Select method…' : '—'} />
             {codeOptions.map((opt) => (
-              <SelectItem key={opt.code} value={opt.code} text={`${opt.label} (${opt.code})`} />
+              <SelectItem key={opt.code} value={opt.code} text={opt.label} />
             ))}
           </Select>
 
@@ -337,7 +337,7 @@ export const AddAgreementForm: FC<AddAgreementFormProps> = ({ projectId, onSucce
             {rules.showTerm && (
               <NumberInput
                 id="new-agreement-term"
-                label="Agreement term (years) *"
+                label="Agreement term (months) *"
                 value={formState.agreementTerm}
                 onChange={(_, { value }) =>
                   handleFieldChange('agreementTerm', value?.toString() ?? '')
