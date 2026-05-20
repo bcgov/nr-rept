@@ -103,7 +103,6 @@ spec:
               value: ${IDENTITY_LOOKUP_BASE_URL}
 
             # ── Oracle DB (consumed by application-oracle.yml) ─
-            # application-oracle.yml builds the full TCPS TNS descriptor from these.
             - name: DATABASE_HOST
               value: ${DATABASE_HOST}
             - name: DATABASE_SERVICE_NAME
