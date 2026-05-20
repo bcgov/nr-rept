@@ -20,6 +20,13 @@ on:
         description: Deployment target; usually PR number, 'test' or 'prod'
         default: ${{ github.event.number }}
         type: string
+      slot:
+        description: |
+          Route hostname slot — PR # mod-50'd into a fixed pool of pre-registered
+          Cognito callback URIs (see pr-open.yml). Omit for TEST/PROD; defaults to
+          `target` in that case so the host stays `nr-rept-{test,prod}.apps...`.
+        default: ""
+        type: string
       tag:
         description: Container tag
         default: ${{ github.event.number }}
@@ -140,6 +147,7 @@ jobs:
           overwrite: true
           parameters:
             -p ZONE="${{ inputs.target }}"
+            -p SLOT="${{ inputs.slot || inputs.target }}"
             -p NAME="nr-rept"
             -p IMAGE_TAG="${{ inputs.tag }}"
             -p VITE_USER_POOLS_ID="${{ vars.VITE_USER_POOLS_ID }}"
