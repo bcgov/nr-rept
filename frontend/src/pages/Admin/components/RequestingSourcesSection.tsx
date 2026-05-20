@@ -222,7 +222,6 @@ const RequestingSourcesSection: FC = () => {
     () => [
       { key: 'name', header: 'Name', selected: true },
       { key: 'type', header: 'Type', selected: true },
-      { key: 'orgUnit', header: 'Org unit', selected: true },
       {
         key: 'record',
         header: 'Actions',

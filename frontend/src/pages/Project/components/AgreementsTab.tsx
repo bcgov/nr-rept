@@ -193,7 +193,7 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
                 <TableRow>
                   <TableHeader aria-label="Selected agreement" />
                   <TableHeader>Type</TableHeader>
-                  <TableHeader>Agreement Label</TableHeader>
+                  <TableHeader>Acquisition / Disposition Method</TableHeader>
                   <TableHeader>Active</TableHeader>
                   <TableHeader>Payment Terms</TableHeader>
                   <TableHeader>Expiry Date</TableHeader>
@@ -232,10 +232,10 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
                       />
                       <TableCell>
                         {agreement.agreementType === 'ACQUISITION'
-                          ? displayValue(agreement.acquisitionAgreementLabel)
+                          ? 'Acquisition'
                           : agreement.agreementType === 'DISPOSITION'
-                            ? displayValue(agreement.dispositionAgreementLabel)
-                            : displayValue(agreement.agreementLabel)}
+                            ? 'Disposition'
+                            : displayValue(agreement.agreementType)}
                       </TableCell>
                       <TableCell>{displayValue(agreement.agreementLabel)}</TableCell>
                       <TableCell>{formatBoolean(agreement.active)}</TableCell>

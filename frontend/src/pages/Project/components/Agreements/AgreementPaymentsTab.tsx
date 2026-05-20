@@ -96,17 +96,12 @@ const buildPaymentFields = (payment: ReptAgreementPayment) => [
     label: 'Payment Rescinded',
     value: formatBoolean(payment.rescinded),
   },
-  {
-    label: 'Revision Count',
-    value: displayValue(payment.revisionCount ?? null),
-  },
 ];
 
 const buildPayeeRow = (payee: ReptAgreementPayee) => [
   displayValue(payee.displayName ?? payee.companyName ?? payee.lastName ?? payee.firstName),
   displayValue(payee.contactTypeLabel ?? payee.contactTypeCode),
   displayValue(payee.parcelIdentifier),
-  displayValue(payee.titleNumber),
   displayValue(payee.phone),
   displayValue(payee.email),
 ];
@@ -455,7 +450,6 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                     <TableHeader>Name</TableHeader>
                     <TableHeader>Type</TableHeader>
                     <TableHeader>Parcel Identifier (PID)</TableHeader>
-                    <TableHeader>Title Number</TableHeader>
                     <TableHeader>Phone</TableHeader>
                     <TableHeader>Email</TableHeader>
                   </TableRow>
@@ -662,23 +656,15 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                       invalid={Boolean(validationErrors.casStob)}
                       invalidText={validationErrors.casStob}
                     />
-                    <NumberInput
+                    <TextInput
                       id="payment-cas-project"
-                      label="CAS project number *"
+                      labelText="CAS project number *"
                       value={draft.casProjectNumber}
-                      onChange={(_, { value }) =>
-                        handleDraftChange('casProjectNumber', value?.toString() ?? '')
+                      onChange={(event) =>
+                        handleDraftChange('casProjectNumber', event.target.value)
                       }
-                      min={0}
                       invalid={Boolean(validationErrors.casProjectNumber)}
                       invalidText={validationErrors.casProjectNumber}
-                      allowEmpty
-                      hideSteppers
-                      onKeyDown={(event) => {
-                        if (['e', 'E', '+', '-', '.'].includes(event.key)) {
-                          event.preventDefault();
-                        }
-                      }}
                     />
                   </div>
 
