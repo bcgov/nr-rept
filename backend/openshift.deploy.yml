@@ -80,11 +80,13 @@ objects:
       selector:
         matchLabels:
           app: ${NAME}-backend-${ZONE}
+      # Recreate (not RollingUpdate) — matches BCGov template convention.
+      # The brief swap downtime is acceptable for ephemeral PR previews and
+      # avoids racing against the deployer action, which patches strategy
+      # mid-apply and creates a `rollingUpdate set while type=Recreate`
+      # validation error if the Template ships its own RollingUpdate config.
       strategy:
-        type: RollingUpdate
-        rollingUpdate:
-          maxUnavailable: 25%
-          maxSurge: 25%
+        type: Recreate
       template:
         metadata:
           labels:

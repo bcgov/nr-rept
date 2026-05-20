@@ -155,24 +155,32 @@
       <scope>test</scope>
     </dependency>
     <!--
-      JasperReports 7.x restructured the artifact layout: PDF export was
-      extracted into `jasperreports-pdf` (now backed by OpenPDF instead of
-      the legacy iText 2.x). `JasperExportManager.exportReportToPdf` will
-      throw ClassNotFoundException at runtime if the pdf module isn't on
-      the classpath.
-      Upgraded to clear:
-        - CVE-2025-10492 (Jasper Java deserialization)
-        - CVE-2025-48734 (transitive commons-beanutils 1.9.x; 7.x ships 1.11+)
+      Pinned to JR 6.21.5 (last stable 6.x). JR 7.x removed the legacy
+      SAX/Digester JRXmlLoader and the replacement (JacksonReportLoader)
+      is shipped unregistered, with a namespace-detection bug, and no
+      Jackson annotations on JasperDesign — `JasperCompileManager.compileReport`
+      fails on every standard JRXML with "Unable to load report" across the
+      entire 7.0.0–7.0.6 line. Reassess once JR 7.x finishes the migration
+      (track the `//TODO legacyxml` markers in JRXmlLoader.java).
+
+      CVE posture on 6.21.5:
+        - CVE-2025-48734 (commons-beanutils): cleared. 6.21.5's pom pins
+          commons-beanutils 1.11.0.
+        - iText 2.x CVEs: cleared. 6.21.5 ships OpenPDF 1.3.32; legacy iText
+          is no longer a transitive dep.
+        - CVE-2025-10492 (Jasper Java deserialization on .jasper load):
+          accepted. Exploit requires attacker-controlled .jasper input;
+          this app only loads JRXML from its own classpath (src/main/resources/reports/),
+          never from user upload, so the deserialization sink is unreachable.
+
+      JR 6.x bundles the Eclipse JDT expression compiler (ecj) and PDF
+      exporter into the core jar, so no jasperreports-jdt / jasperreports-pdf
+      sub-artifacts are needed (those exist only in 7.x).
     -->
     <dependency>
       <groupId>net.sf.jasperreports</groupId>
       <artifactId>jasperreports</artifactId>
-      <version>7.0.4</version>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.jasperreports</groupId>
-      <artifactId>jasperreports-pdf</artifactId>
-      <version>7.0.4</version>
+      <version>6.21.5</version>
     </dependency>
   </dependencies>
 
