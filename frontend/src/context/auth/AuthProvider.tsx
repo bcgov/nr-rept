@@ -5,7 +5,7 @@ import { env } from '@/env';
 
 import { AuthContext, type AuthContextType } from './AuthContext';
 import { parseToken, getAccessTokenFromCookie } from './authUtils';
-import { type FamLoginUser, AVAILABLE_ROLES } from './types';
+import { type FamLoginUser } from './types';
 
 /**
  * Seconds before access-token expiry at which we consider it "stale" and
@@ -44,23 +44,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   // ── Initial session bootstrap + user state ─────────────────────────
+  // Users without any recognized REPT role are kept in state (isLoggedIn=true)
+  // so the routing layer can send them to /unauthorized via getNoRoleRoutes().
+  // Auto-signing them out here would bounce them through Cognito and they'd
+  // land on a public path that the public route table doesn't cover,
+  // falling through to the NotFound catch-all.
   const refreshUserState = useCallback(async () => {
     setIsLoading(true);
     try {
       const parsed = await loadSession(false);
-
-      if (parsed && (!parsed.roles || parsed.roles.length === 0)) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          '[AuthProvider] User has no recognized role — logging out.',
-          'cognito:groups did not contain any of:',
-          AVAILABLE_ROLES,
-        );
-        await signOut();
-        setUser(undefined);
-        return;
-      }
-
       setUser(parsed);
     } catch (error) {
       // eslint-disable-next-line no-console
