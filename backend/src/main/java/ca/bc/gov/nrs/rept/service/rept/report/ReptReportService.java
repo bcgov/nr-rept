@@ -74,6 +74,12 @@ public class ReptReportService {
     try (InputStream is = resource.getInputStream()) {
       return JasperCompileManager.compileReport(is);
     } catch (JRException | IOException ex) {
+      // Log the underlying cause so the JRException / IOException stack
+      // makes it into pod logs. Without this, callers only see the
+      // ReportGenerationException's message in the HTTP response body and
+      // the actual Jasper/IO failure is invisible.
+      LOGGER.error("Failed to compile JRXML for [{}] (path={})",
+          definition.getId(), path, ex);
       throw new ReportGenerationException("Failed to compile JRXML for " + definition.getId(), ex);
     }
   }
