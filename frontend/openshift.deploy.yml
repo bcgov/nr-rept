@@ -15,6 +15,15 @@ parameters:
   - name: ZONE
     description: PR number, 'test', or 'prod'
     required: true
+  # SLOT decouples the public-facing Route hostname from the OpenShift object
+  # names so per-PR previews can share a fixed pool of Cognito callback URIs.
+  # AWS Cognito user pool app clients don't accept wildcards in CallbackURLs;
+  # we pre-register 50 URIs (nr-rept-0…nr-rept-49.apps.silver.devops.gov.bc.ca)
+  # and bucket PRs into them via PR % 50.
+  # pr-open.yml computes SLOT = PR % 50; merge.yml passes SLOT = ZONE = test/prod.
+  - name: SLOT
+    description: Route hostname slot — PR % 50 for previews, or test/prod for those targets
+    required: true
   - name: IMAGE_TAG
     description: Container image tag (PR number, 'test', or 'prod')
     value: latest
@@ -187,7 +196,7 @@ objects:
         app: ${NAME}-frontend-${ZONE}
         app.kubernetes.io/instance: ${ZONE}
     spec:
-      host: ${NAME}-${ZONE}.${DOMAIN}
+      host: ${NAME}-${SLOT}.${DOMAIN}
       to:
         kind: Service
         name: ${NAME}-frontend-${ZONE}
