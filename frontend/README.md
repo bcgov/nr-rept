@@ -7,96 +7,68 @@ React frontend application for the Real Estate Project Tracking system.
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | React | 19.x | UI framework |
-| TypeScript | 5.x | Type safety |
-| Vite | 6.x | Build tool |
-| Carbon Design System | 1.x | UI components |
+| TypeScript | 5.8.x | Type safety |
+| Vite | 7.x | Build tool / dev server |
+| Carbon Design System | 1.x (@carbon/react) | UI components |
 | React Query | 5.x | Data fetching |
 | AWS Amplify | 6.x | Cognito authentication |
 | React Router | 7.x | Routing |
+| Vitest + Playwright | 3.x / 1.54.x | Unit/browser + E2E testing |
 
-## 🚀 Quick Start
+## 🚀 Running Locally
 
-### Prerequisites
-
-- Node.js 20+
-- npm 10+
-
-### Environment Setup
-
-1. **Copy environment file:**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Edit `.env` with your values:**
-   ```bash
-   VITE_APP_NAME=REPT
-   VITE_ZONE=dev
-   VITE_USER_POOLS_ID=your-cognito-pool-id
-   VITE_USER_POOLS_WEB_CLIENT_ID=your-cognito-client-id
-   VITE_REDIRECT_SIGN_OUT=http://localhost:3000
-   VITE_BACKEND_URL=http://localhost:8080
-   ```
-
-### Running Locally
-
-```bash
-# Install dependencies
-npm ci
-
-# Start development server
-npm run dev
-```
-
-The application will be available at http://localhost:3000
-
-### Running with Docker
-
-```bash
-# Build the image
-docker build -t rept-frontend \
-  --build-arg VITE_USER_POOLS_ID=your-pool-id \
-  --build-arg VITE_USER_POOLS_WEB_CLIENT_ID=your-client-id \
-  .
-
-# Run the container
-docker run -p 3000:3000 rept-frontend
-```
+See the [root README's Local Development section](../README.md#local-development) — both `npm run dev` and Docker Compose workflows live there, along with the `.env` setup.
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_APP_NAME` | Application name | REPT |
-| `VITE_ZONE` | Environment (dev/test/prod) | dev |
-| `VITE_USER_POOLS_ID` | Cognito User Pool ID | - |
-| `VITE_USER_POOLS_WEB_CLIENT_ID` | Cognito App Client ID | - |
-| `VITE_REDIRECT_SIGN_OUT` | Logout redirect URL | http://localhost:3000 |
-| `VITE_BACKEND_URL` | Backend API URL | http://localhost:8080 |
+Mirrors `frontend/.env.example`. Bundled into the Vite build at dev time and into `/srv/config.js` at container start in prod.
+
+| Variable | Description | Default (local) | Default (prod) |
+|----------|-------------|-----------------|----------------|
+| `VITE_APP_NAME` | Application display name | REPT | Real Estate Project Tracking |
+| `VITE_ZONE` | Deploy zone; AuthProvider uppercases it to pick the Cognito IdP (`<ZONE>-IDIR`) | dev | dev / test / prod |
+| `VITE_BASE_PATH` | Base path when served behind a path-prefix proxy | empty | empty |
+| `VITE_USER_POOLS_ID` | Cognito User Pool ID | - | - |
+| `VITE_USER_POOLS_WEB_CLIENT_ID` | Cognito App Client ID | - | - |
+| `VITE_REDIRECT_SIGN_OUT` | Cognito logout redirect URL | http://localhost:3000 | route-host URL |
+| `VITE_BACKEND_URL` | API base path or URL — read by the API client | http://localhost:8080 | `/api` (relative; proxied by Caddy) |
+| `NODE_ENV` | Node environment | development | production |
 
 ### Development Server Options
 
+These are read by `vite.config.ts` to configure the dev server and HMR. Only matter when you run `npm run dev` (or compose).
+
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_DEV_HOST` | Dev server host | localhost |
+| `VITE_DEV_HOST` | Dev server bind address (`0.0.0.0` if running in Docker) | localhost |
 | `VITE_DEV_PORT` | Dev server port | 3000 |
-| `VITE_HMR_HOST` | HMR host | localhost |
-| `VITE_HMR_PORT` | HMR port | 3000 |
+| `VITE_DEV_BACKEND_TARGET` | Where Vite's `/api` proxy forwards | http://localhost:8080 |
+| `VITE_HMR_HOST` | HMR WebSocket host the browser dials | localhost |
+| `VITE_HMR_PORT` | HMR WebSocket port | 3000 |
+| `VITE_HMR_PROTOCOL` | `ws` or `wss` | ws |
 
 ## 📜 Available Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
+| `npm run dev` | Start Vite dev server (HMR enabled) |
+| `npm run build` | Type-check (`tsc -b`) then `vite build` to `dist/` |
+| `npm run deploy` | Used in CI: `npm ci && tsc -b && vite build` |
+| `npm run preview` | Serve the production build locally for inspection |
 | `npm run lint` | Run ESLint |
-| `npm run test` | Run all tests |
-| `npm run test:unit` | Run unit tests only |
-| `npm run test:browser` | Run browser tests |
-| `npm run test:coverage` | Run tests with coverage |
+| `npm run test` | Vitest in watch mode |
+| `npm run test:unit` | Vitest, `node` project only |
+| `npm run test:browser` | Vitest, `browser` project only (Playwright-driven) |
+| `npm run test:ci` | Vitest one-shot, all projects (used by CI) |
+| `npm run test:watch` | Vitest in watch + coverage |
+| `npm run test:coverage` | Vitest one-shot with coverage (HTML report) |
+| `npm run e2e` | Playwright E2E, chromium only. Requires `E2E_BASE_URL` (see [e2e/README.md](e2e/README.md)) |
+| `npm run e2e:login` | Headed auth-setup run; refreshes `e2e/.auth/user.json`. Requires `E2E_BASE_URL` |
+| `npm run e2e:all-browsers` | Playwright E2E across all configured browsers. Requires `E2E_BASE_URL` |
+| `npm run e2e:ui` | Playwright UI mode. Requires `E2E_BASE_URL` |
+| `npm run e2e:report` | Open the last Playwright HTML report (no URL needed) |
 
 ## 🧪 Testing
 
@@ -129,25 +101,27 @@ frontend/
 ├── src/
 │   ├── assets/           # Static assets (images)
 │   ├── components/       # Reusable UI components
-│   │   ├── core/         # Core components (PageTitle, etc.)
+│   │   ├── core/         # Core components (PageTitle, EmptySection, etc.)
 │   │   ├── Form/         # Form components
-│   │   └── Layout/       # Layout components
+│   │   ├── Layout/       # App shell (header, sidenav, profile panel)
+│   │   └── Modal/        # Modal dialog components
 │   ├── config/           # Configuration
-│   │   ├── api/          # API configuration
-│   │   ├── fam/          # Cognito/FAM config
-│   │   └── react-query/  # React Query config
+│   │   ├── api/          # Axios + React Query keys
+│   │   ├── fam/          # Cognito / FAM Amplify config
+│   │   ├── react-query/  # QueryClient defaults
+│   │   └── tests/        # Test-only setup (Vitest globals, MSW handlers)
 │   ├── context/          # React contexts
-│   │   ├── auth/         # Authentication
-│   │   ├── layout/       # Layout state
+│   │   ├── auth/         # AuthProvider + Cognito session handling
+│   │   ├── layout/       # Layout state (sidenav open/closed)
 │   │   ├── notification/ # Toast notifications
-│   │   ├── pageTitle/    # Page title
+│   │   ├── pageTitle/    # Document title + breadcrumb
 │   │   ├── preference/   # User preferences
 │   │   └── theme/        # Theme (light/dark)
-│   ├── hooks/            # Custom hooks
-│   ├── pages/            # Page components
-│   ├── routes/           # Routing configuration
-│   ├── services/         # API services
-│   ├── styles/           # Global styles
+│   ├── hooks/            # Custom hooks (useAuthorization, etc.)
+│   ├── pages/            # Route-level page components
+│   ├── routes/           # Route table + ProtectedRoute
+│   ├── services/         # API service modules
+│   ├── styles/           # Global SCSS
 │   └── utils/            # Utility functions
 └── public/               # Static public files
 ```
@@ -160,7 +134,3 @@ The application uses [Carbon Design System](https://carbondesignsystem.com/) wit
 - `@carbon/icons-react` - Icon library
 - `@bcgov-nr/nr-theme` - BC Gov theme
 
-## 📚 Documentation
-
-- [Frontend Architecture](../docs/frontend-architecture.md)
-- [Architecture Overview](../docs/architecture-overview.md)

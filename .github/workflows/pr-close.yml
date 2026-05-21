@@ -23,3 +23,22 @@ jobs:
     with:
       cleanup: label
       packages: backend frontend
+      # The helper's default cleanup label is `app=<repo-name>-<target>`
+      # (i.e. `app=nr-rept-<PR#>`), but every object in our templates is
+      # labelled `app=nr-rept-{backend,frontend}-<PR#>` — those labels are
+      # also the matchLabels/selector for the Deployment, Service, and
+      # NetworkPolicy podSelector, so they can't be flattened to a single
+      # PR-wide value without colliding backend and frontend Pods.
+      # `cleanup_name` is the helper's escape hatch: a space-separated list
+      # of label values it iterates over, calling
+      #   oc delete all,cm,pvc,secret -l app=<value>
+      # for each. Listing both sub-app labels here makes PR close actually
+      # remove the deployed objects.
+      #
+      # Caveat: `oc`'s `all` alias does NOT include NetworkPolicy, so the
+      # per-PR ingress NetworkPolicies (defined in both openshift.deploy.yml
+      # files) are NOT swept by this cleanup. They accumulate over time;
+      # if that becomes a problem, add an explicit
+      #   oc delete networkpolicy -l app=...
+      # step here.
+      cleanup_name: nr-rept-backend-${{ github.event.number }} nr-rept-frontend-${{ github.event.number }}

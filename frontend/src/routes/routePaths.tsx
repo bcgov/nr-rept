@@ -4,9 +4,15 @@
  * PUBLIC_ROUTES  — unauthenticated pages (Landing, 404, Unauthorized).
  * PROTECTED_ROUTES — authenticated pages wrapped in <Layout> (Dashboard, Projects, Reports, Admin).
  *
+ * Three route sets correspond to three auth states (selected in AppRoutes):
+ *   not logged in            -> getPublicRoutes()
+ *   logged in, no REPT role  -> getNoRoleRoutes()
+ *   logged in, has role(s)   -> getProtectedRoutes()
+ *
  * Exported helpers:
  *   getPublicRoutes()        — returns PUBLIC_ROUTES as-is.
- *   getProtectedRoutes(roles) — returns PROTECTED_ROUTES with role-restricted routes wrapped in <ProtectedRoute>.
+ *   getNoRoleRoutes()        — Layout-wrapped /unauthorized + catch-all redirect to it.
+ *   getProtectedRoutes()     — returns PROTECTED_ROUTES with role-restricted routes wrapped in <ProtectedRoute>.
  *   getMenuEntries(roles)    — returns sidebar menu items filtered by role.
  */
 
@@ -187,6 +193,32 @@ export const getMenuEntries = (roles: string[]): MenuItem[] => {
 
 /** Returns the public (unauthenticated) route array. */
 export const getPublicRoutes = (): RouteDescription[] => PUBLIC_ROUTES;
+
+/**
+ * Returns the route set for an authenticated user who has no recognized REPT
+ * role. They can reach the Layout-wrapped RoleErrorPage and nothing else;
+ * every other path redirects to /unauthorized so they don't see empty
+ * dashboards or hit a string of 403s. The Layout header's profile menu still
+ * exposes Log out.
+ */
+export const getNoRoleRoutes = (): RouteDescription[] => [
+  {
+    path: '/unauthorized',
+    id: 'Unauthorized',
+    element: (
+      <Layout>
+        <RoleErrorPage />
+      </Layout>
+    ),
+    isSideMenu: false,
+  },
+  {
+    path: '*',
+    id: 'UnauthorizedRedirect',
+    element: <Navigate to="/unauthorized" replace />,
+    isSideMenu: false,
+  },
+];
 
 /** Returns the protected route array with role-gated routes wrapped in <ProtectedRoute>. */
 export const getProtectedRoutes = (): RouteDescription[] => {

@@ -12,6 +12,7 @@ vi.mock('@/context/auth/useAuth', () => ({
 
 vi.mock('@/routes/routePaths', () => ({
   getPublicRoutes: () => [{ path: '/', element: <div>Public Page</div> }],
+  getNoRoleRoutes: () => [{ path: '/', element: <div>No Role Page</div> }],
   getProtectedRoutes: () => [{ path: '/', element: <div>Protected Page</div> }],
 }));
 
@@ -53,10 +54,11 @@ describe('AppRoutes', () => {
     expect(content).toBeTruthy();
   });
 
-  it('renders protected routes if logged in', async () => {
+  it('renders protected routes if logged in with a recognized role', async () => {
     (useAuthModule.useAuth as ReturnType<typeof vi.fn>).mockReturnValue({
       isLoading: false,
       isLoggedIn: true,
+      user: { roles: ['REPT_VIEWER'] },
     });
 
     render(
@@ -66,6 +68,23 @@ describe('AppRoutes', () => {
     );
 
     const content = await screen.findByText('Protected Page');
+    expect(content).toBeTruthy();
+  });
+
+  it('renders no-role routes if logged in without any recognized role', async () => {
+    (useAuthModule.useAuth as ReturnType<typeof vi.fn>).mockReturnValue({
+      isLoading: false,
+      isLoggedIn: true,
+      user: { roles: [] },
+    });
+
+    render(
+      <PageTitleProvider>
+        <AppRoutes />
+      </PageTitleProvider>,
+    );
+
+    const content = await screen.findByText('No Role Page');
     expect(content).toBeTruthy();
   });
 });

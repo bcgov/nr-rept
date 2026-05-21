@@ -195,10 +195,6 @@ const buildPropertyDetails = (
     { label: 'Property City', value: displayValue(property.city) },
     { label: 'Legal Description', value: displayValue(property.legalDescription) },
     {
-      label: 'Revision Count',
-      value: isDetail ? displayValue(detail?.revisionCount) : MISSING_VALUE,
-    },
-    {
       label: 'Expropriation Recommended',
       value: formatBoolean(property.expropriationRecommended),
     },
@@ -264,7 +260,6 @@ const buildPropertyRegistration = (
     { label: 'LTO Document Number', value: displayValue(registration.ltoDocumentNumber) },
     { label: 'Survey Tube Number', value: displayValue(registration.surveyTubeNumber) },
     { label: 'Registration Date', value: formatDate(registration.registrationDate) },
-    { label: 'Revision Count', value: displayValue(registration.revisionCount) },
   ];
 };
 
@@ -280,7 +275,6 @@ const buildPropertyExpropriation = (
       value: formatDate(expropriation.noticeAdvancePaymentDate),
     },
     { label: 'Vesting Date', value: formatDate(expropriation.vestingDate) },
-    { label: 'Revision Count', value: displayValue(expropriation.revisionCount) },
   ];
 };
 

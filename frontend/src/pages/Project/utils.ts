@@ -18,13 +18,12 @@ export const formatDate = (value?: string | null, options?: Intl.DateTimeFormatO
   }).format(date);
 };
 
+// Renders a reference-data value for display. Historically appended the
+// raw code in parentheses (e.g. "MOFR Leased Land (MLL)"); the code suffix
+// is dropped here so users only see the human-readable label. Callers still
+// pass the code so we can fall back to it when the label is missing — a
+// defensive case for records whose backend lookup didn't resolve.
 export const formatWithCode = (label?: string | null, code?: string | number | null) => {
-  if (!label && isEmptyValue(code)) {
-    return MISSING_VALUE;
-  }
-  if (label && !isEmptyValue(code)) {
-    return `${label} (${code})`;
-  }
   if (label) {
     return label;
   }

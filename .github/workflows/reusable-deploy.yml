@@ -20,6 +20,13 @@ on:
         description: Deployment target; usually PR number, 'test' or 'prod'
         default: ${{ github.event.number }}
         type: string
+      slot:
+        description: |
+          Route hostname slot — PR # mod-50'd into a fixed pool of pre-registered
+          Cognito callback URIs (see pr-open.yml). Omit for TEST/PROD; defaults to
+          `target` in that case so the host stays `nr-rept-{test,prod}.apps...`.
+        default: ""
+        type: string
       tag:
         description: Container tag
         default: ${{ github.event.number }}
@@ -69,6 +76,19 @@ jobs:
       contents: read
     outputs:
       triggered: ${{ steps.deploy.outputs.triggered }}
+    # Plumb sensitive values through job-level env vars rather than expanding
+    # `${{ secrets.* }}` directly inside the `parameters` string. The deployer
+    # action ultimately runs:
+    #   TEMPLATE="$(oc process ... ${{ inputs.parameters }} ...)"
+    # which means GHA substitutes the literal secret into a bash double-quoted
+    # context. Any `$X` inside the value (where X is an unset name) gets
+    # variable-expanded by bash and silently dropped along with its leading
+    # `$`. Going through env + `"$VAR"` means bash performs only a single
+    # expansion to the literal value; characters inside that value are not
+    # re-parsed for `$`/`'`/`"` semantics.
+    env:
+      DATABASE_PASSWORD: ${{ secrets.database_password }}
+      KEYSTORE_SECRET: ${{ secrets.keystore_secret }}
     steps:
       - uses: bcgov/action-deployer-openshift@f7bd61ec357fb1dfd1d43f1287bcd21382d06348 # v4.1.0
         id: deploy
@@ -95,8 +115,8 @@ jobs:
             -p DATABASE_HOST="${{ secrets.database_host }}"
             -p DATABASE_SERVICE_NAME="${{ secrets.database_service_name }}"
             -p DATABASE_USER="${{ secrets.database_user }}"
-            -p DATABASE_PASSWORD="${{ secrets.database_password }}"
-            -p KEYSTORE_SECRET="${{ secrets.keystore_secret }}"
+            -p DATABASE_PASSWORD="$DATABASE_PASSWORD"
+            -p KEYSTORE_SECRET="$KEYSTORE_SECRET"
           triggers: ${{ inputs.triggers }}
 
   frontend:
@@ -127,6 +147,7 @@ jobs:
           overwrite: true
           parameters:
             -p ZONE="${{ inputs.target }}"
+            -p SLOT="${{ inputs.slot || inputs.target }}"
             -p NAME="nr-rept"
             -p IMAGE_TAG="${{ inputs.tag }}"
             -p VITE_USER_POOLS_ID="${{ vars.VITE_USER_POOLS_ID }}"
