@@ -7,7 +7,7 @@ import { AuthProvider } from '@/context/auth/AuthProvider';
 import { LayoutSideNav } from './index';
 
 vi.mock('@/context/layout/useLayout', () => ({
-  useLayout: () => ({ isSideNavExpanded: true }),
+  useLayout: () => ({ isSideNavExpanded: true, closeSideNav: () => {} }),
 }));
 
 vi.mock('@/routes/routePaths', () => ({

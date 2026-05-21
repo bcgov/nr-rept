@@ -230,6 +230,11 @@ const ProjectSearchPage: FC = () => {
       handleUpdate(field, event.target.value);
     };
 
+  const handleProjectFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const sanitized = event.target.value.replace(/[^0-9/-]/g, '');
+    handleUpdate('projectFile', sanitized);
+  };
+
   const handleSelectChange =
     (field: keyof SearchFormState) => (event: ChangeEvent<HTMLSelectElement>) => {
       handleUpdate(field, event.target.value);
@@ -386,9 +391,10 @@ const ProjectSearchPage: FC = () => {
               <TextInput
                 id="project-search-file"
                 labelText="Project file"
-                placeholder="Search by project file number"
+                placeholder="e.g. 123 or 30100-25/123-01"
                 value={formState.projectFile}
-                onChange={handleTextChange('projectFile')}
+                onChange={handleProjectFileChange}
+                inputMode="numeric"
                 disabled={optionsQuery.isLoading}
               />
               <TextInput
@@ -496,28 +502,30 @@ const ProjectSearchPage: FC = () => {
         </Tile>
       </Column>
 
-      <Column sm={4} md={8} lg={16}>
-        <Tile className="project-search__tile">
-          <Stack gap={4}>
-            <div
-              className={
-                tableContent && (tableContent.page?.totalElements ?? 0) > 0
-                  ? 'bordered-table'
-                  : undefined
-              }
-            >
-              <TableResource<ProjectSearchRow>
-                headers={tableHeaders}
-                content={tableContent as PageableResponse<ProjectSearchRow>}
-                loading={searchQuery.isFetching}
-                error={searchQuery.isError}
-                displayRange
-                onPageChange={handlePageChange}
-              />
-            </div>
-          </Stack>
-        </Tile>
-      </Column>
+      {searchParams && (
+        <Column sm={4} md={8} lg={16}>
+          <Tile className="project-search__tile">
+            <Stack gap={4}>
+              <div
+                className={
+                  tableContent && (tableContent.page?.totalElements ?? 0) > 0
+                    ? 'bordered-table'
+                    : undefined
+                }
+              >
+                <TableResource<ProjectSearchRow>
+                  headers={tableHeaders}
+                  content={tableContent as PageableResponse<ProjectSearchRow>}
+                  loading={searchQuery.isFetching}
+                  error={searchQuery.isError}
+                  displayRange
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            </Stack>
+          </Tile>
+        </Column>
+      )}
     </Grid>
   );
 };

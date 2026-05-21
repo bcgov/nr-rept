@@ -7,7 +7,8 @@
 .#{vars.$bcgov-prefix}--header {
 
   .#{vars.$bcgov-prefix}--header__name {
-    margin-left: 0.9375rem;
+    margin-left: 0;
+    padding-inline-start: 0.25rem;
     color: colors.$white;
 
     &:hover {
@@ -15,22 +16,31 @@
     }
 
     @include breakpoint-down(lg) {
-      margin-left: 0;      
-      padding: 0;
+      padding: 0 0 0 0.25rem;
     }
   }
 
-  .#{vars.$bcgov-prefix}--header__menu-toggle {
+  // Carbon hides the menu toggle at lg+ by default; we always want the
+  // hamburger visible because it now drives the slide-in drawer at every size.
+  .#{vars.$bcgov-prefix}--header__menu-toggle,
+  .#{vars.$bcgov-prefix}--header__menu-toggle__hidden {
+    display: flex;
     color: colors.$white;
 
     &.#{vars.$bcgov-prefix}--header__action--active {
       color: var(--#{vars.$bcgov-prefix}-layer-selected-inverse);
     }
 
-    path{
-      fill: currentColor;
+    // Suppress Carbon's blue focus border on mouse clicks (e.g. when the
+    // user opens the drawer); preserve it for keyboard-driven focus so
+    // tabbing through the header still has a visible indicator.
+    &:focus:not(:focus-visible) {
+      border-color: transparent;
     }
 
+    path {
+      fill: currentColor;
+    }
   }
 
 }

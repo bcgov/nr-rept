@@ -27,6 +27,21 @@ on:
           `target` in that case so the host stays `nr-rept-{test,prod}.apps...`.
         default: ""
         type: string
+      backend_replicas:
+        description: |
+          Backend pod count (sets both Deployment.spec.replicas and the
+          backend HPA's min/max). Defaults to "1" so PR previews stay light;
+          merge.yml sets "2" for TEST and "3" for PROD. lite_mode strips the
+          HPA on PR previews regardless.
+        default: "1"
+        type: string
+      frontend_replicas:
+        description: |
+          Frontend pod count. Defaults to "2" (the original hardcoded value
+          before this template was parameterized); merge.yml sets "2" for
+          TEST and "3" for PROD. PR previews get 1 via lite_mode.
+        default: "2"
+        type: string
       tag:
         description: Container tag
         default: ${{ github.event.number }}
@@ -109,6 +124,8 @@ jobs:
             -p ZONE="${{ inputs.target }}"
             -p NAME="nr-rept"
             -p IMAGE_TAG="${{ inputs.tag }}"
+            -p MIN_REPLICAS="${{ inputs.backend_replicas }}"
+            -p MAX_REPLICAS="${{ inputs.backend_replicas }}"
             -p AWS_COGNITO_ISSUER_URI="${{ vars.AWS_COGNITO_ISSUER_URI }}"
             -p COGNITO_USERINFO_URI="${{ vars.COGNITO_USERINFO_URI }}"
             -p IDENTITY_LOOKUP_BASE_URL="${{ vars.IDENTITY_LOOKUP_BASE_URL }}"
@@ -150,6 +167,7 @@ jobs:
             -p SLOT="${{ inputs.slot || inputs.target }}"
             -p NAME="nr-rept"
             -p IMAGE_TAG="${{ inputs.tag }}"
+            -p REPLICAS="${{ inputs.frontend_replicas }}"
             -p VITE_USER_POOLS_ID="${{ vars.VITE_USER_POOLS_ID }}"
             -p VITE_USER_POOLS_WEB_CLIENT_ID="${{ vars.VITE_USER_POOLS_WEB_CLIENT_ID }}"
             -p VITE_REDIRECT_SIGN_OUT="${{ vars.VITE_REDIRECT_SIGN_OUT }}"

@@ -24,6 +24,9 @@ parameters:
   - name: SLOT
     description: Route hostname slot — PR % 50 for previews, or test/prod for those targets
     required: true
+  - name: REPLICAS
+    description: Pod count; PR previews get 1 via lite_mode, TEST=2, PROD=3
+    value: "2"
   - name: IMAGE_TAG
     description: Container image tag (PR number, 'test', or 'prod')
     value: latest
@@ -64,7 +67,7 @@ objects:
         app.kubernetes.io/name: ${NAME}-frontend
         app.kubernetes.io/instance: ${ZONE}
     spec:
-      replicas: 2
+      replicas: ${{REPLICAS}}
       selector:
         matchLabels:
           app: ${NAME}-frontend-${ZONE}

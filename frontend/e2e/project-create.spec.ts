@@ -1,0 +1,229 @@
+import { expect, test, type Locator } from '@playwright/test';
+
+import { openProjectTab } from './helpers/project';
+import { gotoProtected, uniqueSuffix } from './utils';
+
+/**
+ * End-to-end coverage for the project lifecycle. Each test in the serial
+ * block depends on the project created by the first one — Playwright's
+ * `describe.serial` keeps module-scoped state intact across tests and stops
+ * the chain if any earlier test fails.
+ *
+ * There is no UI affordance to delete a project, so each run leaves a row
+ * behind named `E2E Project <suffix>` to make the residue easy to spot.
+ */
+test.describe.serial('project lifecycle', () => {
+  let projectId = '';
+  let projectName = '';
+
+  /** Fill a Carbon input/textarea only if it's actually rendered. */
+  const fillIfVisible = async (locator: Locator, value: string) => {
+    if (await locator.isVisible().catch(() => false)) {
+      await locator.fill(value);
+    }
+  };
+
+  test('create project file', async ({ page }) => {
+    projectName = `E2E Project ${uniqueSuffix()}`;
+
+    await gotoProtected(page, '/projects/create');
+    await expect(page).not.toHaveURL(/\/unauthorized/);
+
+    const submit = page.getByRole('button', { name: /create project file/i });
+    await expect(submit).toBeEnabled({ timeout: 60_000 });
+
+    await page.locator('#project-create-prefix').selectOption({ index: 1 });
+
+    const suffix = page.locator('#project-create-suffix');
+    await expect(suffix).toBeEnabled({ timeout: 30_000 });
+    await suffix.selectOption({ index: 1 });
+
+    await page.locator('#project-create-name').fill(projectName);
+    await page.locator('#project-create-region').selectOption({ index: 1 });
+    await page.locator('#project-create-district').selectOption({ index: 1 });
+    await page.locator('#project-create-requesting-source').selectOption({ index: 1 });
+
+    await submit.click();
+
+    await page.waitForURL(/\/projects\/\d+/, { timeout: 60_000 });
+    const match = page.url().match(/\/projects\/(\d+)/);
+    expect(match, 'project URL should contain a numeric id').not.toBeNull();
+    projectId = match![1];
+  });
+
+  test('History tab: edit and save', async ({ page }) => {
+    expect(projectId, 'create step must populate projectId').not.toBe('');
+
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'History');
+
+    await page.getByRole('button', { name: /^edit$/i }).click();
+
+    // `#projectHistory` is the largest free-text field on the form; one save
+    // round-trip on it is enough to confirm the History edit path works.
+    const historyValue = `E2E history note ${uniqueSuffix()}`;
+    await page.locator('#projectHistory').fill(historyValue);
+
+    await page.getByRole('button', { name: /^save$/i }).click();
+
+    // After save the panel flips back to read-only; the value should be
+    // visible there. Scope to a region that won't pick up unrelated chrome.
+    await expect(page.getByRole('button', { name: /^edit$/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(historyValue)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('Acquisition Request tab: create', async ({ page }) => {
+    expect(projectId, 'create step must populate projectId').not.toBe('');
+
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'Acquisition Request');
+
+    // Fresh projects have no acquisition request, so the empty state is
+    // expected. Click through to the create form.
+    await page.getByRole('button', { name: /create acquisition request/i }).click();
+
+    // Required selects: pick first non-placeholder option.
+    await page.locator('#acquisitionTypeCode').selectOption({ index: 1 });
+
+    // Wait for funding options to populate alongside acquisition types.
+    const funding = page.locator('#fundingCode');
+    await expect(funding).toBeEnabled({ timeout: 30_000 });
+    await funding.selectOption({ index: 1 });
+
+    // Required dates (no defaults on this form). Two-digit zero-padding so the
+    // string round-trips through flatpickr cleanly.
+    await page.locator('#receivedDate').fill('2026-01-15');
+    await page.locator('#targetCompletionDate').fill('2026-12-31');
+
+    // Required free-text / numeric fields.
+    await page.locator('#justification').fill('E2E justification');
+    await page.locator('#propertiesDescription').fill('E2E properties description');
+    await page.locator('#timberVolumeAccessed').fill('100');
+    await page.locator('#responsibilityCentre').fill('E2E-RC');
+    await page.locator('#serviceLine').fill('E2E-SL');
+    await page.locator('#availableFunds').fill('5000');
+    await page.locator('#stob').fill('E2E');
+
+    await page.getByRole('button', { name: /^save$/i }).click();
+
+    // On success the form flips back to view mode (Edit button reappears).
+    await expect(page.getByRole('button', { name: /^edit$/i })).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('Agreements tab: add agreement', async ({ page }) => {
+    expect(projectId, 'create step must populate projectId').not.toBe('');
+
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'Agreements');
+
+    await page.getByRole('button', { name: /add agreement/i }).click();
+
+    await page.locator('#new-agreement-type').selectOption('ACQUISITION');
+
+    // Agreement method options are filtered by the selected type; wait for
+    // the select to become enabled before picking.
+    const code = page.locator('#new-agreement-code');
+    await expect(code).toBeEnabled({ timeout: 30_000 });
+    await code.selectOption({ index: 1 });
+
+    // Some agreement codes (LEA/LOO/ROW/SLS/COM) light up extra required
+    // fields. Fill any that render — `fillIfVisible` no-ops when they don't.
+    await fillIfVisible(page.locator('#new-agreement-term'), '12');
+    await fillIfVisible(page.locator('#new-agreement-bring-forward'), '2026-02-01');
+    await fillIfVisible(page.locator('#new-agreement-anniversary'), '2027-01-15');
+    await fillIfVisible(page.locator('#new-agreement-renegotiation'), '2028-01-15');
+    await fillIfVisible(page.locator('#new-agreement-commitment'), 'E2E commitment description');
+
+    await page.getByRole('button', { name: /save agreement/i }).click();
+
+    // On success the form unmounts and the new row appears in the agreements
+    // table. The table renders with a radio input per row.
+    await expect(page.locator('input[id^="agreement-select-"]').first()).toBeVisible({
+      timeout: 30_000,
+    });
+  });
+
+  /**
+   * Once an agreement row exists, the workspace below the table renders three
+   * sub-tabs (Details / Properties / Payments). The next three tests walk
+   * each at smoke depth: a Details edit/save round-trip, plus open/empty-
+   * state checks for Properties and Payments since both go deep into CRUD
+   * (link properties from a property pool, build a payment with payees) and
+   * the lifecycle project has neither linked properties nor payees.
+   */
+
+  test('Agreements → Details sub-tab: edit and save', async ({ page }) => {
+    expect(projectId, 'create step must populate projectId').not.toBe('');
+
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'Agreements');
+
+    // The previously-created agreement is auto-selected and Details is the
+    // default sub-tab, so we land directly on the read-only Details panel.
+    const agreementSubTabs = page.getByRole('tablist', { name: 'Agreement sections' });
+    await expect(agreementSubTabs).toBeVisible({ timeout: 30_000 });
+
+    await page.getByRole('button', { name: /^edit$/i }).click();
+
+    // Toggle the active checkbox so `hasChanges` flips and the save fires.
+    // Clicking the input directly is fine here — no styled overlay covers it.
+    await page.locator('#agreement-active').click();
+
+    await page.getByRole('button', { name: /save details/i }).click();
+
+    // Back to read-only.
+    await expect(page.getByRole('button', { name: /^edit$/i })).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('Agreements → Properties sub-tab: opens', async ({ page }) => {
+    expect(projectId, 'create step must populate projectId').not.toBe('');
+
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'Agreements');
+
+    const agreementSubTabs = page.getByRole('tablist', { name: 'Agreement sections' });
+    await expect(agreementSubTabs).toBeVisible({ timeout: 30_000 });
+    await agreementSubTabs.getByRole('tab', { name: 'Properties', exact: true }).click();
+
+    // The lifecycle project has no properties yet, so this agreement has
+    // none linked either — the empty-state notification should render.
+    await expect(
+      page.getByText(/not linked to any properties/i),
+    ).toBeVisible({ timeout: 30_000 });
+    // And the Link properties button is rendered (disabled because the
+    // project has no properties to pick from).
+    await expect(
+      page.getByRole('button', { name: /link properties/i }),
+    ).toBeVisible();
+  });
+
+  test('Agreements → Payments sub-tab: opens new-payment modal', async ({ page }) => {
+    expect(projectId, 'create step must populate projectId').not.toBe('');
+
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'Agreements');
+
+    const agreementSubTabs = page.getByRole('tablist', { name: 'Agreement sections' });
+    await expect(agreementSubTabs).toBeVisible({ timeout: 30_000 });
+    await agreementSubTabs.getByRole('tab', { name: 'Payments', exact: true }).click();
+
+    // Empty-state notification confirms the tab rendered.
+    await expect(
+      page.getByText(/no payments recorded for this agreement/i),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await page.getByRole('button', { name: /new payment/i }).click();
+
+    const paymentModal = page.getByRole('dialog', { name: /new payment/i });
+    await expect(paymentModal).toBeVisible({ timeout: 10_000 });
+
+    // No property contacts exist on the lifecycle project, so the payee
+    // warning should surface — confirming the modal wired up its options.
+    await expect(
+      paymentModal.getByText(/a property contact is required/i),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await paymentModal.getByRole('button', { name: /^cancel$/i }).click();
+    await expect(paymentModal).toBeHidden({ timeout: 10_000 });
+  });
+});
