@@ -373,6 +373,7 @@ const RequestingSourcesSection: FC = () => {
               value={formState.name}
               onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
               placeholder="Enter external source name"
+              maxLength={500}
             />
           ) : (
             <OrgUnitSelector

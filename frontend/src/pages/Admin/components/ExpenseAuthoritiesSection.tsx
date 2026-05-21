@@ -188,7 +188,7 @@ const ExpenseAuthoritiesSection: FC = () => {
               <IconButton
                 kind="ghost"
                 size="sm"
-                label={false}
+                label={`Edit ${record.name}`}
                 onClick={() => openEditModal(record)}
               >
                 <Edit />
@@ -196,7 +196,7 @@ const ExpenseAuthoritiesSection: FC = () => {
               <IconButton
                 kind="ghost"
                 size="sm"
-                label={false}
+                label={`Delete ${record.name}`}
                 onClick={() => openDeleteConfirm(record)}
               >
                 <TrashCan />
@@ -302,6 +302,7 @@ const ExpenseAuthoritiesSection: FC = () => {
             value={formState.name}
             onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
             placeholder="Enter expense authority name"
+            maxLength={20}
           />
           <RadioButtonGroup
             legendText="Is this expense authority currently active?"

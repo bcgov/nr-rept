@@ -64,11 +64,11 @@ These are read by `vite.config.ts` to configure the dev server and HMR. Only mat
 | `npm run test:ci` | Vitest one-shot, all projects (used by CI) |
 | `npm run test:watch` | Vitest in watch + coverage |
 | `npm run test:coverage` | Vitest one-shot with coverage (HTML report) |
-| `npm run e2e` | Playwright E2E, chromium only |
-| `npm run e2e:login` | Headed run of the auth-setup project (refreshes `e2e/.auth/user.json`) |
-| `npm run e2e:all-browsers` | Playwright E2E across all configured browsers |
-| `npm run e2e:ui` | Playwright UI mode |
-| `npm run e2e:report` | Open the last Playwright HTML report |
+| `npm run e2e` | Playwright E2E, chromium only. Requires `E2E_BASE_URL` (see [e2e/README.md](e2e/README.md)) |
+| `npm run e2e:login` | Headed auth-setup run; refreshes `e2e/.auth/user.json`. Requires `E2E_BASE_URL` |
+| `npm run e2e:all-browsers` | Playwright E2E across all configured browsers. Requires `E2E_BASE_URL` |
+| `npm run e2e:ui` | Playwright UI mode. Requires `E2E_BASE_URL` |
+| `npm run e2e:report` | Open the last Playwright HTML report (no URL needed) |
 
 ## 🧪 Testing
 

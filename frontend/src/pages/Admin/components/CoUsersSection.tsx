@@ -371,6 +371,7 @@ const CoUsersSection: FC = () => {
               value={formState.name}
               onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
               placeholder="Enter external co-user name"
+              maxLength={60}
             />
           ) : (
             <OrgUnitSelector

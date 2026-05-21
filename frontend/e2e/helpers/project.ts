@@ -11,12 +11,18 @@ export const openFirstProject = async (page: Page): Promise<string> => {
 
   await page.getByRole('button', { name: /^search$/i }).click();
 
+  // Bumped from 30s — the project search query joins across multiple Oracle
+  // tables and routinely runs 30–60s when the backend is reached over the
+  // BC Gov VPN (i.e. anyone running `E2E_BASE_URL=http://localhost:3000`
+  // against a locally-running Spring Boot). The deployed dev/test backend
+  // sits in the same network as Oracle and finishes in seconds, so the
+  // longer ceiling is harmless in CI.
   const firstProjectLink = page.locator('a.project-search__link').first();
-  await firstProjectLink.waitFor({ state: 'visible', timeout: 30_000 });
+  await firstProjectLink.waitFor({ state: 'visible', timeout: 90_000 });
 
   await firstProjectLink.click();
 
-  await page.waitForURL(/\/projects\/\d+/, { timeout: 30_000 });
+  await page.waitForURL(/\/projects\/\d+/, { timeout: 90_000 });
 
   const match = page.url().match(/\/projects\/(\d+)/);
   expect(match, 'project URL should contain a numeric id').not.toBeNull();

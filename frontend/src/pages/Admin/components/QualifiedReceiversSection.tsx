@@ -298,6 +298,7 @@ const QualifiedReceiversSection: FC = () => {
             value={formState.name}
             onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
             placeholder="Enter source name"
+            maxLength={20}
           />
           <RadioButtonGroup
             legendText="Is this receiver currently active?"

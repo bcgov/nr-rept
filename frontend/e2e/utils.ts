@@ -2,9 +2,19 @@ import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
-export const DEFAULT_DEV_BASE_URL = 'https://rept-a582fc-dev.apps.silver.devops.gov.bc.ca';
+// E2E_BASE_URL is set by `.github/workflows/reusable-tests.yml` at step
+// level (resolved from the PR slot or test/prod target). For local hand-runs,
+// export it explicitly:
+//   E2E_BASE_URL=http://localhost:3000 npm run e2e
+// Failing fast here beats silently targeting a stale dev URL.
+if (!process.env.E2E_BASE_URL) {
+  throw new Error(
+    'E2E_BASE_URL is not set. Export it before running Playwright ' +
+      '(e.g. `E2E_BASE_URL=http://localhost:3000 npm run e2e`).',
+  );
+}
 
-export const baseURL = process.env.E2E_BASE_URL ?? DEFAULT_DEV_BASE_URL;
+export const baseURL = process.env.E2E_BASE_URL;
 
 /** Path to the saved auth state produced by auth.setup.ts. */
 export const STORAGE_STATE = path.join(import.meta.dirname, '.auth', 'user.json');
