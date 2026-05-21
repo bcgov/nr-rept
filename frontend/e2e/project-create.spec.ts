@@ -160,19 +160,27 @@ test.describe.serial('project lifecycle', () => {
 
     // The previously-created agreement is auto-selected and Details is the
     // default sub-tab, so we land directly on the read-only Details panel.
-    const agreementSubTabs = page.getByRole('tablist', { name: 'Agreement sections' });
-    await expect(agreementSubTabs).toBeVisible({ timeout: 30_000 });
+    // Scope subsequent button lookups to that panel so we don't race against
+    // Edit buttons that live in other (hidden) project tabs.
+    const detailsPanel = page.locator('.agreement-details-tab');
+    await expect(detailsPanel).toBeVisible({ timeout: 30_000 });
 
-    await page.getByRole('button', { name: /^edit$/i }).click();
+    const editButton = detailsPanel.getByRole('button', { name: /^edit$/i });
+    await expect(editButton).toBeEnabled({ timeout: 30_000 });
+    await editButton.click();
 
-    // Toggle the active checkbox so `hasChanges` flips and the save fires.
-    // Clicking the input directly is fine here — no styled overlay covers it.
-    await page.locator('#agreement-active').click();
+    // Carbon's Checkbox overlays the underlying <input> with a visible
+    // .cds--checkbox-label-text span that intercepts pointer events; clicking
+    // the input id hangs in actionability. Click the label text instead —
+    // same fix the radio-button tests use.
+    await page.getByText('Agreement active', { exact: true }).click();
 
     await page.getByRole('button', { name: /save details/i }).click();
 
     // Back to read-only.
-    await expect(page.getByRole('button', { name: /^edit$/i })).toBeVisible({ timeout: 30_000 });
+    await expect(detailsPanel.getByRole('button', { name: /^edit$/i })).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   test('Agreements → Properties sub-tab: opens', async ({ page }) => {
