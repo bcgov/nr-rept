@@ -1,4 +1,4 @@
-import { Accordion, AccordionItem, Column, Grid, Tag } from '@carbon/react';
+import { Accordion, AccordionItem, Column, Grid } from '@carbon/react';
 import { useEffect, useState, type FC } from 'react';
 
 import { usePageTitle } from '@/context/pageTitle/usePageTitle';
@@ -17,13 +17,6 @@ const ReportAccordionTitle: FC<ReportRowProps> = ({ definition }) => {
     <div className="reports-row">
       <div className="reports-row__cell reports-row__cell--name">{definition.title}</div>
       <div className="reports-row__cell reports-row__cell--description">{definition.summary}</div>
-      <div className="reports-row__cell reports-row__cell--formats">
-        {definition.availableFormats.map((format) => (
-          <Tag key={format} type="blue" size="sm">
-            {format.toUpperCase()}
-          </Tag>
-        ))}
-      </div>
     </div>
   );
 };
@@ -49,7 +42,6 @@ const ReportsLandingPage: FC = () => {
           <div className="reports-row reports-row--header" role="row">
             <div className="reports-row__cell reports-row__cell--name">Report</div>
             <div className="reports-row__cell reports-row__cell--description">Description</div>
-            <div className="reports-row__cell reports-row__cell--formats">Formats</div>
           </div>
           <Accordion className="reports-accordion" align="start">
             {REPORT_DEFINITIONS.map((definition) => {

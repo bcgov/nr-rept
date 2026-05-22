@@ -456,7 +456,10 @@ nav.#{variables.$bcgov-prefix}--side-nav--expanded {
 
 a.#{variables.$bcgov-prefix}--header__name {
   // previously was .#{variables.$bcgov-prefix}--header-site-name
-  font-family: "BCSans", "Noto Sans", Verdana, Arial, sans-serif;
+  // NOTE: family is "BC Sans" (with the space) — that's how
+  // @bcgov-nr/nr-theme/design-tokens/type-family.scss registers the @font-face.
+  // "BCSans" (no space) silently falls through to Noto Sans / Verdana.
+  font-family: "BC Sans", "Noto Sans", Verdana, Arial, sans-serif;
   font-size: 0.875rem;
   font-weight: 700;
   color: #f3f3f5;
@@ -490,7 +493,7 @@ nav.#{variables.$bcgov-prefix}--side-nav,
 }
 
 .#{variables.$bcgov-prefix}--content {
-  padding: 0;
+  padding: 0 1.5rem;
 }
 
 .#{variables.$bcgov-prefix}--header ~ .#{variables.$bcgov-prefix}--content, div:has(.#{variables.$bcgov-prefix}--header) ~ .#{variables.$bcgov-prefix}--content {
@@ -502,14 +505,6 @@ nav.#{variables.$bcgov-prefix}--side-nav,
   @include breakpoint(md) {
     padding-left: 20px;
     padding-right: 20px;
-  }
-}
-
-.#{variables.$bcgov-prefix}--content {
-  @include breakpoint(lg) {
-    // Matches the trimmed side-nav width in LayoutSideNav/index.scss.
-    padding-left: 12rem;
-    padding-right: 0;
   }
 }
 

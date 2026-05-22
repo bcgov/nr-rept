@@ -20,6 +20,14 @@ public class ReptProjectSearchService {
   private static final Pattern PROJECT_FILE_PATTERN =
       Pattern.compile("(?<prefix>\\d{3,5}-\\d{2})/(?<number>\\d{1,6})-(?<suffix>\\d{2})");
 
+  private static final Pattern PROJECT_NUMBER_ONLY_PATTERN = Pattern.compile("\\d{1,6}");
+
+  private static final Pattern PROJECT_PREFIX_NUMBER_PATTERN =
+      Pattern.compile("(?<prefix>\\d{3,5}-\\d{2})/(?<number>\\d{1,6})");
+
+  private static final Pattern PROJECT_NUMBER_SUFFIX_PATTERN =
+      Pattern.compile("(?<number>\\d{1,6})-(?<suffix>\\d{2})");
+
   private final ReptProjectRepository projectRepository;
 
   public ReptProjectSearchService(ReptProjectRepository projectRepository) {
@@ -54,22 +62,41 @@ public class ReptProjectSearchService {
       return baseCriteria;
     }
 
-    Matcher matcher = PROJECT_FILE_PATTERN.matcher(projectFile.trim());
-    if (!matcher.matches()) {
+    String trimmed = projectFile.trim();
+
+    String prefix = baseCriteria.projectFilePrefix();
+    String number = null;
+    String suffix = baseCriteria.projectFileSuffix();
+
+    Matcher fullMatcher = PROJECT_FILE_PATTERN.matcher(trimmed);
+    Matcher prefixNumberMatcher = PROJECT_PREFIX_NUMBER_PATTERN.matcher(trimmed);
+    Matcher numberSuffixMatcher = PROJECT_NUMBER_SUFFIX_PATTERN.matcher(trimmed);
+    if (fullMatcher.matches()) {
+      prefix = fullMatcher.group("prefix");
+      number = fullMatcher.group("number");
+      suffix = fullMatcher.group("suffix");
+    } else if (prefixNumberMatcher.matches()) {
+      prefix = prefixNumberMatcher.group("prefix");
+      number = prefixNumberMatcher.group("number");
+    } else if (numberSuffixMatcher.matches()) {
+      number = numberSuffixMatcher.group("number");
+      suffix = numberSuffixMatcher.group("suffix");
+    } else if (PROJECT_NUMBER_ONLY_PATTERN.matcher(trimmed).matches()) {
+      number = trimmed;
+    } else {
       return baseCriteria;
     }
 
-    ReptProjectSearchCriteria.Builder builder = ReptProjectSearchCriteria.builder()
-        .projectFilePrefix(matcher.group("prefix"))
-        .projectNumber(matcher.group("number"))
-        .projectFileSuffix(matcher.group("suffix"))
+    return ReptProjectSearchCriteria.builder()
+        .projectFilePrefix(prefix)
+        .projectNumber(number)
+        .projectFileSuffix(suffix)
         .projectName(baseCriteria.projectName())
         .regionNumber(baseCriteria.regionNumber())
         .districtNumber(baseCriteria.districtNumber())
         .projectManagerUserId(baseCriteria.projectManagerUserId())
-        .projectStatusCode(baseCriteria.projectStatusCode());
-
-    return builder.build();
+        .projectStatusCode(baseCriteria.projectStatusCode())
+        .build();
   }
 
   private List<CodeNameDto> toCodeList(Map<String, String> map) {
