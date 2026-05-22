@@ -8,12 +8,10 @@ import type { FC, ReactNode } from 'react';
 
 const Layout: FC<{ children: ReactNode }> = ({ children }) => {
   return (
-    <>
-      <LayoutProvider>
-        <HeaderContainer render={LayoutHeader} />
-        <Content>{children}</Content>
-      </LayoutProvider>
-    </>
+    <LayoutProvider>
+      <HeaderContainer render={LayoutHeader} />
+      <Content>{children}</Content>
+    </LayoutProvider>
   );
 };
 

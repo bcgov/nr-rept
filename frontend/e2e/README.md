@@ -66,8 +66,23 @@ haven't run the login bootstrap yet.
   `/projects`, `/projects/create`, `/admin`, `/reports`, `/reports/:id`)
   plus the 404 path, walks all six project-detail tabs on the first listed
   project, and asserts the global error boundary never takes over.
+- **`project-create.spec.ts`** — `describe.serial` lifecycle: creates a
+  project file, then exercises History (edit + save), Acquisition Request
+  (create with all required fields), Agreements (add agreement), each
+  of the three Agreement sub-tabs (Details edit/save, Properties empty-
+  state, Payments new-payment modal), plus a property created under the
+  same project with Edit/Save on each of its four editable sub-tabs
+  (Details, Milestones, Registration, Expropriation). Each later test
+  reuses the `projectId` (and `propertyPid` for the property branch)
+  captured by earlier tests. No cleanup — see the gotcha below.
 - **`property-crud.spec.ts`** — picks the first project, creates a Property
-  with the minimum-required fields, walks its sub-tabs, then deletes it.
+  with the minimum-required fields, smoke-clicks all five Property
+  sub-tabs (Details, Milestones, Registration, Expropriation, Contacts),
+  drives one Edit/Save round-trip on Details to lock in the edit path,
+  then deletes the property. Edit/Save on the other sub-tabs is left out
+  on purpose — each property mutation invalidates the project's full
+  property-list query, and four list-refetches back-to-back against a
+  property we're about to delete pushed the test past its budget.
 - **`property-contact-crud.spec.ts`** — creates an admin contact + a
   property, associates the contact with the property, removes the
   association, then deletes both.
@@ -89,8 +104,10 @@ assertion still removes the test row from the namespace.
 
 ## Notes & gotchas
 
-- **Project creation is not exercised** — the UI doesn't expose a delete
-  for projects, so creating one would leave permanent debris.
+- **Project creation has no cleanup** — the UI doesn't expose a delete for
+  projects, so `project-create.spec.ts` intentionally leaves a row behind
+  each run. The project name is prefixed `E2E Project` + the suffix so the
+  residue is easy to spot in `/projects` searches.
 - **Test data names** are suffixed with `e2e-<timestamp>-<rand>` to avoid
   collisions and to make leftover rows easy to spot/clean. Two admin specs
   use the suffix alone (no human-readable prefix) because their backing

@@ -83,7 +83,7 @@
 
 .reports-row {
   display: grid;
-  grid-template-columns: 1.4fr 3fr 0.8fr;
+  grid-template-columns: 1.4fr 3fr;
   gap: 1rem;
   align-items: center;
   width: 100%;
@@ -111,12 +111,6 @@
 
 .reports-row__cell--description {
   color: var(--cds-text-secondary);
-}
-
-.reports-row__cell--formats {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
 }
 
 .report-form {

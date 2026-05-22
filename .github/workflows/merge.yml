@@ -50,6 +50,8 @@ jobs:
       environment: test
       target: test
       tag: ${{ needs.init.outputs.pr }}
+      backend_replicas: "2"
+      frontend_replicas: "2"
 
   tests:
     name: Tests
@@ -81,6 +83,8 @@ jobs:
       environment: prod
       target: prod
       tag: ${{ needs.init.outputs.pr }}
+      backend_replicas: "3"
+      frontend_replicas: "3"
 
   # After PROD is up, alias the PR image as :prod in GHCR. Creates a durable
   # record of "this is the image running in production right now" and a
