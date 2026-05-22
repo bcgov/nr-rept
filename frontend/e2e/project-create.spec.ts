@@ -1,6 +1,7 @@
 import { expect, test, type Locator } from '@playwright/test';
 
 import { openProjectTab } from './helpers/project';
+import { createProperty } from './helpers/property';
 import { gotoProtected, uniqueSuffix } from './utils';
 
 /**
@@ -15,6 +16,7 @@ import { gotoProtected, uniqueSuffix } from './utils';
 test.describe.serial('project lifecycle', () => {
   let projectId = '';
   let projectName = '';
+  let propertyPid = '';
 
   /** Fill a Carbon input/textarea only if it's actually rendered. */
   const fillIfVisible = async (locator: Locator, value: string) => {
@@ -233,5 +235,101 @@ test.describe.serial('project lifecycle', () => {
 
     await paymentModal.getByRole('button', { name: /^cancel$/i }).click();
     await expect(paymentModal).toBeHidden({ timeout: 10_000 });
+  });
+
+  /**
+   * Property + Property-sub-tab coverage piggy-backs on the lifecycle
+   * project. Each property mutation invalidates `reptKeys.properties(...)`
+   * (the heavy project property-list query), so chaining four Edit/Save
+   * cycles in one test blows past Playwright's per-test budget — splitting
+   * them into siblings gives each its own 180s window. There is no delete
+   * step: the lifecycle project itself is never deleted, so leaving its
+   * property behind matches the existing "no cleanup" gotcha.
+   */
+
+  test('property: create under lifecycle project', async ({ page }) => {
+    expect(projectId, 'create step must populate projectId').not.toBe('');
+
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'Properties');
+
+    propertyPid = await createProperty(page);
+    expect(propertyPid).toMatch(/^\d{3}-\d{3}-\d{3}$/);
+  });
+
+  /**
+   * Helper used by all four sub-tab edit tests: navigate to the lifecycle
+   * project's Properties tab and assert the just-created property is
+   * present (it's auto-selected because it's the only property on this
+   * fresh project). Each test then drives a single sub-tab Edit/Save.
+   */
+  const openPropertySubTab = async (page: import('@playwright/test').Page, subTab: string) => {
+    await gotoProtected(page, `/projects/${projectId}`);
+    await openProjectTab(page, 'Properties');
+    await expect(page.locator('tr', { hasText: propertyPid })).toBeVisible({ timeout: 60_000 });
+    const propertySubTabs = page.getByRole('tablist', { name: 'Property sub-sections' });
+    await propertySubTabs.getByRole('tab', { name: subTab, exact: true }).click();
+  };
+
+  test('Property → Details: edit and save', async ({ page }) => {
+    expect(propertyPid, 'property step must populate propertyPid').not.toBe('');
+
+    await openPropertySubTab(page, 'Details');
+
+    const editButton = page.getByRole('button', { name: /^edit$/i });
+    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await editButton.click();
+
+    const addressValue = `E2E address ${uniqueSuffix()}`;
+    await page.locator('#parcelAddress').fill(addressValue);
+
+    await page.getByRole('button', { name: /^save$/i }).click();
+    await expect(editButton).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(addressValue)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('Property → Milestones: edit and save', async ({ page }) => {
+    expect(propertyPid, 'property step must populate propertyPid').not.toBe('');
+
+    await openPropertySubTab(page, 'Milestones');
+
+    const editButton = page.getByRole('button', { name: /^edit$/i });
+    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await editButton.click();
+
+    await page.locator('#ownerContactDate').fill('2026-02-15');
+
+    await page.getByRole('button', { name: /^save$/i }).click();
+    await expect(editButton).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('Property → Registration: upsert and save', async ({ page }) => {
+    expect(propertyPid, 'property step must populate propertyPid').not.toBe('');
+
+    await openPropertySubTab(page, 'Registration');
+
+    const editButton = page.getByRole('button', { name: /^edit$/i });
+    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await editButton.click();
+
+    await page.locator('#ltoPlanNumber').fill('E2E-PLAN');
+
+    await page.getByRole('button', { name: /^save$/i }).click();
+    await expect(editButton).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('Property → Expropriation: upsert and save', async ({ page }) => {
+    expect(propertyPid, 'property step must populate propertyPid').not.toBe('');
+
+    await openPropertySubTab(page, 'Expropriation');
+
+    const editButton = page.getByRole('button', { name: /^edit$/i });
+    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await editButton.click();
+
+    await page.locator('#executiveApprovalDate').fill('2026-03-15');
+
+    await page.getByRole('button', { name: /^save$/i }).click();
+    await expect(editButton).toBeVisible({ timeout: 30_000 });
   });
 });

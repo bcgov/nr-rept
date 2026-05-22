@@ -68,15 +68,21 @@ haven't run the login bootstrap yet.
   project, and asserts the global error boundary never takes over.
 - **`project-create.spec.ts`** — `describe.serial` lifecycle: creates a
   project file, then exercises History (edit + save), Acquisition Request
-  (create with all required fields), Agreements (add agreement), and each
+  (create with all required fields), Agreements (add agreement), each
   of the three Agreement sub-tabs (Details edit/save, Properties empty-
-  state, Payments new-payment modal) — all against the same project. Each
-  later test reuses the `projectId` captured by the first one. No cleanup
-  — see the gotcha below.
+  state, Payments new-payment modal), plus a property created under the
+  same project with Edit/Save on each of its four editable sub-tabs
+  (Details, Milestones, Registration, Expropriation). Each later test
+  reuses the `projectId` (and `propertyPid` for the property branch)
+  captured by earlier tests. No cleanup — see the gotcha below.
 - **`property-crud.spec.ts`** — picks the first project, creates a Property
-  with the minimum-required fields, drives an edit/save on each of the
-  four editable Property sub-tabs (Details, Milestones, Registration,
-  Expropriation), smoke-clicks Contacts, then deletes the property.
+  with the minimum-required fields, smoke-clicks all five Property
+  sub-tabs (Details, Milestones, Registration, Expropriation, Contacts),
+  drives one Edit/Save round-trip on Details to lock in the edit path,
+  then deletes the property. Edit/Save on the other sub-tabs is left out
+  on purpose — each property mutation invalidates the project's full
+  property-list query, and four list-refetches back-to-back against a
+  property we're about to delete pushed the test past its budget.
 - **`property-contact-crud.spec.ts`** — creates an admin contact + a
   property, associates the contact with the property, removes the
   association, then deletes both.
