@@ -239,7 +239,14 @@ export const AgreementsTab: FC<AgreementsTabProps> = ({ projectId }) => {
                       </TableCell>
                       <TableCell>{displayValue(agreement.agreementLabel)}</TableCell>
                       <TableCell>{formatBoolean(agreement.active)}</TableCell>
-                      <TableCell>{displayValue(agreement.paymentTerms)}</TableCell>
+                      <TableCell
+                        className="project-table__payment-terms-cell"
+                        title={agreement.paymentTerms ?? undefined}
+                      >
+                        {agreement.paymentTerms && agreement.paymentTerms.length > 100
+                          ? `${agreement.paymentTerms.slice(0, 100)}...`
+                          : displayValue(agreement.paymentTerms)}
+                      </TableCell>
                       <TableCell>{formatDate(agreement.expiryDate)}</TableCell>
                     </TableRow>
                   );
