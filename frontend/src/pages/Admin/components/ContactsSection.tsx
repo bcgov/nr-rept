@@ -372,7 +372,7 @@ const ContactsSection: FC = () => {
           <div style={{ flex: '0 0 auto' }}>
             <Button
               type="button"
-              kind="secondary"
+              kind="ghost"
               size="md"
               onClick={() => setFilters({ firstName: '', lastName: '', companyName: '' })}
             >

@@ -491,7 +491,7 @@ const ProjectSearchPage: FC = () => {
             </div>
 
             <div className="project-search__actions">
-              <Button kind="tertiary" size={'md'} type="button" onClick={handleReset}>
+              <Button kind="ghost" size={'md'} type="button" onClick={handleReset}>
                 Clear
               </Button>
               <Button type="submit" size={'md'} disabled={optionsQuery.isLoading}>
