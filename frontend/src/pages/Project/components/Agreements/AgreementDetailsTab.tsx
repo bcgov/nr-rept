@@ -5,6 +5,7 @@ import {
   DatePicker,
   DatePickerInput,
   InlineNotification,
+  Link,
   NumberInput,
   TextArea,
   TextInput,
@@ -48,6 +49,38 @@ type AgreementDetailsFormState = {
   commitmentDescription: string;
   coUserId?: number;
   coUserLabel?: string;
+};
+
+const EXPANDABLE_TEXT_THRESHOLD = 200;
+
+const ExpandableText: FC<{ value?: string | null; threshold?: number }> = ({
+  value,
+  threshold = EXPANDABLE_TEXT_THRESHOLD,
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const text = value?.trim();
+
+  if (!text) {
+    return <>{MISSING_VALUE}</>;
+  }
+
+  if (text.length <= threshold) {
+    return <span className="expandable-text">{text}</span>;
+  }
+
+  return (
+    <span className="expandable-text">
+      {expanded ? text : `${text.slice(0, threshold)}…`}{' '}
+      <Link
+        as="button"
+        type="button"
+        className="expandable-text__toggle"
+        onClick={() => setExpanded((prev) => !prev)}
+      >
+        {expanded ? 'Show less' : 'Show more'}
+      </Link>
+    </span>
+  );
 };
 
 const buildAgreementDetails = (agreement?: ReptAgreement | null): DetailField[] => {
@@ -109,7 +142,7 @@ const buildAgreementDetails = (agreement?: ReptAgreement | null): DetailField[] 
     },
     {
       label: 'Commitment Description',
-      value: displayValue(agreement.commitmentDescription),
+      value: <ExpandableText value={agreement.commitmentDescription} />,
     },
     {
       label: 'Co-use Partner',
@@ -117,7 +150,7 @@ const buildAgreementDetails = (agreement?: ReptAgreement | null): DetailField[] 
     },
     {
       label: 'Payment Terms',
-      value: displayValue(agreement.paymentTerms),
+      value: <ExpandableText value={agreement.paymentTerms} />,
     },
   ];
 };
