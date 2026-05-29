@@ -86,6 +86,25 @@ jobs:
       backend_replicas: "3"
       frontend_replicas: "3"
 
+  # Sync Sysdig email alerts for PROD. No-ops cleanly if SYSDIG_API_TOKEN is
+  # unset — adoption is gradual. Alert templates live in monitoring/alerts/.
+  monitor-prod:
+    name: Sysdig Monitor (PROD)
+    needs: [deploy-prod]
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      # TODO: pin to a tagged release once action-sysdig-monitor cuts v1.
+      - uses: bcgov/action-sysdig-monitor@main
+        with:
+          sysdig_api_token: ${{ secrets.SYSDIG_API_TOKEN }}
+          oc_namespace: ${{ secrets.oc_namespace }}
+          app: nr-rept
+
   # After PROD is up, alias the PR image as :prod in GHCR. Creates a durable
   # record of "this is the image running in production right now" and a
   # rollback target.
