@@ -510,6 +510,7 @@ export interface ReptAgreementPaymentOptions {
   expenseAuthorities: CodeName[];
   qualifiedReceivers: CodeName[];
   taxRate?: ReptAgreementPaymentTaxRate | null;
+  pstRate?: ReptAgreementPaymentTaxRate | null;
 }
 
 export interface ReptAgreementPayment {
@@ -532,6 +533,9 @@ export interface ReptAgreementPayment {
   casProjectNumber?: string | null;
   taxRateId?: number | null;
   taxRatePercent?: number | null;
+  pstRateId?: number | null;
+  pstRatePercent?: number | null;
+  pstAmount?: number | null;
   expenseAuthorityCode?: string | null;
   expenseAuthorityLabel?: string | null;
   qualifiedReceiverCode?: string | null;
@@ -554,6 +558,7 @@ export interface ReptAgreementPaymentCreateRequest {
   casProjectNumber?: string | null;
   processingInstructions?: string | null;
   applyGst?: boolean | null;
+  applyPst?: boolean | null;
   propertyContactIds: number[];
 }
 

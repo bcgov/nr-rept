@@ -23,6 +23,7 @@ public record ReptAgreementPaymentCreateRequestDto(
     @NotNull LocalDate requestDate,
     @NotNull @Positive BigDecimal amount,
     Boolean applyGst,
+    Boolean applyPst,
     String paymentTypeCode,
     String paymentTermTypeCode,
     String expenseAuthorityCode,

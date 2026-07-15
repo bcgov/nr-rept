@@ -310,6 +310,7 @@ export const getAgreementPaymentOptions = (projectId: string, agreementId: strin
     expenseAuthorities: result?.expenseAuthorities ?? [],
     qualifiedReceivers: result?.qualifiedReceivers ?? [],
     taxRate: result?.taxRate ?? null,
+    pstRate: result?.pstRate ?? null,
   }));
 
 export const updateAgreementProperties = (
