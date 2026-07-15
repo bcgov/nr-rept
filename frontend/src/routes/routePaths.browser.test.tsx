@@ -19,11 +19,12 @@ describe('routePaths', () => {
 
   it('getPublicRoutes returns the unauthenticated route set', () => {
     const result = routePaths.getPublicRoutes();
-    // Landing is the first entry; other public routes are Unauthorized
-    // and the wildcard 404 catch-all.
+    // Landing is the first entry; Unauthorized is also public. Any other path
+    // (e.g. a logged-out user navigating to /dashboard) is caught by the
+    // wildcard and redirected back to Landing (login).
     expect(result.some((r) => r.id === 'Landing')).toBe(true);
     expect(result.some((r) => r.id === 'Unauthorized')).toBe(true);
-    expect(result.some((r) => r.id === 'Not Found')).toBe(true);
+    expect(result.some((r) => r.id === 'RedirectToLogin' && r.path === '*')).toBe(true);
   });
 
   it('getProtectedRoutes returns protected and system routes', () => {

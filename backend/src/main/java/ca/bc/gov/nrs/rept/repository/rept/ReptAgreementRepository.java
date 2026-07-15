@@ -53,6 +53,10 @@ public class ReptAgreementRepository extends AbstractReptRepository {
   private static final String PROC_CONTACT_GET = "REPT_CONTACT_GET";
   private static final String PROC_TAX_RATE_GET = "GST_VALUE";
   private static final String PROC_TAX_RATE_FIND = "GST_FIND";
+  // PST_VALUE(id) is equivalent to GST_VALUE(id) (both select TAX_RATE_PCT by id regardless of
+  // tax type), so the read-side rate lookup reuses PROC_TAX_RATE_GET. PST_FIND is distinct because
+  // it returns the currently-effective PST-typed row.
+  private static final String PROC_PST_RATE_FIND = "PST_FIND";
 
   private static final String PROC_ACQUISITION_CODES = "ACQUISITION_AGREEMENT_CODE_LST";
   private static final String PROC_DISPOSITION_CODES = "DISPOSITION_AGREEMENT_CODE_LST";
@@ -377,6 +381,7 @@ public class ReptAgreementRepository extends AbstractReptRepository {
                             landTitleCodes,
                             contactTypeCodes);
                     BigDecimal taxRatePercent = loadTaxRatePercent(record.taxRateId(), taxRateCache);
+                    BigDecimal pstRatePercent = loadTaxRatePercent(record.pstRateId(), taxRateCache);
                     results.add(
                         toPaymentDto(
                             record,
@@ -385,6 +390,7 @@ public class ReptAgreementRepository extends AbstractReptRepository {
                             expenseAuthorityCodes,
                             qualifiedReceiverCodes,
                             taxRatePercent,
+                            pstRatePercent,
                             payees));
                   }
                 }
@@ -445,6 +451,7 @@ public class ReptAgreementRepository extends AbstractReptRepository {
             landTitleCodes,
             contactTypeCodes);
     BigDecimal taxRatePercent = loadTaxRatePercent(record.taxRateId(), taxRateCache);
+    BigDecimal pstRatePercent = loadTaxRatePercent(record.pstRateId(), taxRateCache);
 
     return Optional.of(
         toPaymentDto(
@@ -454,7 +461,26 @@ public class ReptAgreementRepository extends AbstractReptRepository {
             expenseAuthorityCodes,
             qualifiedReceiverCodes,
             taxRatePercent,
+            pstRatePercent,
             payees));
+  }
+
+  /**
+   * Loads only the PST figures for a payment. REPORT_2161's cursor does not select PST, so the
+   * invoice takes it as a Jasper parameter instead; reading it here keeps that report working
+   * without a change to REPT_REPORTS.REPORT_2161. Cheaper than {@link #findAgreementPayment}: no
+   * code lists and no payee loading.
+   */
+  public Optional<PaymentPstDetails> findPaymentPstDetails(Long paymentId) {
+    if (paymentId == null) {
+      return Optional.empty();
+    }
+
+    return loadPaymentRecord(paymentId)
+        .map(
+            record ->
+                new PaymentPstDetails(
+                    record.pstAmount(), loadTaxRatePercent(record.pstRateId(), new HashMap<>())));
   }
 
   @Transactional
@@ -463,7 +489,7 @@ public class ReptAgreementRepository extends AbstractReptRepository {
       return null;
     }
 
-    final String call = qualifyProjectProcedureWithoutReturn(PROC_PAYMENT_INSERT, 20);
+    final String call = qualifyProjectProcedureWithoutReturn(PROC_PAYMENT_INSERT, 22);
     try {
       return jdbcTemplate.execute(
           call,
@@ -502,6 +528,12 @@ public class ReptAgreementRepository extends AbstractReptRepository {
             setStringOrNull(cs, 18, command.userId());
             setStringOrNull(cs, 19, command.expenseAuthorityCode());
             setStringOrNull(cs, 20, command.qualifiedReceiverCode());
+            setLongOrNull(cs, 21, command.pstRateId());
+            if (command.pstAmount() == null) {
+              cs.setNull(22, Types.NUMERIC);
+            } else {
+              cs.setBigDecimal(22, command.pstAmount());
+            }
 
             cs.execute();
             return cs.getObject(1, Long.class);
@@ -620,8 +652,10 @@ public class ReptAgreementRepository extends AbstractReptRepository {
     Map<String, String> expenseAuthorities = loadCodeList(PROC_EXPENSE_AUTH_CODES);
     Map<String, String> qualifiedReceivers = loadCodeList(PROC_QUALIFIED_RECEIVER_CODES);
     ReptAgreementPaymentTaxRateDto taxRate = fetchCurrentTaxRate();
+    ReptAgreementPaymentTaxRateDto pstRate = fetchCurrentPstRate();
 
-    return new PaymentReferenceData(paymentTypes, paymentTerms, expenseAuthorities, qualifiedReceivers, taxRate);
+    return new PaymentReferenceData(
+        paymentTypes, paymentTerms, expenseAuthorities, qualifiedReceivers, taxRate, pstRate);
   }
 
   @Transactional
@@ -1081,6 +1115,41 @@ public class ReptAgreementRepository extends AbstractReptRepository {
     }
   }
 
+  private ReptAgreementPaymentTaxRateDto fetchCurrentPstRate() {
+    final String call = qualifyProjectProcedure(PROC_PST_RATE_FIND, 0);
+    try {
+      return jdbcTemplate.execute(
+          call,
+          (CallableStatementCallback<ReptAgreementPaymentTaxRateDto>)
+              cs -> {
+                cs.registerOutParameter(1, OracleTypes.CURSOR);
+                cs.execute();
+
+                ResultSet rs = (ResultSet) cs.getObject(1);
+                if (rs == null) {
+                  return null;
+                }
+
+                try (rs) {
+                  if (!rs.next()) {
+                    return null;
+                  }
+                  Long pstRateId = rs.getObject("REPT_TAX_RATE_ID", Long.class);
+                  BigDecimal percent = rs.getBigDecimal("TAX_RATE_PCT");
+                  return new ReptAgreementPaymentTaxRateDto(pstRateId, percent);
+                }
+              });
+    } catch (DataAccessException e) {
+      LOGGER.warn(
+          "{} failed for package {}: {}",
+          PROC_PST_RATE_FIND,
+          projectPackage,
+          e.getMessage(),
+          e);
+      return null;
+    }
+  }
+
   private PaymentRecord mapPaymentRecord(ResultSet rs) throws SQLException {
     Long id = rs.getObject("REPT_AGREEMENT_PAYMENT_ID", Long.class);
     Long agreementId = rs.getObject("REPT_AGREEMENT_ID", Long.class);
@@ -1101,6 +1170,8 @@ public class ReptAgreementRepository extends AbstractReptRepository {
     String expenseAuthorityCode = trim(rs.getString("EXPENSE_AUTHORITY_ID"));
     String qualifiedReceiverCode = trim(rs.getString("QUALIFIED_RECEIVER_ID"));
     Long revisionCount = rs.getObject("REVISION_COUNT", Long.class);
+    Long pstRateId = rs.getObject("REPT_PST_RATE_ID", Long.class);
+    BigDecimal pstAmount = rs.getBigDecimal("PST_AMOUNT");
 
     return new PaymentRecord(
         id,
@@ -1121,7 +1192,9 @@ public class ReptAgreementRepository extends AbstractReptRepository {
         taxRateId,
         expenseAuthorityCode,
         qualifiedReceiverCode,
-        revisionCount);
+        revisionCount,
+        pstRateId,
+        pstAmount);
   }
 
   private ReptAgreementPaymentDto toPaymentDto(
@@ -1131,6 +1204,7 @@ public class ReptAgreementRepository extends AbstractReptRepository {
       Map<String, String> expenseAuthorityCodes,
       Map<String, String> qualifiedReceiverCodes,
       BigDecimal taxRatePercent,
+      BigDecimal pstRatePercent,
       List<ReptAgreementPayeeDto> payees) {
     return new ReptAgreementPaymentDto(
         record.id(),
@@ -1152,6 +1226,9 @@ public class ReptAgreementRepository extends AbstractReptRepository {
         record.casProjectNumber(),
         record.taxRateId(),
         taxRatePercent,
+        record.pstRateId(),
+        pstRatePercent,
+        record.pstAmount(),
         record.expenseAuthorityCode(),
         labelFor(expenseAuthorityCodes, record.expenseAuthorityCode()),
         record.qualifiedReceiverCode(),
@@ -1401,7 +1478,12 @@ public class ReptAgreementRepository extends AbstractReptRepository {
       Long taxRateId,
       String expenseAuthorityCode,
       String qualifiedReceiverCode,
-      Long revisionCount) {}
+      Long revisionCount,
+      Long pstRateId,
+      BigDecimal pstAmount) {}
+
+  /** PST figures for a single payment, used to parameterize the REPORT_2161 invoice. */
+  public record PaymentPstDetails(BigDecimal pstAmount, BigDecimal pstRatePercent) {}
 
   public record PropertyAssociationLink(Long associationId, Long propertyId, Long revisionCount) {}
 
@@ -1423,14 +1505,17 @@ public class ReptAgreementRepository extends AbstractReptRepository {
       Long taxRateId,
       String expenseAuthorityCode,
       String qualifiedReceiverCode,
-      String userId) {}
+      String userId,
+      Long pstRateId,
+      BigDecimal pstAmount) {}
 
   public record PaymentReferenceData(
       Map<String, String> paymentTypes,
       Map<String, String> paymentTerms,
       Map<String, String> expenseAuthorities,
       Map<String, String> qualifiedReceivers,
-      ReptAgreementPaymentTaxRateDto taxRate) {}
+      ReptAgreementPaymentTaxRateDto taxRate,
+      ReptAgreementPaymentTaxRateDto pstRate) {}
 
   public record AgreementCreateCommand(
       Long projectId,
