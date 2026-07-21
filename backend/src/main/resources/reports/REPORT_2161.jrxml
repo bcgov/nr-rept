@@ -4,6 +4,14 @@
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="6"/>
 	<parameter name="IN_PAYMENT_ID" class="java.math.BigDecimal"/>
+	<!--
+	  PST is supplied by the caller (ReptReportParameterProvider) rather than the
+	  REPORT_2161 cursor, so the invoice can show PST without a change to
+	  REPT_REPORTS.REPORT_2161. Both default to null, which renders the invoice
+	  exactly as it did before PST existed.
+	-->
+	<parameter name="IN_PST_AMOUNT" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="IN_PST_RATE" class="java.math.BigDecimal" isForPrompting="false"/>
 	<parameter name="ORACLE_REF_CURSOR" class="java.sql.ResultSet" isForPrompting="false"/>
 	<parameter name="p_report_id" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["REPORT_2161.rpt"]]></defaultValueExpression>
@@ -194,7 +202,7 @@ STOB:]]></text>
 ( $F{STOB}                     == null || $F{STOB}.isEmpty()                     ? "" : $F{STOB} )]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="29" y="153" width="547" height="60" forecolor="#000000" uuid="af4cda5c-0eae-43f1-b5ec-627bc842ef88"/>
+				<reportElement positionType="Float" x="29" y="153" width="547" height="60" forecolor="#000000" uuid="af4cda5c-0eae-43f1-b5ec-627bc842ef88"/>
 				<textElement textAlignment="Left">
 					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
 				</textElement>
@@ -242,13 +250,17 @@ QR:]]></text>
  ( $F{QR}                     == null || $F{QR}.isEmpty()                     ? "" : $F{QR} )]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
-				<reportElement x="310" y="131" width="246" height="15" forecolor="#000000" uuid="094d55c0-4340-4242-8843-c4d1c82a5100">
+				<reportElement x="76" y="131" width="470" height="15" forecolor="#000000" uuid="094d55c0-4340-4242-8843-c4d1c82a5100">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
-				<textElement textAlignment="Left">
+				<textElement textAlignment="Right">
 					<font fontName="Times New Roman" size="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA[( "$"+new DecimalFormat("#,##0.00").format($F{REQUISITION_AMOUNT})+" + "+new DecimalFormat("#,##0.00").format($F{GSTAMOUNT})+ " ("+ $F{GST}+"% GST) = $"+new DecimalFormat("#,##0.00").format($F{TOTALAMOUNT}))]]></textFieldExpression>
+				<textFieldExpression><![CDATA["$" + new DecimalFormat("#,##0.00").format($F{REQUISITION_AMOUNT}) +
+( $F{GSTAMOUNT} == null || $F{GSTAMOUNT}.signum() == 0 ? "" : " + " + new DecimalFormat("#,##0.00").format($F{GSTAMOUNT}) + "\u00A0(" + $F{GST} + "%\u00A0GST)" ) +
+( $P{IN_PST_AMOUNT} == null || $P{IN_PST_AMOUNT}.signum() == 0 ? "" : " + " + new DecimalFormat("#,##0.00").format($P{IN_PST_AMOUNT}) + "\u00A0(" + $P{IN_PST_RATE} + "%\u00A0PST)" ) +
+( $F{TOTALAMOUNT} == null || $F{REQUISITION_AMOUNT} == null || $F{TOTALAMOUNT}.compareTo($F{REQUISITION_AMOUNT}) == 0 ? "" :
+  " = $" + new DecimalFormat("#,##0.00").format($F{TOTALAMOUNT}) )]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 				<reportElement x="30" y="3" width="546" height="60" forecolor="#000000" uuid="5c2607b9-fb9c-4568-b1ed-3642055ffc6b"/>

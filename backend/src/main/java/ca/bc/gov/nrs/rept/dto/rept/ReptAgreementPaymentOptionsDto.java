@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * Aggregates the dropdown/selection data required to build the agreement payments form on the
- * frontend, including payee candidates, CAS code lists, and the current GST rate.
+ * frontend, including payee candidates, CAS code lists, and the current GST/PST rates.
  */
 public record ReptAgreementPaymentOptionsDto(
     List<ReptAgreementPayeeCandidateDto> payeeCandidates,
@@ -13,5 +13,6 @@ public record ReptAgreementPaymentOptionsDto(
     List<CodeNameDto> paymentTerms,
     List<CodeNameDto> expenseAuthorities,
     List<CodeNameDto> qualifiedReceivers,
-    ReptAgreementPaymentTaxRateDto taxRate
+    ReptAgreementPaymentTaxRateDto taxRate,
+    ReptAgreementPaymentTaxRateDto pstRate
 ) {}

@@ -65,6 +65,7 @@ const buildPaymentFields = (payment: ReptAgreementPayment) => [
   { label: 'Request Date', value: formatDate(payment.requestDate) },
   { label: 'Payment Amount', value: formatCurrency(payment.amount) },
   { label: 'GST Amount', value: formatCurrency(payment.gstAmount) },
+  { label: 'PST Amount', value: formatCurrency(payment.pstAmount) },
   { label: 'Total Invoice', value: formatCurrency(payment.totalAmount) },
   {
     label: 'Payment Term',
@@ -82,7 +83,8 @@ const buildPaymentFields = (payment: ReptAgreementPayment) => [
     label: 'Qualified Receiver',
     value: formatWithCode(payment.qualifiedReceiverLabel, payment.qualifiedReceiverCode),
   },
-  { label: 'Tax Rate', value: formatPercent(payment.taxRatePercent) },
+  { label: 'GST Rate', value: formatPercent(payment.taxRatePercent) },
+  { label: 'PST Rate', value: formatPercent(payment.pstRatePercent) },
   { label: 'CAS Client', value: displayValue(payment.casClient) },
   { label: 'CAS Responsibility Centre', value: displayValue(payment.casResponsibilityCentre) },
   { label: 'CAS Service Line', value: displayValue(payment.casServiceLine) },
@@ -120,6 +122,7 @@ const buildInitialPaymentDraft = () => ({
   casProjectNumber: '',
   processingInstructions: '',
   applyGst: true,
+  applyPst: false,
 });
 
 type PaymentDraftState = ReturnType<typeof buildInitialPaymentDraft>;
@@ -322,6 +325,7 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
         casProjectNumber: draft.casProjectNumber || null,
         processingInstructions: draft.processingInstructions || null,
         applyGst: draft.applyGst,
+        applyPst: draft.applyPst,
         propertyContactIds: [selectedPayeeId!],
       },
       {
@@ -360,6 +364,7 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
 
   const amountValue = useMemo(() => parseCurrencyInput(draft.amount), [draft.amount]);
   const gstPercent = paymentOptions?.taxRate?.percent ?? null;
+  const pstPercent = paymentOptions?.pstRate?.percent ?? null;
   const gstAmount = useMemo(() => {
     if (
       !draft.applyGst ||
@@ -371,12 +376,23 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
     }
     return (amountValue * gstPercent) / 100;
   }, [amountValue, draft.applyGst, gstPercent]);
+  const pstAmount = useMemo(() => {
+    if (
+      !draft.applyPst ||
+      amountValue === null ||
+      pstPercent === null ||
+      Number.isNaN(pstPercent)
+    ) {
+      return 0;
+    }
+    return (amountValue * pstPercent) / 100;
+  }, [amountValue, draft.applyPst, pstPercent]);
   const totalAmount = useMemo(() => {
     if (amountValue === null) {
       return 0;
     }
-    return draft.applyGst ? amountValue + gstAmount : amountValue;
-  }, [amountValue, draft.applyGst, gstAmount]);
+    return amountValue + gstAmount + pstAmount;
+  }, [amountValue, gstAmount, pstAmount]);
 
   const selectedPayee = useMemo(
     () =>
@@ -552,6 +568,20 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                         ) => handleDraftChange('applyGst', checked)}
                       />
                     </div>
+                    <div className="agreement-payment-form__checkbox">
+                      <Checkbox
+                        id="payment-apply-pst"
+                        labelText={
+                          pstPercent !== null ? `Apply PST (${pstPercent}% currently)` : 'Apply PST'
+                        }
+                        hideLabel={false}
+                        checked={draft.applyPst}
+                        onChange={(
+                          _: React.ChangeEvent<HTMLInputElement>,
+                          { checked }: { checked: boolean },
+                        ) => handleDraftChange('applyPst', checked)}
+                      />
+                    </div>
                     <Select
                       id="payment-type"
                       labelText="Payment type *"
@@ -682,6 +712,10 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                     <div>
                       <p>GST amount</p>
                       <strong>{formatCurrency(draft.applyGst ? gstAmount : 0)}</strong>
+                    </div>
+                    <div>
+                      <p>PST amount</p>
+                      <strong>{formatCurrency(draft.applyPst ? pstAmount : 0)}</strong>
                     </div>
                     <div>
                       <p>Total invoice</p>

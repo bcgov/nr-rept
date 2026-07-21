@@ -1,7 +1,8 @@
 /**
  * Route definitions for the REPT application.
  *
- * PUBLIC_ROUTES  — unauthenticated pages (Landing, 404, Unauthorized).
+ * PUBLIC_ROUTES  — unauthenticated pages (Landing, Unauthorized); any other
+ *                  path redirects to Landing (login).
  * PROTECTED_ROUTES — authenticated pages wrapped in <Layout> (Dashboard, Projects, Reports, Admin).
  *
  * Three route sets correspond to three auth states (selected in AppRoutes):
@@ -67,9 +68,13 @@ export const PUBLIC_ROUTES: RouteDescription[] = [
     isSideMenu: false,
   },
   {
+    // A logged-out user who navigates directly to any downstream/unknown path
+    // (e.g. /dashboard) is bounced back to the Landing page — the IDIR login
+    // screen — rather than shown a 404 they can't act on. Mirrors the
+    // catch-all redirect used by getNoRoleRoutes().
     path: '*',
-    id: 'Not Found',
-    element: <NotFoundPage />,
+    id: 'RedirectToLogin',
+    element: <Navigate to="/" replace />,
     isSideMenu: false,
   },
 ];

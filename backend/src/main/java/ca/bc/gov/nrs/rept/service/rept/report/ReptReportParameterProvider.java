@@ -1,6 +1,8 @@
 package ca.bc.gov.nrs.rept.service.rept.report;
 
 import ca.bc.gov.nrs.rept.dto.rept.report.ReptReportRequestDto;
+import ca.bc.gov.nrs.rept.repository.rept.ReptAgreementRepository;
+import ca.bc.gov.nrs.rept.repository.rept.ReptAgreementRepository.PaymentPstDetails;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -14,6 +16,12 @@ public class ReptReportParameterProvider {
 
   private static final LocalDate DEFAULT_START_DATE = LocalDate.of(1900, 1, 1);
   private static final LocalDate DEFAULT_END_DATE = LocalDate.of(9999, 12, 31);
+
+  private final ReptAgreementRepository agreementRepository;
+
+  public ReptReportParameterProvider(ReptAgreementRepository agreementRepository) {
+    this.agreementRepository = agreementRepository;
+  }
 
   public Map<String, Object> buildJasperParameters(
       ReptReportDefinition definition,
@@ -121,6 +129,20 @@ public class ReptReportParameterProvider {
     }
     Map<String, Object> params = new HashMap<>();
     params.put("IN_PAYMENT_ID", BigDecimal.valueOf(paymentId));
+
+    // REPORT_2161's cursor selects GST but not PST, while the TOTAL_INVOICE_AMOUNT it returns
+    // already includes PST. Passing PST as a parameter therefore keeps the invoice's arithmetic
+    // reconcilable without touching the stored procedure. A payment with no PST resolves to nulls,
+    // which the template renders as a GST-only invoice.
+    PaymentPstDetails pst =
+        agreementRepository
+            .findPaymentPstDetails(paymentId)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Payment " + paymentId + " could not be read; cannot render invoice"));
+    params.put("IN_PST_AMOUNT", pst.pstAmount());
+    params.put("IN_PST_RATE", pst.pstRatePercent());
     return params;
   }
 

@@ -223,7 +223,8 @@ public class ReptAgreementService {
             toCodeList(paymentTermCodes),
             toCodeList(expenseAuthorityCodes),
             toCodeList(qualifiedReceiverCodes),
-            referenceData != null ? referenceData.taxRate() : null);
+            referenceData != null ? referenceData.taxRate() : null,
+            referenceData != null ? referenceData.pstRate() : null);
 
     return Optional.of(options);
   }
@@ -263,7 +264,9 @@ public class ReptAgreementService {
                   context.taxRateId(),
                   context.expenseAuthorityCode(),
                   context.qualifiedReceiverCode(),
-                  userId));
+                  userId,
+                  context.pstRateId(),
+                  context.pstAmount()));
     } catch (DataIntegrityViolationException ex) {
       throw new AgreementCommandException(
           AgreementCommandException.Reason.CONFLICT,
@@ -644,19 +647,40 @@ public class ReptAgreementService {
     }
 
     boolean applyGst = Boolean.TRUE.equals(request.applyGst());
+    boolean applyPst = Boolean.TRUE.equals(request.applyPst());
     BigDecimal gstAmount = BigDecimal.ZERO;
+    BigDecimal pstAmount = BigDecimal.ZERO;
     BigDecimal totalAmount = amount;
     Long taxRateId = null;
+    Long pstRateId = null;
 
-    if (applyGst) {
+    if (applyGst || applyPst) {
       PaymentReferenceData referenceData = repository.loadPaymentReferenceData();
-      ReptAgreementPaymentTaxRateDto taxRate = referenceData != null ? referenceData.taxRate() : null;
-      if (taxRate == null || taxRate.id() == null || taxRate.percent() == null) {
-        errors.add("GST cannot be applied because the current tax rate is unavailable");
-      } else if (amount != null) {
-        gstAmount = calculateGst(amount, taxRate.percent());
-        totalAmount = amount.add(gstAmount);
-        taxRateId = taxRate.id();
+
+      if (applyGst) {
+        ReptAgreementPaymentTaxRateDto taxRate =
+            referenceData != null ? referenceData.taxRate() : null;
+        if (taxRate == null || taxRate.id() == null || taxRate.percent() == null) {
+          errors.add("GST cannot be applied because the current tax rate is unavailable");
+        } else if (amount != null) {
+          gstAmount = calculateTax(amount, taxRate.percent());
+          taxRateId = taxRate.id();
+        }
+      }
+
+      if (applyPst) {
+        ReptAgreementPaymentTaxRateDto pstRate =
+            referenceData != null ? referenceData.pstRate() : null;
+        if (pstRate == null || pstRate.id() == null || pstRate.percent() == null) {
+          errors.add("PST cannot be applied because the current PST rate is unavailable");
+        } else if (amount != null) {
+          pstAmount = calculateTax(amount, pstRate.percent());
+          pstRateId = pstRate.id();
+        }
+      }
+
+      if (amount != null) {
+        totalAmount = amount.add(gstAmount).add(pstAmount);
       }
     }
 
@@ -671,8 +695,10 @@ public class ReptAgreementService {
         requestDate,
         amount,
         gstAmount,
+        pstAmount,
         totalAmount,
         taxRateId,
+        pstRateId,
         paymentTermTypeCode,
         paymentTypeCode,
         expenseAuthorityCode,
@@ -693,7 +719,7 @@ public class ReptAgreementService {
     return value.setScale(2, RoundingMode.HALF_UP);
   }
 
-  private BigDecimal calculateGst(BigDecimal amount, BigDecimal percent) {
+  private BigDecimal calculateTax(BigDecimal amount, BigDecimal percent) {
     if (amount == null || percent == null) {
       return BigDecimal.ZERO;
     }
@@ -870,8 +896,10 @@ public class ReptAgreementService {
       LocalDate requestDate,
       BigDecimal amount,
       BigDecimal gstAmount,
+      BigDecimal pstAmount,
       BigDecimal totalAmount,
       Long taxRateId,
+      Long pstRateId,
       String paymentTermTypeCode,
       String paymentTypeCode,
       String expenseAuthorityCode,
