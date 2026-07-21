@@ -74,7 +74,7 @@ IN_AGREEMENT_EXISTS => $P{IN_AGREEMENT_EXISTS}
 				<textElement textAlignment="Center">
 					<font fontName="Times New Roman" size="11" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
 				</textElement>
-				<text><![CDATA[MOF/RTEB/Property Services Section]]></text>
+				<text><![CDATA[MFOR/TCBAB/Forest Land Acquisitions Group]]></text>
 			</staticText>
 			<staticText>
 				<reportElement uuid="f0d3d706-850d-4231-a660-21679b9495aa" x="6" y="49" width="966" height="18" forecolor="#000000"/>

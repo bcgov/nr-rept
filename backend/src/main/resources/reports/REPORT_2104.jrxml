@@ -65,7 +65,7 @@ IN_SORT_COLUMN => $P{IN_SORT_COLUMN}
 				<textElement textAlignment="Center">
 					<font fontName="Times New Roman" size="11" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
 				</textElement>
-				<text><![CDATA[MOF/RTEB/Property Services Section]]></text>
+				<text><![CDATA[MFOR/TCBAB/Forest Land Acquisitions Group]]></text>
 			</staticText>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
 				<reportElement uuid="1a16478f-cbac-4f88-ae17-c06c82333c00" x="6" y="42" width="570" height="30" forecolor="#000000"/>
