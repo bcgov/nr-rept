@@ -51,12 +51,13 @@ describe('LayoutHeader', () => {
   it('toggles side nav when menu button is clicked', async () => {
     await renderWithProviders();
 
-    const toggleButton = await screen.findByLabelText(/open menu/i);
+    // The nav is popped out by default, so the menu button starts as "Close menu".
+    const toggleButton = await screen.findByLabelText(/close menu/i);
     expect(toggleButton).toBeInTheDocument();
 
     fireEvent.click(toggleButton);
 
-    // After toggling once, aria-label should change to "Close menu"
-    expect(screen.getByLabelText(/close menu/i)).toBeInTheDocument();
+    // After pulling the nav back, the aria-label flips to "Open menu".
+    expect(screen.getByLabelText(/open menu/i)).toBeInTheDocument();
   });
 });

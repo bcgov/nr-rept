@@ -1,5 +1,5 @@
 import { SideNav, SideNavItems, SideNavLink, SideNavMenu, SideNavMenuItem } from '@carbon/react';
-import { useEffect, type FC } from 'react';
+import { type FC } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/context/auth/useAuth';
@@ -9,21 +9,13 @@ import { getMenuEntries, type MenuItem } from '@/routes/routePaths';
 import './index.scss';
 
 export const LayoutSideNav: FC = () => {
-  const { isSideNavExpanded, closeSideNav } = useLayout();
+  const { isSideNavExpanded } = useLayout();
   const location = useLocation();
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (!isSideNavExpanded) return;
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Element | null;
-      if (!target) return;
-      if (target.closest('.side-nav-drawer, .cds--header__menu-toggle')) return;
-      closeSideNav();
-    };
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [isSideNavExpanded, closeSideNav]);
+  // Note: the nav no longer auto-closes on link click or outside pointer-down.
+  // It stays popped out — the only way to pull it back is the header menu
+  // button, which is the behaviour we want (matches nr-fsp-new).
 
   const renderIcon = (route: MenuItem) => {
     const Icon = route.icon;
@@ -43,7 +35,6 @@ export const LayoutSideNav: FC = () => {
       to={route.path}
       isActive={route.path === location.pathname}
       renderIcon={route.icon}
-      onClick={closeSideNav}
     >
       {route.id}
     </SideNavLink>
@@ -68,7 +59,6 @@ export const LayoutSideNav: FC = () => {
             as={Link}
             to={childPath(route.path, childRoute)}
             isActive={childPath(route.path, childRoute) === location.pathname}
-            onClick={closeSideNav}
           >
             {renderIcon(childRoute)}
           </SideNavMenuItem>

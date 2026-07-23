@@ -2,16 +2,21 @@ import { env } from '@/env';
 
 const redirectUri = window.location.origin + (env.VITE_BASE_PATH || '/').replace(/\/$/, '');
 
-// The full BC Gov logoff chain URL — must exactly match one of the Allowed sign-out URLs
-// registered in the Cognito app client for the current environment.
-// Set VITE_REDIRECT_SIGN_OUT in:
-//   - frontend/.env for local development
-//   - playbooks/vars/custom/<env>.yaml for deployed environments (injected via config.js.j2)
-// Example (dev/test/localhost):
-//   https://logontest7.gov.bc.ca/clp-cgi/logoff.cgi?retnow=1&returl=
-//     https://test.loginproxy.gov.bc.ca/auth/realms/standard/protocol/openid-connect/logout
-//       ?redirect_uri=<your-app-url>
-export const redirectSignOut = env.VITE_REDIRECT_SIGN_OUT?.trim() ?? '';
+// Where Cognito returns the browser after its /logout hop — the app origin.
+// This must be registered as an Allowed sign-out URL on the Cognito app client
+// (the same origin the federated logout chain passes as its `logout_uri`, see
+// context/auth/logoutChain.ts). Computed from the runtime origin so the same
+// image works across PR-preview / TEST / PROD without a per-env variable.
+//
+// This backs only the *fallback* Amplify hosted-UI sign-out. The primary logout
+// path drives the federated chain (Siteminder → KC → Cognito → app) itself.
+export const redirectSignOut = redirectUri;
+
+// Cognito hosted-UI domain. Exported so the federated logout builder
+// (context/auth/logoutChain.ts) can construct the Cognito /logout URL that
+// Keycloak redirects back through as the final hop of the sign-out chain.
+export const COGNITO_HOSTED_UI_DOMAIN =
+  'lza-prod-fam-user-pool-domain.auth.ca-central-1.amazoncognito.com';
 
 const verificationMethods: 'code' | 'token' = 'code';
 
@@ -25,7 +30,7 @@ const amplifyconfig = {
       signUpVerificationMethod: verificationMethods,
       loginWith: {
         oauth: {
-          domain: 'lza-prod-fam-user-pool-domain.auth.ca-central-1.amazoncognito.com',
+          domain: COGNITO_HOSTED_UI_DOMAIN,
           scopes: ['openid', 'profile'],
           redirectSignIn: [`${redirectUri}/dashboard`],
           redirectSignOut: [redirectSignOut],

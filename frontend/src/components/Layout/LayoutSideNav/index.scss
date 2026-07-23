@@ -6,31 +6,111 @@
 @use '@bcgov-nr/nr-theme/design-tokens/colors.scss' as colors;
 @use '@carbon/type';
 
-// Carbon's default ux side nav is 16rem; route labels in this app fit in much
-// less. Trim to 12rem and tighten the icon-to-label gap so the column doesn't
-// trail empty space.
-.#{vars.$bcgov-prefix}--side-nav--ux {
-  inline-size: 12rem;
+// Side-nav sizing. Popped out = a fixed 12rem panel (icons + labels); pulled
+// back = a 3rem (48px) icon-only rail. Fixed widths keep the matching content
+// margin (Layout index.scss) in lock-step with the nav.
+:root {
+  --bc-sidenav-width: 12rem;
+  --bc-sidenav-rail: 3rem;
 }
 
-.cds--side-nav__link-text {
+.#{vars.$bcgov-prefix}--side-nav__link-text {
   svg {
     margin-inline-end: 0.75rem;
     fill: var(--#{vars.$bcgov-prefix}-link-primary);
   }
 }
 
-// Drawer behavior: the side nav is always rendered at full width and slid
-// on/off-screen via transform — same timing as the profile panel slide-out.
-// Carbon's built-in width transition is overridden to keep the motion smooth
-// and prevent the in-flow layout shift that the persistent variant causes.
-.side-nav-drawer.#{vars.$bcgov-prefix}--side-nav {
-  inline-size: 12rem;
-  transform: translateX(-100%);
-  transition: transform 400ms cubic-bezier(0.4, 0.14, 0.3, 1);
-  will-change: transform;
+// We drive the nav as an always-visible rail/panel, not a modal drawer. Carbon
+// still renders its dimming overlay (because isPersistent={false}), and because
+// `expanded` is hardcoded true the overlay is stuck "active" — a full-viewport
+// fixed element that contributes nothing here and produces stray edges when the
+// page is clicked. Suppress it entirely.
+.#{vars.$bcgov-prefix}--side-nav__overlay,
+.#{vars.$bcgov-prefix}--side-nav__overlay-active {
+  display: none !important;
 }
 
-.side-nav-drawer--open.#{vars.$bcgov-prefix}--side-nav {
-  transform: translateX(0);
+// The drawer is always on-screen now; its width animates between the rail and
+// the full panel. Same timing as the content margin transition so they move
+// together.
+.side-nav-drawer.#{vars.$bcgov-prefix}--side-nav {
+  inline-size: var(--bc-sidenav-width);
+  min-inline-size: var(--bc-sidenav-width);
+  max-inline-size: var(--bc-sidenav-width);
+  transform: none;
+  transition:
+    inline-size 400ms cubic-bezier(0.4, 0.14, 0.3, 1),
+    min-inline-size 400ms cubic-bezier(0.4, 0.14, 0.3, 1),
+    max-inline-size 400ms cubic-bezier(0.4, 0.14, 0.3, 1);
+}
+
+// Pulled back = icon-only rail (the --open class is absent). overflow: visible
+// only here so the hover tooltips can escape the 48px rail; the popped-out nav
+// keeps Carbon's overflow.
+.side-nav-drawer.#{vars.$bcgov-prefix}--side-nav:not(.side-nav-drawer--open) {
+  inline-size: var(--bc-sidenav-rail);
+  min-inline-size: var(--bc-sidenav-rail);
+  max-inline-size: var(--bc-sidenav-rail);
+  overflow: visible;
+}
+
+// In the rail, the link is the positioning anchor and centres its icon.
+.side-nav-drawer:not(.side-nav-drawer--open) .#{vars.$bcgov-prefix}--side-nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // Carbon indents the link (padding-inline-start: 2rem) to make room for the
+  // label; force it flush so the icon can centre in the 48px rail.
+  padding-inline: 0 !important;
+}
+
+// Zero the icon→label gap so the lone icon sits dead-centre in the rail.
+.side-nav-drawer:not(.side-nav-drawer--open) .#{vars.$bcgov-prefix}--side-nav__icon {
+  margin-inline: 0 !important;
+}
+
+// Carbon clips the list (ul) and items (li), which would cut off the tooltip
+// that sticks out to the right of the 48px rail. Let them overflow while
+// collapsed. !important is required: Carbon's
+// `.cds--side-nav:hover .cds--side-nav__items` sets overflow-y: auto and wins
+// on source order — exactly on hover, the moment the tooltip appears.
+.side-nav-drawer:not(.side-nav-drawer--open) .#{vars.$bcgov-prefix}--side-nav__items,
+.side-nav-drawer:not(.side-nav-drawer--open) .#{vars.$bcgov-prefix}--side-nav__item {
+  overflow: visible !important;
+}
+
+// Tooltip = the link's own label, repurposed. Take the real
+// .cds--side-nav__link-text out of flow and float it to the right of the icon
+// as a dark pill, hidden until the link is hovered.
+.side-nav-drawer:not(.side-nav-drawer--open) .#{vars.$bcgov-prefix}--side-nav__link-text {
+  position: absolute;
+  inset-inline-start: calc(100% + 8px);
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: #131315;
+  // !important beats Carbon's hover colour, which would paint the text the
+  // dark primary colour — invisible against the dark pill.
+  color: #fff !important;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 9500;
+
+  svg {
+    display: none;
+  }
+}
+
+.side-nav-drawer:not(.side-nav-drawer--open)
+  .#{vars.$bcgov-prefix}--side-nav__link:hover
+  .#{vars.$bcgov-prefix}--side-nav__link-text {
+  opacity: 1;
 }

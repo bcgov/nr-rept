@@ -24,9 +24,15 @@ cat > "$CONFIG_FILE" <<EOF
 window.config = {
   VITE_USER_POOLS_ID: "$(escape "${VITE_USER_POOLS_ID:-}")",
   VITE_USER_POOLS_WEB_CLIENT_ID: "$(escape "${VITE_USER_POOLS_WEB_CLIENT_ID:-}")",
-  VITE_REDIRECT_SIGN_OUT: "$(escape "${VITE_REDIRECT_SIGN_OUT:-}")",
+  // Federated logout chain (Siteminder → Keycloak → Cognito → app). All three
+  // must be set for the chain; if any is blank, logout falls back to the plain
+  // Amplify sign-out (which returns to the app origin). See
+  // context/auth/logoutChain.ts.
+  VITE_LOGOUT_SITEMINDER_URL: "$(escape "${VITE_LOGOUT_SITEMINDER_URL:-}")",
+  VITE_LOGOUT_KEYCLOAK_URL: "$(escape "${VITE_LOGOUT_KEYCLOAK_URL:-}")",
+  VITE_LOGOUT_KEYCLOAK_CLIENT_ID: "$(escape "${VITE_LOGOUT_KEYCLOAK_CLIENT_ID:-}")",
   VITE_BACKEND_URL: "$(escape "${VITE_BACKEND_URL:-}")",
-  VITE_APP_NAME: "$(escape "${VITE_APP_NAME:-REPT}")",
+  VITE_APP_NAME: "$(escape "${VITE_APP_NAME:-Real Estate Project Tracking}")",
   VITE_ZONE: "$(escape "${VITE_ZONE:-dev}")"
 };
 EOF

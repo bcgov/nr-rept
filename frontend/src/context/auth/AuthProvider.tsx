@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, useCallback, useRef, type ReactNode } fro
 import { env } from '@/env';
 
 import { AuthContext, type AuthContextType } from './AuthContext';
-import { parseToken, getAccessTokenFromCookie } from './authUtils';
+import { parseToken, getAccessTokenFromCookie, clearStoredTokens } from './authUtils';
+import { buildFederatedLogoutUrl } from './logoutChain';
 import { type FamLoginUser } from './types';
 
 /**
@@ -149,6 +150,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [appEnv]);
 
   const logout = useCallback(async () => {
+    // Primary path: drive the federated logout chain ourselves so Cognito fires
+    // LAST (Siteminder → KC → Cognito → app). Amplify's signOut() would force
+    // Cognito first, which is what makes the app URL have to be registered on
+    // the shared Keycloak client — see logoutChain.ts. We clear the local token
+    // cookies up front (so returning to the app reads as logged out), then
+    // navigate; the browser still carries the Cognito session cookie, so the
+    // chain's final Cognito /logout hop clears it server-side.
+    const chainUrl = buildFederatedLogoutUrl(window.location.origin);
+    if (chainUrl) {
+      clearStoredTokens();
+      // Deliberately NOT setUser(undefined) here: a full-page navigation is
+      // imminent and the app re-bootstraps from scratch on return, so the state
+      // update is pointless — and worse, it can momentarily mount LandingPage
+      // before the browser unloads, whose mount effect reads-and-clears the
+      // SESSION_EXPIRED_FLAG. That would consume the "session expired" banner
+      // signal before the timeout round-trip returns, so the notice never
+      // shows. Leave state as-is and let the navigation take over.
+      window.location.assign(chainUrl);
+      return;
+    }
+    // Fallback (chain not configured for this env): plain Amplify hosted-UI
+    // sign-out, which redirects through Cognito /logout back to the app origin
+    // (config/fam/config.ts redirectSignOut).
     await signOut();
     setUser(undefined);
   }, []);
@@ -156,6 +180,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const userToken = useCallback((): string | undefined => {
     return getAccessTokenFromCookie();
   }, []);
+
+  // Unconditional refresh (vs ensureFreshToken, which only refreshes when the
+  // access token is near expiry). Mints a fresh rotated refresh token, sliding
+  // the session. Throws if the refresh token has expired — the caller signs out.
+  const forceRefreshSession = useCallback(async (): Promise<void> => {
+    const parsed = await loadSession(true);
+    setUser(parsed);
+  }, [loadSession]);
 
   const contextValue: AuthContextType = useMemo(
     () => ({
@@ -166,8 +198,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout,
       userToken,
       ensureFreshToken,
+      forceRefreshSession,
     }),
-    [user, isLoading, login, logout, userToken, ensureFreshToken],
+    [user, isLoading, login, logout, userToken, ensureFreshToken, forceRefreshSession],
   );
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
