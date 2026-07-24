@@ -1,5 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test';
-
+import { expect, test, type Locator } from './fixtures';
 import { openProjectTab } from './helpers/project';
 import { createProperty } from './helpers/property';
 import { gotoProtected, uniqueSuffix } from './utils';
@@ -197,14 +196,10 @@ test.describe.serial('project lifecycle', () => {
 
     // The lifecycle project has no properties yet, so this agreement has
     // none linked either — the empty-state notification should render.
-    await expect(
-      page.getByText(/not linked to any properties/i),
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/not linked to any properties/i)).toBeVisible({ timeout: 30_000 });
     // And the Link properties button is rendered (disabled because the
     // project has no properties to pick from).
-    await expect(
-      page.getByRole('button', { name: /link properties/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /link properties/i })).toBeVisible();
   });
 
   test('Agreements → Payments sub-tab: opens new-payment modal', async ({ page }) => {
@@ -218,9 +213,9 @@ test.describe.serial('project lifecycle', () => {
     await agreementSubTabs.getByRole('tab', { name: 'Payments', exact: true }).click();
 
     // Empty-state notification confirms the tab rendered.
-    await expect(
-      page.getByText(/no payments recorded for this agreement/i),
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/no payments recorded for this agreement/i)).toBeVisible({
+      timeout: 30_000,
+    });
 
     await page.getByRole('button', { name: /new payment/i }).click();
 
@@ -229,9 +224,9 @@ test.describe.serial('project lifecycle', () => {
 
     // No property contacts exist on the lifecycle project, so the payee
     // warning should surface — confirming the modal wired up its options.
-    await expect(
-      paymentModal.getByText(/a property contact is required/i),
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(paymentModal.getByText(/a property contact is required/i)).toBeVisible({
+      timeout: 30_000,
+    });
 
     await paymentModal.getByRole('button', { name: /^cancel$/i }).click();
     await expect(paymentModal).toBeHidden({ timeout: 10_000 });
@@ -327,7 +322,15 @@ test.describe.serial('project lifecycle', () => {
     await expect(editButton).toBeEnabled({ timeout: 60_000 });
     await editButton.click();
 
-    await page.locator('#executiveApprovalDate').fill('2026-03-15');
+    // executiveApprovalDate is a Carbon <DatePicker> (flatpickr). A raw fill()
+    // sets the input text but does NOT fire flatpickr's onChange, so the form
+    // model stays empty — and because this field is REQUIRED, save is blocked
+    // and the view never returns to read mode. Press Enter to make flatpickr
+    // parse the typed value and commit it to the form.
+    const approvalDate = page.locator('#executiveApprovalDate');
+    await approvalDate.fill('2026-03-15');
+    await approvalDate.press('Enter');
+    await expect(approvalDate).not.toHaveAttribute('aria-invalid', 'true');
 
     await page.getByRole('button', { name: /^save$/i }).click();
     await expect(editButton).toBeVisible({ timeout: 30_000 });

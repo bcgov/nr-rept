@@ -173,6 +173,13 @@ export default function SessionTimeout() {
   // sleep / tab-throttling. While the warning is open, activity is ignored so
   // the countdown runs and the user must choose.
   useEffect(() => {
+    // Inert under automated browsers (Playwright/Selenium set navigator.webdriver).
+    // The idle guard proactively refreshes tokens on activity, which rotates the
+    // Cognito refresh token — a problem for the e2e suite, where every spec shares
+    // one refresh token via storageState (a rotation there poisons the shared
+    // token for later specs). Real users never hit this branch.
+    if (typeof navigator !== 'undefined' && navigator.webdriver) return;
+
     let lastReset = 0;
     let lastKeepalive = 0;
 
