@@ -59,7 +59,7 @@ export const getIdTokenFromCookie = (): string | undefined => {
 export const getUserTokenFromCookie = getAccessTokenFromCookie;
 
 /**
- * Drops every Amplify token/session cookie for the configured app client. Used
+ * Drops every Amplify token/session entry for the configured app client. Used
  * by the federated-logout path, which drives the sign-out redirect chain itself
  * (Siteminder → KC → Cognito → app) instead of Amplify's signOut(): clearing
  * the tokens here means that when the browser lands back on the app at the end
@@ -67,14 +67,22 @@ export const getUserTokenFromCookie = getAccessTokenFromCookie;
  * logged-out Landing. The chain's final Cognito /logout hop clears the Cognito
  * session cookie server-side.
  *
- * REPT stores Amplify tokens in cookies (main.tsx CookieStorage), NOT
- * localStorage — so this expires cookies with the same domain/path attributes
- * they were written with (domain = hostname, path = VITE_BASE_PATH || '/'),
- * which a cookie deletion must match to take effect.
+ * REPT configures Amplify with CookieStorage (main.tsx), but Amplify's v6 flow
+ * doesn't always keep every token as a DOM-visible cookie — some can land in
+ * localStorage (see the note in services/http/headers.ts). If ANY store still
+ * holds a valid token when the app re-bootstraps after the logout chain, the
+ * SPA reads it and considers the user logged in (bouncing straight back to
+ * /dashboard). So we sweep ALL three stores — cookies, localStorage,
+ * sessionStorage — for the Cognito key prefix, and for cookies we expire under
+ * every domain/path combination the cookie may have been written with (a cookie
+ * only clears when the deletion's domain+path match how it was set).
  */
 export const clearStoredTokens = (): void => {
+  const prefix = `CognitoIdentityServiceProvider.${env.VITE_USER_POOLS_WEB_CLIENT_ID}`;
+
+  // Cookies — enumerate names from document.cookie, expire each under the likely
+  // attribute combinations (Amplify sets domain = hostname, path = base path).
   try {
-    const prefix = `CognitoIdentityServiceProvider.${env.VITE_USER_POOLS_WEB_CLIENT_ID}`;
     const path = env.VITE_BASE_PATH || '/';
     const host = window.location.hostname;
     const past = 'Thu, 01 Jan 1970 00:00:00 GMT';
@@ -83,14 +91,29 @@ export const clearStoredTokens = (): void => {
       .map((c) => c.trim().split('=')[0])
       .filter((name) => name && name.startsWith(prefix))
       .forEach((name) => {
-        // Expire under every attribute combination Amplify may have used, since
-        // a cookie only clears when domain+path match how it was set.
-        document.cookie = `${name}=; expires=${past}; path=${path}`;
-        document.cookie = `${name}=; expires=${past}; path=${path}; domain=${host}`;
-        document.cookie = `${name}=; expires=${past}; path=/`;
+        for (const p of new Set([path, '/'])) {
+          document.cookie = `${name}=; expires=${past}; path=${p}`;
+          document.cookie = `${name}=; expires=${past}; path=${p}; domain=${host}`;
+          document.cookie = `${name}=; expires=${past}; path=${p}; domain=.${host}`;
+        }
       });
   } catch {
-    /* storage disabled — nothing to clear */
+    /* cookies disabled — nothing to clear */
+  }
+
+  // Web storage — Amplify may have written some tokens here despite the
+  // CookieStorage config; the app reads whichever store has them, so clear both.
+  for (const store of [window.localStorage, window.sessionStorage]) {
+    try {
+      const keys: string[] = [];
+      for (let i = 0; i < store.length; i++) {
+        const key = store.key(i);
+        if (key && key.startsWith(prefix)) keys.push(key);
+      }
+      keys.forEach((k) => store.removeItem(k));
+    } catch {
+      /* storage disabled — skip */
+    }
   }
 };
 
