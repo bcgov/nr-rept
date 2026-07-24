@@ -24,7 +24,7 @@ export const LayoutHeader: FC = () => {
         isActive={isSideNavExpanded}
         onClick={toggleSideNav}
       />
-      <HeaderName as={Link} to={'/dashboard'} prefix="">
+      <HeaderName as={Link} to={'/dashboard'} prefix="REPT">
         {appName}
       </HeaderName>
 

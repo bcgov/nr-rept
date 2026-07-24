@@ -1,5 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
-
+import { expect, test, type Page } from './fixtures';
 import { openFirstProject } from './helpers/project';
 import { gotoProtected } from './utils';
 

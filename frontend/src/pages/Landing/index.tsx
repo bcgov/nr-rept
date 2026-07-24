@@ -1,9 +1,11 @@
 import { Login } from '@carbon/icons-react';
-import { Button, Column, Grid } from '@carbon/react';
+import { Button, Column, Grid, InlineNotification } from '@carbon/react';
+import { useEffect, useState } from 'react';
 
 import logo_rev from '@/assets/img/bc-gov-logo-rev.png';
 import logo from '@/assets/img/bc-gov-logo.png';
 import LandingImg from '@/assets/img/landing.jpg';
+import { SESSION_EXPIRED_FLAG } from '@/components/SessionTimeout';
 import { useAuth } from '@/context/auth/useAuth';
 import { useTheme } from '@/context/theme/useTheme';
 import useBreakpoint from '@/hooks/useBreakpoint';
@@ -17,6 +19,23 @@ const LandingPage: FC = () => {
   const { login } = useAuth();
   const breakpoint = useBreakpoint();
   const { theme } = useTheme();
+
+  // After a session-timeout logout, the SessionTimeout guard stashes a
+  // sessionStorage flag before redirecting through the Cognito sign-out chain.
+  // When the browser lands back here, surface a one-time "session expired"
+  // notice explaining why the user was logged out, then clear the flag so a
+  // manual reload doesn't show it again.
+  const [sessionExpired, setSessionExpired] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(SESSION_EXPIRED_FLAG) === '1') {
+        setSessionExpired(true);
+        sessionStorage.removeItem(SESSION_EXPIRED_FLAG);
+      }
+    } catch {
+      /* storage disabled — no notice, non-fatal */
+    }
+  }, []);
 
   // Unit is rem
   const elementMarginMap: Record<BreakpointType, number> = {
@@ -46,6 +65,17 @@ const LandingPage: FC = () => {
                 className="logo"
               />
             </div>
+
+            {sessionExpired && (
+              <InlineNotification
+                kind="warning"
+                lowContrast
+                title="Session expired"
+                subtitle="You were logged out due to inactivity. Please log in again to continue."
+                onClose={() => setSessionExpired(false)}
+                data-testid="landing-session-expired"
+              />
+            )}
 
             {/* Welcome - Title and Subtitle */}
             <h1 data-testid="landing-title" className="landing-title">

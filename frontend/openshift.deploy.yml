@@ -43,8 +43,19 @@ parameters:
     required: true
   - name: VITE_USER_POOLS_WEB_CLIENT_ID
     required: true
-  - name: VITE_REDIRECT_SIGN_OUT
-    required: true
+  # Federated logout chain (Siteminder → Keycloak → Cognito → app). The frontend
+  # builds this itself so Cognito fires LAST (context/auth/logoutChain.ts). If any
+  # of the three is blank, logout falls back to the Amplify hosted-UI sign-out
+  # (which returns to the app origin — register it as a Cognito sign-out URL).
+  - name: VITE_LOGOUT_SITEMINDER_URL
+    description: IDIR/BCeID Siteminder logoff.cgi base URL
+    value: ""
+  - name: VITE_LOGOUT_KEYCLOAK_URL
+    description: Keycloak end-session (logout) endpoint URL
+    value: ""
+  - name: VITE_LOGOUT_KEYCLOAK_CLIENT_ID
+    description: The app's FAM/Keycloak client id (for post-logout redirect)
+    value: ""
   - name: VITE_BACKEND_URL
     description: Browser-facing API base path; usually '/api'
     value: /api
@@ -127,8 +138,12 @@ objects:
                   value: ${VITE_USER_POOLS_ID}
                 - name: VITE_USER_POOLS_WEB_CLIENT_ID
                   value: ${VITE_USER_POOLS_WEB_CLIENT_ID}
-                - name: VITE_REDIRECT_SIGN_OUT
-                  value: ${VITE_REDIRECT_SIGN_OUT}
+                - name: VITE_LOGOUT_SITEMINDER_URL
+                  value: ${VITE_LOGOUT_SITEMINDER_URL}
+                - name: VITE_LOGOUT_KEYCLOAK_URL
+                  value: ${VITE_LOGOUT_KEYCLOAK_URL}
+                - name: VITE_LOGOUT_KEYCLOAK_CLIENT_ID
+                  value: ${VITE_LOGOUT_KEYCLOAK_CLIENT_ID}
                 - name: VITE_BACKEND_URL
                   value: ${VITE_BACKEND_URL}
                 - name: VITE_APP_NAME

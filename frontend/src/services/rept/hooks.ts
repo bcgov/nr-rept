@@ -778,11 +778,34 @@ export const useDeleteReptProperty = (
       if (!projectId) {
         throw new Error('Project ID must be specified');
       }
-      await deleteProperty(projectId, propertyId, revisionCount);
+      // The revisionCount handed in comes from the property LIST row, which can
+      // lag a just-saved edit — the list is refreshed by a heavy join, so right
+      // after editing a property's details its list row still carries the old
+      // revision. Deleting with a stale revision trips the backend's optimistic-
+      // lock check (409) and the delete silently no-ops. Read the current
+      // revision straight from the property detail first so the delete always
+      // carries the freshest value; fall back to the passed one if that fetch
+      // fails for any reason.
+      let effectiveRevision = revisionCount;
+      try {
+        const fresh = await getPropertyDetail(projectId, propertyId);
+        if (fresh?.revisionCount != null) {
+          effectiveRevision = fresh.revisionCount;
+        }
+      } catch {
+        /* keep the caller-supplied revision */
+      }
+      await deleteProperty(projectId, propertyId, effectiveRevision);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: reptKeys.properties(projectId) });
       queryClient.invalidateQueries({ queryKey: reptKeys.project(projectId) });
+    },
+    onError: () => {
+      // A failed delete (e.g. a genuine conflict) may mean our cached list is
+      // out of date — refresh it so the row reflects current server state and a
+      // retry picks up the latest revision.
+      queryClient.invalidateQueries({ queryKey: reptKeys.properties(projectId) });
     },
   });
 };

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from './fixtures';
 import { openFirstProject, openProjectTab } from './helpers/project';
 import { createProperty, deleteProperty } from './helpers/property';
 import { uniqueSuffix } from './utils';

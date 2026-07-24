@@ -1,10 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { LayoutContext } from './LayoutContext';
 
+// SideNav defaults to expanded ("popped out") and remembers the user's last
+// open/closed choice across reloads. Persisted via localStorage so navigating
+// between pages always restores the user's preference.
+const SIDE_NAV_STORAGE_KEY = 'rept.layout.sideNavOpen';
+
+const loadSideNavInitial = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  try {
+    const raw = window.localStorage.getItem(SIDE_NAV_STORAGE_KEY);
+    if (raw === null) return true; // default: open
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+};
+
 export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isSideNavExpanded, setSideNavExpanded] = useState(false);
+  const [isSideNavExpanded, setSideNavExpanded] = useState<boolean>(loadSideNavInitial);
   const [isHeaderPanelOpen, setHeaderPanelOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(SIDE_NAV_STORAGE_KEY, String(isSideNavExpanded));
+    } catch {
+      /* quota / private-mode — non-fatal */
+    }
+  }, [isSideNavExpanded]);
 
   return (
     <LayoutContext.Provider
