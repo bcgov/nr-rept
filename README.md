@@ -51,7 +51,7 @@ oc cp $(oc get pod -l app=rept-backend -o jsonpath='{.items[0].metadata.name}'):
 
 #### `frontend/.env`
 
-Copy `frontend/.env.example` and fill in the Cognito client IDs. `VITE_USER_POOLS_ID`, `VITE_USER_POOLS_WEB_CLIENT_ID`, `VITE_REDIRECT_SIGN_OUT`, `VITE_BACKEND_URL`, `VITE_ZONE`, `VITE_APP_NAME` are inlined into the app bundle by Vite (via `import.meta.env`); changing `.env` requires restarting `npm run dev`. For local dev, `http://localhost:3000` must be in the Cognito user-pool client's allowed-callback list — already configured via the slot-bucketing scheme (see `.github/workflows/pr-open.yml` for context).
+Copy `frontend/.env.example` and fill in the Cognito client IDs. `VITE_USER_POOLS_ID`, `VITE_USER_POOLS_WEB_CLIENT_ID`, `VITE_LOGOUT_SITEMINDER_URL`, `VITE_LOGOUT_KEYCLOAK_URL`, `VITE_LOGOUT_KEYCLOAK_CLIENT_ID`, `VITE_BACKEND_URL`, `VITE_ZONE`, `VITE_APP_NAME` are inlined into the app bundle by Vite (via `import.meta.env`); changing `.env` requires restarting `npm run dev`. For local dev, `http://localhost:3000` must be in the Cognito user-pool client's allowed-callback list — already configured via the slot-bucketing scheme (see `.github/workflows/pr-open.yml` for context).
 
 ### Option A — direct on host (recommended for backend work)
 

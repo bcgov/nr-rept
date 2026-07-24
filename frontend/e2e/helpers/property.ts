@@ -54,7 +54,17 @@ export const deleteProperty = async (page: Page, pidFormatted: string): Promise<
     // hidden icon label), so we can't anchor the regex to `^delete$`.
     await confirmDialog.getByRole('button', { name: /\bdelete$/i }).click();
 
-    await expect(row).toHaveCount(0, { timeout: 30_000 });
+    // Wait for the confirm dialog to close first: that's the signal the delete
+    // was accepted (the modal only dismisses once the mutation is submitted).
+    // Asserting this before the row check separates "delete didn't fire" from
+    // "delete fired but the list is slow to refresh".
+    await expect(confirmDialog).toBeHidden({ timeout: 30_000 });
+
+    // Then wait for the row to drop out. Deleting a property invalidates the
+    // project's whole property-list query (reptKeys.properties — the heavy
+    // Oracle join), and on a project with many properties that refetch can take
+    // a while, so give it a generous window rather than racing it.
+    await expect(row).toHaveCount(0, { timeout: 60_000 });
   } catch (err) {
     if (!page.isClosed()) {
       // eslint-disable-next-line no-console
