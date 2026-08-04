@@ -220,6 +220,13 @@
   flex-wrap: wrap;
 }
 
+.agreement-payment-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .agreement-payment-card__title {
   display: flex;
   flex-direction: column;
