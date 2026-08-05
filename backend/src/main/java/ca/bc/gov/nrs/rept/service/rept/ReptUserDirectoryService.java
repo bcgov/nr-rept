@@ -1,40 +1,38 @@
 package ca.bc.gov.nrs.rept.service.rept;
 
+import ca.bc.gov.nrs.rept.client.UserLookupClient;
+import ca.bc.gov.nrs.rept.client.UserLookupClient.IdirUser;
 import ca.bc.gov.nrs.rept.dto.rept.ReptUserSearchResponseDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptUserSummaryDto;
 
 import io.github.resilience4j.retry.annotation.Retry;
-import java.net.URI;
-import java.time.Duration;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
 
 /**
- * Searches IDIR users via the identity-lookup API.
+ * Searches IDIR users via <b>nr-user-lookup-api</b> (see
+ * {@link UserLookupClient}), the shared BC Gov identity directory. This
+ * replaces the FAM identity-lookup integration REPT used previously — the app
+ * no longer calls FAM for user lookups. FAM/Cognito remains the
+ * <i>authentication</i> provider, just not the directory.
  *
- * <p>The service passes the caller's Cognito access token through to the
- * downstream API as a Bearer token. No service-account credentials or
- * Keycloak client are involved.
+ * <p>Authentication is handled entirely by {@link UserLookupClient} via a
+ * Keycloak {@code client_credentials} service-account token; the caller's
+ * Cognito JWT is no longer forwarded downstream.
  *
  * <h3>Configuration</h3>
  * <ul>
- *   <li>{@code ca.bc.gov.nrs.identity-lookup.base-url} — the scheme + host
- *       (e.g. {@code https://identity-lookup.example.gov.bc.ca})</li>
- *       {@code application_id} query parameter required by the API</li>
- *   <li>{@code ca.bc.gov.nrs.identity-lookup.default-page-size} — optional,
- *       defaults to 50</li>
+ *   <li>{@code ca.bc.gov.nrs.user-lookup.*} — see {@link UserLookupClient}</li>
+ *   <li>{@code ca.bc.gov.nrs.user-directory.default-page-size} — optional,
+ *       defaults to 50 when the caller doesn't specify a size</li>
  * </ul>
  */
 @Service
@@ -42,34 +40,21 @@ public class ReptUserDirectoryService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReptUserDirectoryService.class);
 
-  private static final String SEARCH_PATH = "/external/v1/users/identity/idir/search";
-
   private static final Comparator<ReptUserSummaryDto> USER_COMPARATOR =
           Comparator.comparing(ReptUserSummaryDto::displayName,
                           Comparator.nullsLast(String::compareToIgnoreCase))
                   .thenComparing(ReptUserSummaryDto::userId,
                           Comparator.nullsLast(String::compareToIgnoreCase));
 
-  private final RestClient restClient;
+  private final UserLookupClient client;
   private final int defaultPageSize;
 
   public ReptUserDirectoryService(
-          @Value("${ca.bc.gov.nrs.identity-lookup.base-url}") String baseUrl,
-          @Value("${ca.bc.gov.nrs.identity-lookup.default-page-size:50}") int defaultPageSize,
-          @Value("${ca.bc.gov.nrs.identity-lookup.connect-timeout:5s}") Duration connectTimeout,
-          @Value("${ca.bc.gov.nrs.identity-lookup.read-timeout:10s}") Duration readTimeout
+          UserLookupClient client,
+          @Value("${ca.bc.gov.nrs.user-directory.default-page-size:50}") int defaultPageSize
   ) {
+    this.client = client;
     this.defaultPageSize = defaultPageSize;
-
-    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-    factory.setConnectTimeout(Math.toIntExact(connectTimeout.toMillis()));
-    factory.setReadTimeout(Math.toIntExact(readTimeout.toMillis()));
-
-    this.restClient = RestClient.builder()
-            .baseUrl(baseUrl)
-            .requestFactory(factory)
-            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-            .build();
   }
 
   /**
@@ -78,7 +63,6 @@ public class ReptUserDirectoryService {
    * @param criteria search fields (at least one of userId, firstName, lastName required)
    * @return paginated search results
    * @throws IllegalArgumentException if no search field is provided
-   * @throws IllegalStateException    if no valid bearer token is available
    */
   @Retry(name = "apiRetry")
   public ReptUserSearchResponseDto searchUsers(ReptUserSearchCriteria criteria) {
@@ -98,64 +82,48 @@ public class ReptUserDirectoryService {
     }
 
     int pageSize = criteria.size() > 0 ? criteria.size() : defaultPageSize;
-    String bearerToken = extractBearerToken();
 
-    IdentityLookupResponse response = restClient.get()
-            .uri(uriBuilder -> {
-              uriBuilder.path(SEARCH_PATH)
-                      .queryParam("pageSize", pageSize);
-              if (StringUtils.hasText(userId)) {
-                uriBuilder.queryParam("userId", userId);
-              }
-              if (StringUtils.hasText(firstName)) {
-                uriBuilder.queryParam("firstName", firstName);
-              }
-              if (StringUtils.hasText(lastName)) {
-                uriBuilder.queryParam("lastName", lastName);
-              }
-              URI uri = uriBuilder.build();
-              LOG.debug("Requesting URL: {}", uri);
-              return uri;
-            })
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
-            .retrieve()
-            .body(IdentityLookupResponse.class);
+    List<ReptUserSummaryDto> results =
+            mapItems(client.searchIdir(userId, firstName, lastName, pageSize));
 
-    if (response == null) {
-      return new ReptUserSearchResponseDto(List.of(), 0, 0, pageSize);
+    long total = results.size();
+    if (results.size() > pageSize) {
+      results = results.subList(0, pageSize);
     }
 
-    List<ReptUserSummaryDto> results = mapItems(response.items());
+    LOG.debug("user-lookup search [{} {} {}] returned {} of {} results",
+            userId, firstName, lastName, results.size(), total);
 
-    LOG.debug("Identity-lookup search [{} {} {}] returned {} results (total {})",
-            userId, firstName, lastName, results.size(), response.totalItems());
-
-    return new ReptUserSearchResponseDto(
-            results,
-            response.totalItems(),
-            0,
-            response.pageSize()
-    );
+    return new ReptUserSearchResponseDto(results, total, 0, pageSize);
   }
 
-  // ── Token extraction ──────────────────────────────────────────────
-
   /**
-   * Extracts the raw access token from the current Spring Security context.
-   * The token was already validated by the OAuth2 resource server filter chain
-   * before reaching this point.
+   * Best-effort exact lookup by IDIR username, backed by the lookup API's
+   * {@code idir-account-detail} endpoint. Returns {@link Optional#empty()}
+   * when the user can't be resolved (not found, lookup API unconfigured, or an
+   * upstream error) so callers can fall back to showing the raw id.
+   *
+   * <p>nr-user-lookup-api keys on the bare IDIR name, so an {@code IDIR\}
+   * prefix is stripped before the call.
    */
-  private String extractBearerToken() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication instanceof JwtAuthenticationToken jwtAuth) {
-      return jwtAuth.getToken().getTokenValue();
+  public Optional<ReptUserSummaryDto> findByUserId(String userId) {
+    if (!StringUtils.hasText(userId)) {
+      return Optional.empty();
     }
-    throw new IllegalStateException("No valid JWT bearer token in security context");
+    String bare = userId.contains("\\") ? userId.substring(userId.indexOf('\\') + 1) : userId;
+    try {
+      return client.getIdirDetail(bare)
+              .map(ReptUserDirectoryService::toSummary)
+              .filter(Objects::nonNull);
+    } catch (RuntimeException ex) {
+      LOG.debug("user-lookup miss for userId={} ({})", userId, ex.getMessage());
+      return Optional.empty();
+    }
   }
 
   // ── Response mapping ──────────────────────────────────────────────
 
-  private List<ReptUserSummaryDto> mapItems(List<IdentityLookupUser> items) {
+  private List<ReptUserSummaryDto> mapItems(List<IdirUser> items) {
     if (items == null || items.isEmpty()) {
       return List.of();
     }
@@ -167,7 +135,7 @@ public class ReptUserDirectoryService {
             .toList();
   }
 
-  private static ReptUserSummaryDto toSummary(IdentityLookupUser user) {
+  private static ReptUserSummaryDto toSummary(IdirUser user) {
     String userId = trimmed(user.userId());
     if (!StringUtils.hasText(userId)) {
       return null;
@@ -183,7 +151,7 @@ public class ReptUserDirectoryService {
             lastName,
             trimmed(user.email()),
             trimmed(user.guid()),
-            null  // idirUserGuid — not provided by identity-lookup API
+            null  // idirUserGuid — not provided by nr-user-lookup-api
     );
   }
 
@@ -206,34 +174,5 @@ public class ReptUserDirectoryService {
     }
     String trimmedValue = value.trim();
     return trimmedValue.isEmpty() ? null : trimmedValue;
-  }
-
-  // ── Identity-lookup API response records ──────────────────────────
-
-  /**
-   * Maps the top-level JSON response:
-   * <pre>{@code { "totalItems": 5, "pageSize": 50, "items": [...] }}</pre>
-   */
-  private record IdentityLookupResponse(
-          long totalItems,
-          int pageSize,
-          List<IdentityLookupUser> items
-  ) {
-    IdentityLookupResponse {
-      if (items == null) items = Collections.emptyList();
-    }
-  }
-
-  /**
-   * Maps each item in the {@code items} array:
-   * <pre>{@code { "userId", "guid", "firstName", "lastName", "email" }}</pre>
-   */
-  private record IdentityLookupUser(
-          String userId,
-          String guid,
-          String firstName,
-          String lastName,
-          String email
-  ) {
   }
 }
