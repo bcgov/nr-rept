@@ -36,7 +36,9 @@ These are all gitignored — you set them up once and they stay on your machine.
 
 #### `backend/src/main/resources/application-local.yml`
 
-Activated by the Spring `local` profile. Holds DB credentials, Cognito issuer/userinfo URIs, IDIR base URL, and `TRUSTSTORE_PATH`. The header comment in that file documents every field. Copy from a teammate or from the `oc cp` template in the file's comment block.
+Activated by the Spring `local` profile. Holds DB credentials, Cognito issuer/userinfo URIs, the nr-user-lookup-api settings (`ca.bc.gov.nrs.user-lookup.*` — see [backend/README.md](backend/README.md)), and `TRUSTSTORE_PATH`. The header comment in that file documents every field. Copy from a teammate or from the `oc cp` template in the file's comment block.
+
+The user-lookup block is optional locally: leave `base-url`/`token-url`/`client-id`/`client-secret` blank and the app starts fine — the "Find user" search just returns nothing.
 
 Note for Option B: the absolute `TRUSTSTORE_PATH` you set here is overridden inside Docker to `/app/src/main/resources/cert/jssecacerts` via compose env — no edit needed.
 

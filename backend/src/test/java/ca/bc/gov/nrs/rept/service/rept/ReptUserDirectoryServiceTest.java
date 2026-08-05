@@ -1,127 +1,146 @@
 package ca.bc.gov.nrs.rept.service.rept;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.time.Instant;
+import ca.bc.gov.nrs.rept.client.UserLookupClient;
+import ca.bc.gov.nrs.rept.client.UserLookupClient.IdirUser;
+import ca.bc.gov.nrs.rept.dto.rept.ReptUserSearchResponseDto;
+import ca.bc.gov.nrs.rept.dto.rept.ReptUserSummaryDto;
 
-import org.junit.jupiter.api.AfterEach;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.web.client.RestClient;
 
+/**
+ * Unit tests for {@link ReptUserDirectoryService}. The HTTP contract with
+ * nr-user-lookup-api is covered by {@code UserLookupClientTest}; here the
+ * client is mocked so the tests focus on validation, mapping and paging.
+ */
 class ReptUserDirectoryServiceTest {
 
-  private static final String BASE_URL = "https://identity-lookup.example.com";
-  private static final String APP_ID = "REPT";
-  private static final String FAKE_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.fake";
-
-  private MockRestServiceServer mockServer;
+  private UserLookupClient client;
   private ReptUserDirectoryService service;
 
   @BeforeEach
   void setUp() {
-    // Build the service — the constructor creates its own RestClient internally,
-    // so we construct one here with MockRestServiceServer to intercept calls.
-    RestClient.Builder builder = RestClient.builder().baseUrl(BASE_URL);
-    mockServer = MockRestServiceServer.bindTo(builder).build();
-
-    // We need to construct the service through its constructor.
-    // Since the constructor creates its own RestClient, we use a test subclass
-    // approach or reflectively set it. For simplicity, we'll construct via
-    // the public constructor and set up security context for token extraction.
-    service = new ReptUserDirectoryService(
-            BASE_URL, 50,
-            java.time.Duration.ofSeconds(5),
-            java.time.Duration.ofSeconds(10)
-    );
-
-    // Set up a fake JWT in the security context
-    setSecurityContext(FAKE_TOKEN);
-  }
-
-  @AfterEach
-  void tearDown() {
-    SecurityContextHolder.clearContext();
-  }
-
-  @Test
-  void searchUsersThrowsWhenNoCriteriaProvided() {
-    ReptUserSearchCriteria criteria = new ReptUserSearchCriteria(null, " ", null, 0, 0);
-    assertThrows(IllegalArgumentException.class, () -> service.searchUsers(criteria));
+    client = mock(UserLookupClient.class);
+    service = new ReptUserDirectoryService(client, 50);
   }
 
   @Test
   void searchUsersThrowsWhenCriteriaIsNull() {
-    assertThrows(IllegalArgumentException.class, () -> service.searchUsers(null));
+    assertThatThrownBy(() -> service.searchUsers(null))
+            .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
-  void searchUsersThrowsWhenNoToken() {
-    SecurityContextHolder.clearContext();
-    ReptUserSearchCriteria criteria = new ReptUserSearchCriteria("testuser", null, null, 0, 50);
-    assertThrows(IllegalStateException.class, () -> service.searchUsers(criteria));
-  }
-
-  @Test
-  void searchUsersReturnsResults() {
-    // The service creates its own RestClient internally, so we can't easily
-    // intercept with MockRestServiceServer via constructor injection.
-    // This test validates the input validation and token extraction logic.
-    // Integration/contract tests should cover the actual HTTP call.
-
-    // Verify that valid criteria + valid token doesn't throw on validation
-    ReptUserSearchCriteria criteria = new ReptUserSearchCriteria("testuser", null, null, 0, 50);
-    // The actual HTTP call will fail since we're not mocking the internal RestClient,
-    // but the validation and token extraction should pass.
-    try {
-      service.searchUsers(criteria);
-    } catch (Exception e) {
-      // Expected: the RestClient call will fail since there's no mock server
-      // for the internally-created client. The important thing is we got past
-      // validation and token extraction.
-      assertNotNull(e);
-    }
-  }
-
-  @Test
-  void searchUsersDefaultsPageSize() {
-    ReptUserSearchCriteria criteria = new ReptUserSearchCriteria("testuser", null, null, 0, 0);
-    // size <= 0 should use default (50)
-    try {
-      service.searchUsers(criteria);
-    } catch (Exception e) {
-      // Expected — no real server. Validates we don't throw on validation.
-      assertNotNull(e);
-    }
+  void searchUsersThrowsWhenNoCriteriaProvided() {
+    ReptUserSearchCriteria blank = new ReptUserSearchCriteria(null, " ", null, 0, 0);
+    assertThatThrownBy(() -> service.searchUsers(blank))
+            .isInstanceOf(IllegalArgumentException.class);
+    verify(client, never()).searchIdir(any(), any(), any(), anyInt());
   }
 
   @Test
   void searchUsersRequiresAtLeastOneField() {
     ReptUserSearchCriteria empty = new ReptUserSearchCriteria("", "", "", 0, 50);
-    assertThrows(IllegalArgumentException.class, () -> service.searchUsers(empty));
+    assertThatThrownBy(() -> service.searchUsers(empty))
+            .isInstanceOf(IllegalArgumentException.class);
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────
+  @Test
+  void searchUsersMapsAndSortsResults() {
+    when(client.searchIdir("smith", null, null, 50)).thenReturn(List.of(
+            new IdirUser("BSMITH", "g2", "Bob", "Smith", "bob@gov.bc.ca"),
+            new IdirUser("ASMITH", "g1", "Ann", "Smith", "ann@gov.bc.ca")));
 
-  private void setSecurityContext(String tokenValue) {
-    Jwt jwt = Jwt.withTokenValue(tokenValue)
-            .header("alg", "RS256")
-            .claim("sub", "test-user-sub")
-            .claim("token_use", "access")
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(3600))
-            .build();
-    JwtAuthenticationToken auth = new JwtAuthenticationToken(jwt);
-    SecurityContextHolder.getContext().setAuthentication(auth);
+    ReptUserSearchResponseDto response =
+            service.searchUsers(new ReptUserSearchCriteria("smith", null, null, 0, 50));
+
+    assertThat(response.total()).isEqualTo(2);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(50);
+    // Sorted by display name, so "Ann Smith" precedes "Bob Smith".
+    assertThat(response.results()).extracting(ReptUserSummaryDto::userId)
+            .containsExactly("ASMITH", "BSMITH");
+
+    ReptUserSummaryDto first = response.results().get(0);
+    assertThat(first.displayName()).isEqualTo("Ann Smith");
+    assertThat(first.email()).isEqualTo("ann@gov.bc.ca");
+    assertThat(first.idirGuid()).isEqualTo("g1");
+    assertThat(first.idirUserGuid()).isNull();
+  }
+
+  @Test
+  void searchUsersFallsBackToTheDefaultPageSize() {
+    when(client.searchIdir(eq("smith"), any(), any(), eq(50))).thenReturn(List.of());
+
+    ReptUserSearchResponseDto response =
+            service.searchUsers(new ReptUserSearchCriteria("smith", null, null, 0, 0));
+
+    verify(client).searchIdir("smith", null, null, 50);
+    assertThat(response.size()).isEqualTo(50);
+    assertThat(response.results()).isEmpty();
+  }
+
+  @Test
+  void searchUsersTrimsResultsToTheRequestedSize() {
+    when(client.searchIdir(eq(null), eq("jane"), eq(null), eq(1))).thenReturn(List.of(
+            new IdirUser("AJANE", "g1", "Jane", "Alpha", null),
+            new IdirUser("BJANE", "g2", "Jane", "Beta", null)));
+
+    ReptUserSearchResponseDto response =
+            service.searchUsers(new ReptUserSearchCriteria(null, "jane", null, 0, 1));
+
+    assertThat(response.results()).hasSize(1);
+    // `total` reports everything the directory matched, not the trimmed page.
+    assertThat(response.total()).isEqualTo(2);
+  }
+
+  @Test
+  void searchUsersDropsEntriesWithoutAUserId() {
+    when(client.searchIdir(any(), any(), any(), anyInt())).thenReturn(List.of(
+            new IdirUser("  ", "g0", "No", "Id", null),
+            new IdirUser("JSMITH", "g1", "Jane", "Smith", null)));
+
+    ReptUserSearchResponseDto response =
+            service.searchUsers(new ReptUserSearchCriteria("smith", null, null, 0, 50));
+
+    assertThat(response.results()).extracting(ReptUserSummaryDto::userId)
+            .containsExactly("JSMITH");
+  }
+
+  @Test
+  void findByUserIdStripsTheIdirPrefix() {
+    when(client.getIdirDetail("AGOERTZE")).thenReturn(
+            Optional.of(new IdirUser("AGOERTZE", "g1", "Ann", "Goertze", "ann@gov.bc.ca")));
+
+    Optional<ReptUserSummaryDto> user = service.findByUserId("IDIR\\AGOERTZE");
+
+    assertThat(user).isPresent();
+    assertThat(user.get().displayName()).isEqualTo("Ann Goertze");
+  }
+
+  @Test
+  void findByUserIdIsEmptyOnUpstreamFailure() {
+    when(client.getIdirDetail("AGOERTZE")).thenThrow(new IllegalStateException("boom"));
+
+    assertThat(service.findByUserId("AGOERTZE")).isEmpty();
+  }
+
+  @Test
+  void findByUserIdIsEmptyForBlankInput() {
+    assertThat(service.findByUserId("  ")).isEmpty();
+    verify(client, never()).getIdirDetail(any());
   }
 }

@@ -60,4 +60,11 @@ describe('LayoutSideNav', () => {
     const profileLink = screen.getByText('Profile').closest('a');
     expect(profileLink).toHaveClass('cds--side-nav__link--current');
   });
+
+  it('renders the support mailto link at the foot of the nav', async () => {
+    await renderWithProviders('/dashboard');
+    const supportLink = screen.getByText('Report an issue').closest('a');
+    expect(supportLink).toHaveAttribute('href', 'mailto:heartwood@gov.bc.ca');
+    expect(screen.getByText('Support')).toBeInTheDocument();
+  });
 });
