@@ -45,6 +45,7 @@ public class ReptAgreementRepository extends AbstractReptRepository {
   private static final String PROC_PROPERTY_AGREEMENT_DELETE = "PROJECT_PROPERTY_AGREEMENT_DEL";
   private static final String PROC_PAYMENT_FIND = "REPT_AGREEMENT_PAYMENT_FIND";
   private static final String PROC_PAYMENT_INSERT = "REPT_AGREEMENT_PAYMENT_INS";
+  private static final String PROC_PAYMENT_UPDATE = "REPT_AGREEMENT_PAYMENT_UPD";
   private static final String PROC_PAYMENT_GET = "REPT_AGREEMENT_PAYMENT_GET";
   private static final String PROC_PAYEE_FIND = "PAYEE_FIND_BY_PAYMENT";
   private static final String PROC_PAYEE_INSERT = "REPT_AGREE_PAYMENT_PAYEE_INS";
@@ -546,6 +547,88 @@ public class ReptAgreementRepository extends AbstractReptRepository {
           e.getMessage(),
           e);
       throw e;
+    }
+  }
+
+  /**
+   * Flips {@code RESCIND_PAYMENT_IND} on a single payment, reproducing the legacy rescind/restore
+   * action. {@code REPT_AGREEMENT_PAYMENT_UPD} rewrites the whole row, so every other column is read
+   * back and re-sent unchanged — otherwise a rescind would blank the CAS coding.
+   *
+   * <p>Unlike the INS procedure, UPD takes no {@code REPT_TAX_RATE_ID}: the GST rate cannot be
+   * changed by an update, which is why the parameter list is one shorter and the ordering diverges
+   * from {@link #createAgreementPayment} after the total amount.
+   *
+   * <p>{@code revisionCount} is passed straight through so the procedure's own optimistic-lock check
+   * rejects a stale caller instead of silently overwriting a concurrent edit.
+   *
+   * @return the revision count after the update, or {@code null} when the payment does not exist
+   */
+  @Transactional
+  public Long setPaymentRescinded(
+      Long paymentId, boolean rescinded, Long revisionCount, String userId) {
+    if (paymentId == null) {
+      return null;
+    }
+
+    Optional<PaymentRecord> recordOptional = loadPaymentRecord(paymentId);
+    if (recordOptional.isEmpty()) {
+      return null;
+    }
+
+    PaymentRecord record = recordOptional.get();
+    Long lockRevision = revisionCount != null ? revisionCount : record.revisionCount();
+
+    final String call = qualifyProjectProcedureWithoutReturn(PROC_PAYMENT_UPDATE, 21);
+    try {
+      return jdbcTemplate.execute(
+          call,
+          (CallableStatement cs) -> {
+            cs.registerOutParameter(1, Types.NUMERIC);
+            cs.registerOutParameter(2, Types.NUMERIC);
+
+            setLongOrNull(cs, 1, record.id());
+            setLongOrNull(cs, 2, lockRevision);
+            setIndicator(cs, 3, rescinded);
+            setLongOrNull(cs, 4, record.agreementId());
+            setDateOrNull(cs, 5, record.requestDate());
+            setBigDecimalOrNull(cs, 6, record.amount());
+            setStringOrNull(cs, 7, record.paymentTermTypeCode());
+            setStringOrNull(cs, 8, record.paymentTypeCode());
+            setStringOrNull(cs, 9, record.processingInstructions());
+            setStringOrNull(cs, 10, record.casClient());
+            setStringOrNull(cs, 11, record.casResponsibilityCentre());
+            setStringOrNull(cs, 12, record.casServiceLine());
+            setStringOrNull(cs, 13, record.casStob());
+            setStringOrNull(cs, 14, record.casProjectNumber());
+            setBigDecimalOrNull(cs, 15, record.gstAmount());
+            setBigDecimalOrNull(cs, 16, record.totalAmount());
+            setStringOrNull(cs, 17, userId);
+            setStringOrNull(cs, 18, record.expenseAuthorityCode());
+            setStringOrNull(cs, 19, record.qualifiedReceiverCode());
+            setLongOrNull(cs, 20, record.pstRateId());
+            setBigDecimalOrNull(cs, 21, record.pstAmount());
+
+            cs.execute();
+            return cs.getObject(2, Long.class);
+          });
+    } catch (DataAccessException e) {
+      LOGGER.warn(
+          "{} failed for package {}: {}",
+          PROC_PAYMENT_UPDATE,
+          projectPackage,
+          e.getMessage(),
+          e);
+      throw e;
+    }
+  }
+
+  private void setBigDecimalOrNull(CallableStatement cs, int index, BigDecimal value)
+      throws SQLException {
+    if (value == null) {
+      cs.setNull(index, Types.NUMERIC);
+    } else {
+      cs.setBigDecimal(index, value);
     }
   }
 

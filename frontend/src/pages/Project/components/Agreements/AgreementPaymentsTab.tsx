@@ -19,9 +19,10 @@ import {
   TextArea,
   TextInput,
 } from '@carbon/react';
-import { Add, View } from '@carbon/react/icons';
+import { Add, MisuseOutline, Undo, View } from '@carbon/react/icons';
 import { useCallback, useEffect, useMemo, useState, type FC } from 'react';
 
+import DestructiveModal from '@/components/core/DestructiveModal';
 import { Modal } from '@/components/Modal';
 import { useNotification } from '@/context/notification/useNotification';
 import { useAuthorization } from '@/hooks/useAuthorization';
@@ -30,6 +31,7 @@ import {
   useCreateAgreementPayment,
   useReptAgreementPaymentOptions,
   useReptAgreementPayments,
+  useSetAgreementPaymentRescinded,
 } from '@/services/rept/hooks';
 import { openBlobInNewTab } from '@/utils/download';
 
@@ -200,11 +202,15 @@ const validatePaymentDraft = (
 };
 
 export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId, agreementId }) => {
-  const { canCreate } = useAuthorization();
+  const { canCreate, canEdit } = useAuthorization();
   const { display } = useNotification();
   const agreementPaymentsQuery = useReptAgreementPayments(projectId, agreementId ?? undefined);
   const paymentOptionsQuery = useReptAgreementPaymentOptions(projectId, agreementId ?? undefined);
   const createPaymentMutation = useCreateAgreementPayment(projectId, agreementId ?? undefined);
+  const rescindPaymentMutation = useSetAgreementPaymentRescinded(
+    projectId,
+    agreementId ?? undefined,
+  );
   const invoiceReportMutation = useGenerateReport('2161');
 
   useEffect(() => {
@@ -238,6 +244,9 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
   const [selectedPayeeId, setSelectedPayeeId] = useState<number | null>(null);
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // The payment awaiting rescind/restore confirmation. Holding the whole payment (not just the id)
+  // keeps the confirmation copy and the revision count in sync with what the user actually clicked.
+  const [pendingRescind, setPendingRescind] = useState<ReptAgreementPayment | null>(null);
 
   const paymentOptions = paymentOptionsQuery.data;
   const payeeCandidates = useMemo(
@@ -362,6 +371,40 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
     [invoiceReportMutation],
   );
 
+  const handleConfirmRescind = useCallback(() => {
+    if (!pendingRescind) {
+      return;
+    }
+
+    const target = !pendingRescind.rescinded;
+    rescindPaymentMutation.mutate(
+      {
+        paymentId: pendingRescind.id,
+        rescinded: target,
+        revisionCount: pendingRescind.revisionCount,
+      },
+      {
+        onSuccess: () => {
+          setPendingRescind(null);
+          display({
+            kind: 'success',
+            title: target ? 'Payment rescinded' : 'Payment restored',
+            timeout: 5000,
+          });
+        },
+        onError: (error) => {
+          setPendingRescind(null);
+          display({
+            kind: 'error',
+            title: target ? 'Unable to rescind payment' : 'Unable to restore payment',
+            subtitle: error.message,
+            timeout: 9000,
+          });
+        },
+      },
+    );
+  }, [pendingRescind, rescindPaymentMutation, display]);
+
   const amountValue = useMemo(() => parseCurrencyInput(draft.amount), [draft.amount]);
   const gstPercent = paymentOptions?.taxRate?.percent ?? null;
   const pstPercent = paymentOptions?.pstRate?.percent ?? null;
@@ -443,16 +486,28 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
                 Payment requested {formatDate(payment.requestDate)} &middot;{' '}
                 {formatCurrency(payment.totalAmount)}
               </h3>
-              <Button
-                kind="ghost"
-                size="sm"
-                renderIcon={View}
-                iconDescription="View invoice PDF"
-                onClick={() => handleViewInvoice(payment.id)}
-                disabled={invoiceReportMutation.isPending}
-              >
-                View invoice
-              </Button>
+              <div className="agreement-payment-card__actions">
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  renderIcon={View}
+                  iconDescription="View invoice PDF"
+                  onClick={() => handleViewInvoice(payment.id)}
+                  disabled={invoiceReportMutation.isPending}
+                >
+                  View invoice
+                </Button>
+                <Button
+                  kind={payment.rescinded ? 'ghost' : 'danger--ghost'}
+                  size="sm"
+                  renderIcon={payment.rescinded ? Undo : MisuseOutline}
+                  iconDescription={payment.rescinded ? 'Restore payment' : 'Rescind payment'}
+                  onClick={() => setPendingRescind(payment)}
+                  disabled={!canEdit || rescindPaymentMutation.isPending}
+                >
+                  {payment.rescinded ? 'Restore' : 'Rescind'}
+                </Button>
+              </div>
             </div>
             <FieldList
               fields={buildPaymentFields(payment)}
@@ -861,6 +916,23 @@ export const AgreementPaymentsTab: FC<AgreementPaymentsTabProps> = ({ projectId,
           </Button>
         </div>
       </Modal>
+
+      <DestructiveModal
+        open={pendingRescind !== null}
+        title={pendingRescind?.rescinded ? 'Restore Payment?' : 'Rescind Payment?'}
+        message={
+          pendingRescind
+            ? `${pendingRescind.rescinded ? 'Restore' : 'Rescind'} the payment requested ${formatDate(
+                pendingRescind.requestDate,
+              )} for ${formatCurrency(pendingRescind.totalAmount)}? The payment record is kept either way — only its rescinded status changes.`
+            : ''
+        }
+        confirmButtonText={pendingRescind?.rescinded ? 'Restore' : 'Rescind'}
+        confirmButtonKind={pendingRescind?.rescinded ? 'primary' : 'danger'}
+        onConfirm={handleConfirmRescind}
+        onCancel={() => setPendingRescind(null)}
+        loading={rescindPaymentMutation.isPending}
+      />
     </div>
   );
 };

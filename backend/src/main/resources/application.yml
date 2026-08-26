@@ -107,11 +107,25 @@ ca:
     gov:
       nrs:
         self-uri: http://localhost:3000
-        identity-lookup:
-          base-url: ${IDENTITY_LOOKUP_BASE_URL}
-          default-page-size: 10
+        # nr-user-lookup-api — the shared BC Gov IDIR directory behind the
+        # UserSearchModal. Replaces the retired FAM identity-lookup: calls
+        # authenticate with REPT's own Keycloak client_credentials service
+        # account, not the caller's Cognito token. All four values are
+        # optional so PR previews (which skip the Keycloak service-account
+        # step) still start — the client just goes out unauthenticated and
+        # lookups come back empty.
+        user-lookup:
+          base-url: ${USER_LOOKUP_BASE_URL:}
+          token-url: ${USER_LOOKUP_TOKEN_URL:}
+          client-id: ${USER_LOOKUP_CLIENT_ID:}
+          client-secret: ${USER_LOOKUP_CLIENT_SECRET:}
+          # Optional — the scopes are DEFAULT client scopes on the service
+          # account, so normally left blank.
+          scope: ${USER_LOOKUP_SCOPE:}
           connect-timeout: 15s
           read-timeout: 30s
+        user-directory:
+          default-page-size: 10
         cognito:
           userinfo-uri: ${COGNITO_USERINFO_URI}
         frontend:

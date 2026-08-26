@@ -45,6 +45,7 @@ import {
   type ReptAgreementPayment,
   type ReptAgreementPaymentCreateRequest,
   type ReptAgreementPaymentOptions,
+  type ReptAgreementPaymentRescindRequest,
   type ReptAgreementUpdateRequest,
   type ReptAgreementOptions,
   type ReptAgreementCreateRequest,
@@ -358,6 +359,31 @@ export const createAgreementPayment = (
   }).then((result) => {
     if (!result) {
       throw new Error('Payment creation response was empty');
+    }
+    return {
+      ...result,
+      payees: result.payees ?? [],
+    };
+  });
+
+export const setAgreementPaymentRescinded = (
+  projectId: string,
+  agreementId: string,
+  paymentId: number,
+  payload: ReptAgreementPaymentRescindRequest,
+) =>
+  request<ReptAgreementPayment>(
+    `/projects/${projectId}/agreements/${agreementId}/payments/${paymentId}/rescind`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  ).then((result) => {
+    if (!result) {
+      throw new Error('Payment rescind response was empty');
     }
     return {
       ...result,

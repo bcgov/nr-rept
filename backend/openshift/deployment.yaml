@@ -98,9 +98,18 @@ spec:
             - name: COGNITO_USERINFO_URI
               value: ${COGNITO_USERINFO_URI}
 
-            # ── Identity-lookup (IDIR user search) ────────────
-            - name: IDENTITY_LOOKUP_BASE_URL
-              value: ${IDENTITY_LOOKUP_BASE_URL}
+            # ── nr-user-lookup-api (IDIR user search) ─────────
+            - name: USER_LOOKUP_BASE_URL
+              value: ${USER_LOOKUP_BASE_URL}
+            - name: USER_LOOKUP_TOKEN_URL
+              value: ${USER_LOOKUP_TOKEN_URL}
+            - name: USER_LOOKUP_CLIENT_ID
+              value: ${USER_LOOKUP_CLIENT_ID}
+            - name: USER_LOOKUP_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: rept-backend-secret
+                  key: USER_LOOKUP_CLIENT_SECRET
 
             # ── Oracle DB (consumed by application-oracle.yml) ─
             - name: DATABASE_HOST
@@ -271,6 +280,7 @@ stringData:
   DATABASE_USER: ${DATABASE_USER}
   DATABASE_PASSWORD: ${DATABASE_PASSWORD}
   KEYSTORE_SECRET: ${KEYSTORE_SECRET}
+  USER_LOOKUP_CLIENT_SECRET: ${USER_LOOKUP_CLIENT_SECRET}
 ---
 # NetworkPolicy: allow ingress into backend from
 #   1) frontend pods (so Caddy's `reverse_proxy /api*` can reach :8080)

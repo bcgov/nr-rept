@@ -8,6 +8,7 @@ import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPayeeCandidateDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentOptionsDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentCreateRequestDto;
+import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentRescindRequestDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentTaxRateDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPropertyDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPropertyUpdateRequestDto;
@@ -297,6 +298,78 @@ public class ReptAgreementService {
                 new AgreementCommandException(
                     AgreementCommandException.Reason.NOT_FOUND,
                     "Payment not found after creation"));
+  }
+
+  /**
+   * Rescinds or restores a payment — the legacy Rescind/Restore button, which toggled
+   * {@code RESCIND_PAYMENT_IND} and left every other column untouched. Payments are never deleted;
+   * rescinding is how a payment request is withdrawn while keeping the audit trail.
+   */
+  @Transactional
+  public ReptAgreementPaymentDto setAgreementPaymentRescinded(
+      Long projectId,
+      Long agreementId,
+      Long paymentId,
+      ReptAgreementPaymentRescindRequestDto request) {
+    if (request == null || request.rescinded() == null) {
+      throw new AgreementCommandException(
+          AgreementCommandException.Reason.VALIDATION, "Rescinded flag is required");
+    }
+
+    if (paymentId == null || paymentId < 1) {
+      throw new AgreementCommandException(
+          AgreementCommandException.Reason.VALIDATION, "Payment identifier is required");
+    }
+
+    if (!isAgreementInProject(projectId, agreementId)) {
+      throw new AgreementCommandException(
+          AgreementCommandException.Reason.NOT_FOUND, "Agreement not found");
+    }
+
+    ReptAgreementPaymentDto current =
+        repository
+            .findAgreementPayment(projectId, agreementId, paymentId)
+            .orElseThrow(
+                () ->
+                    new AgreementCommandException(
+                        AgreementCommandException.Reason.NOT_FOUND, "Payment not found"));
+
+    // Already in the requested state — skip the round trip so a double-click is a no-op rather
+    // than a spurious revision bump.
+    if (Objects.equals(Boolean.TRUE.equals(current.rescinded()), request.rescinded())) {
+      return current;
+    }
+
+    Long revisionCount =
+        request.revisionCount() != null ? request.revisionCount() : current.revisionCount();
+
+    try {
+      Long updatedRevision =
+          repository.setPaymentRescinded(
+              paymentId, request.rescinded(), revisionCount, safeUserId());
+      if (updatedRevision == null) {
+        throw new AgreementCommandException(
+            AgreementCommandException.Reason.NOT_FOUND, "Payment not found");
+      }
+    } catch (DataIntegrityViolationException ex) {
+      throw new AgreementCommandException(
+          AgreementCommandException.Reason.CONFLICT,
+          "Payment has been modified by another user",
+          ex);
+    } catch (DataAccessException ex) {
+      throw new AgreementCommandException(
+          AgreementCommandException.Reason.DATABASE_ERROR,
+          request.rescinded() ? "Unable to rescind payment" : "Unable to restore payment",
+          ex);
+    }
+
+    return repository
+        .findAgreementPayment(projectId, agreementId, paymentId)
+        .orElseThrow(
+            () ->
+                new AgreementCommandException(
+                    AgreementCommandException.Reason.NOT_FOUND,
+                    "Payment not found after update"));
   }
 
   public List<ReptAgreementPropertyDto> updateAgreementProperties(

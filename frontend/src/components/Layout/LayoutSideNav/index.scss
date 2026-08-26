@@ -114,3 +114,49 @@
   .#{vars.$bcgov-prefix}--side-nav__link-text {
   opacity: 1;
 }
+
+// ── Support block, pinned to the foot of the nav ─────────────────────────
+// The support caption claims the leftover vertical space with an auto margin,
+// pushing it and the "Report an issue" link that follows to the bottom — no
+// absolute positioning, so the block simply sits below the last route when the
+// menu is tall enough to fill the nav.
+//
+// That needs an unbroken flex-column chain from the nav down to the list.
+// Carbon nominally supplies it (`.cds--side-nav__navigation` is a flex column
+// and `.cds--side-nav__items` is `flex: 1 1 0%`), but those rules aren't
+// reliably applied here — the nav computes to `display: block` — so declare it
+// ourselves rather than inherit a mechanism that may not be loaded.
+.side-nav-drawer.#{vars.$bcgov-prefix}--side-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.side-nav-drawer .#{vars.$bcgov-prefix}--side-nav__items {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+// The list is a flex container now, so its items would otherwise shrink to fit
+// rather than scroll when the menu outgrows the nav.
+.side-nav-drawer .#{vars.$bcgov-prefix}--side-nav__items > .#{vars.$bcgov-prefix}--side-nav__item {
+  flex-shrink: 0;
+}
+
+// 1rem matches Carbon's `padding: 0 mini-units(2)` on the links below, so the
+// caption's left edge lines up with theirs.
+.side-nav-support {
+  margin-block-start: auto;
+  flex-shrink: 0;
+  padding: $spacing-03 $spacing-05 $spacing-02;
+  color: var(--cds-text-secondary);
+  @include type.type-style('label-01');
+}
+
+// No room for a section label in the 48px rail — the link's hover tooltip
+// already names it. Dropping the caption entirely (rather than just its text)
+// also drops the auto margin above, so the support icon flows up directly
+// under the route icons instead of being stranded at the bottom of the rail.
+.side-nav-drawer:not(.side-nav-drawer--open) .side-nav-support {
+  display: none;
+}

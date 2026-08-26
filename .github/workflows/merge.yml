@@ -46,6 +46,10 @@ jobs:
       database_host: ${{ secrets.database_host }}
       database_service_name: ${{ secrets.database_service_name }}
       keystore_secret: ${{ secrets.keystore_secret }}
+      keycloak_sa_client_id: ${{ secrets.KEYCLOAK_SA_CLIENT_ID }}
+      keycloak_sa_client_secret: ${{ secrets.KEYCLOAK_SA_CLIENT_SECRET }}
+      keycloak_issuer_uri: ${{ secrets.KEYCLOAK_ISSUER_URI }}
+      user_lookup_base_url: ${{ secrets.USER_LOOKUP_BASE_URL }}
     with:
       environment: test
       target: test
@@ -79,6 +83,10 @@ jobs:
       database_host: ${{ secrets.database_host }}
       database_service_name: ${{ secrets.database_service_name }}
       keystore_secret: ${{ secrets.keystore_secret }}
+      keycloak_sa_client_id: ${{ secrets.KEYCLOAK_SA_CLIENT_ID }}
+      keycloak_sa_client_secret: ${{ secrets.KEYCLOAK_SA_CLIENT_SECRET }}
+      keycloak_issuer_uri: ${{ secrets.KEYCLOAK_ISSUER_URI }}
+      user_lookup_base_url: ${{ secrets.USER_LOOKUP_BASE_URL }}
     with:
       environment: prod
       target: prod
@@ -98,7 +106,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
-      - uses: bcgov/action-sysdig-monitor@122c7672e37f97cf27c1b17d1c0738f152b1bcf7 # 0.0.2
+      - uses: bcgov/actions/sysdig-monitor@4ad61a784f1c17765b03d8d6de9737c1d3f4c0f2 # v0.5.0
         with:
           sysdig_api_token: ${{ secrets.SYSDIG_API_TOKEN }}
           oc_namespace: ${{ secrets.oc_namespace }}

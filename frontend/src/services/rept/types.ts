@@ -562,6 +562,16 @@ export interface ReptAgreementPaymentCreateRequest {
   propertyContactIds: number[];
 }
 
+/**
+ * Target state for the rescind/restore toggle. `rescinded` is the state we want the payment to end
+ * up in — not a flip instruction — so a retried request stays idempotent. `revisionCount` is the
+ * value last read for the payment; the backend uses it for the optimistic-lock check.
+ */
+export interface ReptAgreementPaymentRescindRequest {
+  rescinded: boolean;
+  revisionCount?: number | null;
+}
+
 // Project Update Types
 export interface ReptProjectUpdateOptions {
   statuses: CodeName[];

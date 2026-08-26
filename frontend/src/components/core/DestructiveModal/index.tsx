@@ -39,6 +39,13 @@ export type DestructiveModalProps = {
    */
   onCancel: () => void;
   /**
+   * Carbon button kind for the confirm action. Defaults to `danger` — override with `primary` for
+   * the reversing half of a paired action (e.g. Restore alongside Rescind), where the confirmation
+   * step is still wanted but the action itself is not destructive.
+   * @default "danger"
+   */
+  confirmButtonKind?: 'danger' | 'primary';
+  /**
    * Whether the confirm action is in progress (disables buttons)
    * @default false
    */
@@ -79,6 +86,7 @@ export const DestructiveModal: FC<DestructiveModalProps> = ({
   message,
   confirmButtonText = 'Delete',
   cancelButtonText = 'Cancel',
+  confirmButtonKind = 'danger',
   onConfirm,
   onCancel,
   loading = false,
@@ -111,7 +119,13 @@ export const DestructiveModal: FC<DestructiveModalProps> = ({
         <Button kind="secondary" size="md" onClick={onCancel} disabled={loading}>
           {cancelButtonText}
         </Button>
-        <Button kind="danger" size="md" onClick={onConfirm} disabled={loading}>
+        <Button
+          kind={confirmButtonKind}
+          size="md"
+          onClick={onConfirm}
+          disabled={loading}
+          aria-describedby={warningId}
+        >
           {confirmButtonText}
         </Button>
       </div>

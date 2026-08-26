@@ -30,6 +30,7 @@ import {
   updateAgreementProperties,
   updateAgreement,
   createAgreementPayment,
+  setAgreementPaymentRescinded,
   searchProjects,
   searchUsers,
   getProjectUpdateOptions,
@@ -91,6 +92,7 @@ import type {
   ReptAgreementPayment,
   ReptAgreementPaymentCreateRequest,
   ReptAgreementPaymentOptions,
+  ReptAgreementPaymentRescindRequest,
   ReptAgreementUpdateRequest,
   ReptAgreementOptions,
   ReptAgreementCreateRequest,
@@ -374,6 +376,41 @@ export const useCreateAgreementPayment = (
   });
 };
 
+/**
+ * Rescinds or restores a payment. The caller passes the payment id alongside the target state so a
+ * single hook instance serves every payment card on the agreement.
+ */
+export const useSetAgreementPaymentRescinded = (
+  projectId?: string,
+  agreementId?: string,
+): UseMutationResult<
+  ReptAgreementPayment,
+  Error,
+  ReptAgreementPaymentRescindRequest & { paymentId: number }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ReptAgreementPayment,
+    Error,
+    ReptAgreementPaymentRescindRequest & { paymentId: number }
+  >({
+    mutationKey: ['rept', 'project', projectId, 'agreement', agreementId, 'payments', 'rescind'],
+    mutationFn: ({ paymentId, ...payload }) => {
+      if (!projectId || !agreementId) {
+        return Promise.reject(new Error('Project and agreement must be specified'));
+      }
+      return setAgreementPaymentRescinded(projectId, agreementId, paymentId, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: reptKeys.agreementPayments(projectId, agreementId),
+      });
+      queryClient.invalidateQueries({ queryKey: reptKeys.agreement(projectId, agreementId) });
+    },
+  });
+};
+
 // Agreement Create Options Hook
 export const useAgreementCreateOptions = (
   projectId?: string,
@@ -458,9 +495,9 @@ export const useReptUserSearch = (
 ): UseQueryResult<ReptUserSearchResponse | null, Error> => {
   const enabled = Boolean(
     params &&
-      ((params.userId && params.userId.trim().length > 0) ||
-        (params.firstName && params.firstName.trim().length > 0) ||
-        (params.lastName && params.lastName.trim().length > 0)),
+    ((params.userId && params.userId.trim().length > 0) ||
+      (params.firstName && params.firstName.trim().length > 0) ||
+      (params.lastName && params.lastName.trim().length > 0)),
   );
 
   return useQuery<ReptUserSearchResponse | null, Error>({

@@ -6,6 +6,7 @@ import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementOptionsDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentCreateRequestDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentOptionsDto;
+import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPaymentRescindRequestDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPropertyDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementPropertyUpdateRequestDto;
 import ca.bc.gov.nrs.rept.dto.rept.ReptAgreementUpdateRequestDto;
@@ -193,6 +194,31 @@ public class ReptAgreementController {
       ReptAgreementPaymentDto created =
           service.createAgreementPayment(projectId, agreementId, request);
       return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    } catch (AgreementCommandException ex) {
+      return handleAgreementCommandException(ex);
+    }
+  }
+
+  /**
+   * Rescinds or restores a payment. PUT rather than POST because the body carries the target state,
+   * making a retry idempotent; {@code /api/**} PUTs are already REPT_ADMIN-only.
+   */
+  @PutMapping("/{agreementId}/payments/{paymentId}/rescind")
+  public ResponseEntity<?> setAgreementPaymentRescinded(
+      @PathVariable("projectId") @Positive Long projectId,
+      @PathVariable("agreementId") @Positive Long agreementId,
+      @PathVariable("paymentId") @Positive Long paymentId,
+      @Valid @RequestBody ReptAgreementPaymentRescindRequestDto request) {
+    ReptAgreementService service = serviceProvider.getIfAvailable();
+    if (service == null) {
+      LOGGER.warn("REPT agreement service unavailable – unable to update payment rescind state");
+      return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+    }
+
+    try {
+      ReptAgreementPaymentDto updated =
+          service.setAgreementPaymentRescinded(projectId, agreementId, paymentId, request);
+      return ResponseEntity.ok(updated);
     } catch (AgreementCommandException ex) {
       return handleAgreementCommandException(ex);
     }

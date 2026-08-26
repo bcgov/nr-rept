@@ -1,3 +1,4 @@
+import { Email } from '@carbon/icons-react';
 import { SideNav, SideNavItems, SideNavLink, SideNavMenu, SideNavMenuItem } from '@carbon/react';
 import { type FC } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -7,6 +8,9 @@ import { useLayout } from '@/context/layout/useLayout';
 import { getMenuEntries, type MenuItem } from '@/routes/routePaths';
 
 import './index.scss';
+
+/** Mailbox behind the "Report an issue" support link at the foot of the nav. */
+const SUPPORT_MAILTO = 'mailto:heartwood@gov.bc.ca';
 
 export const LayoutSideNav: FC = () => {
   const { isSideNavExpanded } = useLayout();
@@ -78,6 +82,24 @@ export const LayoutSideNav: FC = () => {
         {getMenuEntries(user?.roles || []).map((route) =>
           route.children ? renderMenuItem(route) : renderMenuLink(route),
         )}
+
+        {/* Support — pinned to the foot of the nav in the popped-out panel
+            (the caption carries the `margin-block-start: auto` that pushes
+            both it and the link down; see index.scss). The caption is
+            decorative, so it's hidden from assistive tech, and it drops out
+            entirely in the collapsed rail — which also drops the auto margin,
+            letting the icon sit directly under the other route icons. The
+            link's hover tooltip carries the label there instead. */}
+        <li className="side-nav-support" aria-hidden="true">
+          Support
+        </li>
+        <SideNavLink
+          data-testid="side-nav-link-report-an-issue"
+          href={SUPPORT_MAILTO}
+          renderIcon={Email}
+        >
+          Report an issue
+        </SideNavLink>
       </SideNavItems>
     </SideNav>
   );
