@@ -12,7 +12,7 @@
  *
  * Exported helpers:
  *   getPublicRoutes()        — returns PUBLIC_ROUTES as-is.
- *   getNoRoleRoutes()        — Layout-wrapped /unauthorized + catch-all redirect to it.
+ *   getNoRoleRoutes()        — standalone /unauthorized + catch-all redirect to it.
  *   getProtectedRoutes()     — returns PROTECTED_ROUTES with role-restricted routes wrapped in <ProtectedRoute>.
  *   getMenuEntries(roles)    — returns sidebar menu items filtered by role.
  */
@@ -212,20 +212,22 @@ export const getPublicRoutes = (): RouteDescription[] => PUBLIC_ROUTES;
 
 /**
  * Returns the route set for an authenticated user who has no recognized REPT
- * role. They can reach the Layout-wrapped RoleErrorPage and nothing else;
- * every other path redirects to /unauthorized so they don't see empty
- * dashboards or hit a string of 403s. The Layout header's profile menu still
- * exposes Log out.
+ * role. They can reach the RoleErrorPage and nothing else; every other path
+ * redirects to /unauthorized so they don't see empty dashboards or hit a string
+ * of 403s.
+ *
+ * Deliberately NOT wrapped in <Layout>. The page is a full-bleed landing-style
+ * screen, and the shell around it would contribute a side nav that is empty by
+ * construction — `getSideMenuRoutes` filters by role, and this user has none.
+ * Sign-out used to be reachable only through the Layout header's profile menu;
+ * the page now offers it as an explicit button, which is the one action
+ * available to someone in this state.
  */
 export const getNoRoleRoutes = (): RouteDescription[] => [
   {
     path: '/unauthorized',
     id: 'Unauthorized',
-    element: (
-      <Layout>
-        <RoleErrorPage />
-      </Layout>
-    ),
+    element: <RoleErrorPage />,
     isSideMenu: false,
   },
   {
