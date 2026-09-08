@@ -29,8 +29,8 @@ In OpenShift deployments these come from the K8s Secret built by `openshift.depl
 |----------|-------------------------|---------|
 | `SERVER_PORT` | Server port             | 8080 |
 | `SPRING_PROFILES_ACTIVE` | Active profiles         | oracle |
-| `AWS_COGNITO_ISSUER_URI` | Cognito issuer URI      | - |
-| `COGNITO_USERINFO_URI` | Cognito /oauth2/userInfo endpoint | - |
+| `KEYCLOAK_ISSUER_URI` | BC Gov SSO realm issuer URI | - |
+| `KEYCLOAK_CLIENT_ID` | CSS integration client id; checked as the token's `azp` | - |
 | `USER_LOOKUP_BASE_URL` | nr-user-lookup-api base URL (IDIR directory) | - |
 | `USER_LOOKUP_TOKEN_URL` | Keycloak token endpoint for `client_credentials` | - |
 | `USER_LOOKUP_CLIENT_ID` | REPT's Keycloak service-account client id | - |
@@ -50,6 +50,38 @@ In OpenShift deployments these come from the K8s Secret built by `openshift.depl
 |---------|-------------|
 | `oracle` | Oracle datasource + JPA dialect; required in all environments. |
 | `local`  | Local-dev only. Loads `application-local.yml` so credentials don't need to be exported as env vars. Activate alongside `oracle` (`SPRING_PROFILES_ACTIVE=local,oracle`). |
+
+## 🔐 Authentication
+
+The backend is a **resource server only** — it validates BC Gov SSO (Keycloak) access tokens and never performs a login redirect. All of it lives in `security/Oauth2SecurityCustomizer`.
+
+### Roles come from `client_roles`
+
+CSS emits the caller's roles for the client the token was issued to as `client_roles`; stock Keycloak puts the same information under `resource_access.<azp>.roles`. **Both are read**, `client_roles` first, because which one appears depends on the realm's mappers.
+
+Role codes are unchanged from the Cognito groups they replace — `REPT_ADMIN` and `REPT_VIEWER`, matched verbatim by `ApiAuthorizationCustomizer`. REPT scopes no role by district, region or forest client, so FAM's scope-suffix grammar (`<CODE>_DISTRICT-DCC`) never appears on a REPT token and exact matching stays correct.
+
+FAM's own bookkeeping roles do reach the token, though: a grant given an expiry date is recorded in CSS as a role assigned to the person, shaped `FAM:EXPIRES:2026-09-30:REPT_ADMIN`. Anything `FAM:`-prefixed is filtered out before authorities are built.
+
+### The `azp` check
+
+Every token must carry `KEYCLOAK_CLIENT_ID` as its `azp` claim, or it is refused with `invalid_token`.
+
+**Why it's needed.** The BC Gov standard realm is shared. Other applications' clients issue tokens signed by the same issuer and verifiable against the same JWKS, so *signature and issuer validation alone do not establish that a token was meant for REPT* — only that the realm minted it.
+
+`client_roles` limits the blast radius in practice, since another client's token carries that client's roles and wouldn't hold `REPT_ADMIN`. But that's a property of how CSS happens to populate the claim rather than a control this service enforces, and it's exactly the sort of implicit guarantee that stops holding the moment someone adds a role mapper. FAM enforces the same rule through its `FamClientTokenFilter`.
+
+The expected client id is configuration rather than a constant: it differs per environment, and a deployment pointed at the wrong realm should fail loudly instead of accepting whatever that realm signs. The refusal message names no client id — the caller holds a valid token for *some* client and doesn't need to be told which one this API wants; the mismatch is logged instead.
+
+> This check replaced a Cognito-era validator that rejected any token whose `token_use` claim wasn't `"access"`. **Keycloak emits no `token_use` claim at all**, so that validator would have failed every single request.
+
+### Identity claims
+
+Profile claims ride the access token, following the [SSO identity-mappers reference](https://bcgov.github.io/sso-docs/advanced/identity-mappers#idir---mfa) for the **IDIR - MFA** integration: `idir_username`, `idir_user_guid`, `identity_provider`, `display_name`, `given_name`, `family_name`, `email`.
+
+That's what let `CognitoUserInfoService` be deleted — Cognito carried these on the ID token only, so the backend used to call `/oauth2/userInfo` on every request behind a five-minute cache. One external dependency is now gone from the request path.
+
+> **`azureidir` is normalised to `IDIR`.** `JwtPrincipalUtil.getUserId()` builds the `IDIR\jsmith` string written to `create_user` / `update_user` across ten services, and those columns hold years of `IDIR\`-prefixed rows. The realm reports `azureidir`, so passing it through would start writing `AZUREIDIR\jsmith` for the same person — nothing would error, no test would fail, and the audit trail would simply stop joining up from the day of the cutover.
 
 ## API Endpoints
 
@@ -73,8 +105,8 @@ Grouped by area; see the `controller/` package for full request/response shapes.
 REPT resolves IDIR user details — display name, email — from
 [nr-user-lookup-api](https://github.com/bcgov/nr-user-lookup-api), the shared BC Gov identity
 service. This **replaces the FAM identity-lookup integration** REPT used previously: the app no
-longer calls FAM for user lookups. FAM/Cognito is still the *authentication* provider — just not
-the directory.
+longer calls FAM for user lookups. FAM (through BC Gov SSO) is still where *authorisation* comes
+from — it administers the REPT roles — just not the directory.
 
 All calls go through `client/UserLookupClient`, against base path `/api/v1/user-lookup`:
 
@@ -85,7 +117,7 @@ All calls go through `client/UserLookupClient`, against base path `/api/v1/user-
 
 ### Authentication — service account, not the caller's token
 
-The old FAM integration forwarded the caller's Cognito JWT downstream. That's gone. **Every**
+The old FAM integration forwarded the caller's JWT downstream. That's gone. **Every**
 nr-user-lookup-api call now authenticates with REPT's own Keycloak
 `grant_type=client_credentials` bearer token (`client/ClientCredentialsTokenSource`, which caches
 the access token until ~60s before expiry). nr-user-lookup-api validates the service account's
@@ -154,7 +186,7 @@ This repo was scaffolded from [bcgov/quickstart-openshift](https://github.com/bc
 
 - Database swapped from Postgres to BC Gov shared Oracle (TCPS connection, JKS truststore).
 - Reports run via the embedded JasperReports library — no remote Jasper server.
-- Per-PR Cognito callback URIs handled via slot bucketing (see root README).
+- Per-PR redirect URIs handled via slot bucketing (see root README).
 
 Upstream conventions for build/deploy actions, OpenShift templates, and PR preview environments still apply where unmodified; check the quickstart for context if something looks unfamiliar.
 

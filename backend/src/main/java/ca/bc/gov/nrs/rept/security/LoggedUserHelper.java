@@ -8,7 +8,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,34 +16,34 @@ import java.util.stream.Collectors;
  *
  * <p>Registered as {@code @auth} for programmatic use in services and security configuration.
  *
- * <h3>Access-token migration note</h3>
- * The frontend now sends a Cognito <em>access token</em> (not an ID token).
- * Access tokens contain {@code cognito:groups} and {@code sub} but lack the
- * {@code custom:idp_*} profile claims that the identity helpers below depend on.
- * Those claims are fetched on demand from the Cognito {@code /oauth2/userInfo}
- * endpoint (via {@link CognitoUserInfoService}) and merged into a synthetic
- * claims map so that existing {@link JwtPrincipalUtil} methods continue to work
- * without modification.
+ * <h3>Identity comes off the token now</h3>
+ * Under Cognito the frontend sent an access token that carried {@code cognito:groups} but none
+ * of the {@code custom:idp_*} profile claims, so this helper called the Cognito
+ * {@code /oauth2/userInfo} endpoint on every request (behind a five-minute cache) and merged
+ * the result into a synthetic claims map.
+ *
+ * <p>BC Gov SSO maps the profile claims onto the access token directly, so the whole
+ * enrichment step — and the external HTTP call it made from the request path — is gone. The
+ * claims are read straight off the JWT.
  */
 @Component("auth")
 public class LoggedUserHelper {
 
-  private final CognitoUserInfoService userInfoService;
-
-  public LoggedUserHelper(CognitoUserInfoService userInfoService) {
-    this.userInfoService = userInfoService;
-  }
-
   // ─── Identity helpers ──────────────────────────────────────────────
+
   /**
    * Get the ID from the logged user (e.g. {@code IDIR\jsmith}).
-   * Requires the {@code custom:idp_username} and {@code custom:idp_name} claims
-   * which are obtained from the Cognito userInfo endpoint.
+   *
+   * <p>Reads {@code idir_username} and {@code identity_provider} from the access token. The
+   * provider is normalised to {@code IDIR} rather than passed through as {@code azureidir} —
+   * see {@link JwtPrincipalUtil} for why that matters to the audit columns this value is
+   * written to.
    */
   public String getLoggedUserId() {
-    return JwtPrincipalUtil.getUserId(getEnrichedClaims());
+    return JwtPrincipalUtil.getUserId(getPrincipal().getClaims());
   }
-  // ─── Role / authority helpers (these use cognito:groups from the access token) ──
+
+  // ─── Role / authority helpers (from client_roles on the access token) ──
 
   /**
    * Returns the set of authority strings for the current user (e.g. {@code REPT_ADMIN}).
@@ -75,30 +74,12 @@ public class LoggedUserHelper {
   private Jwt getPrincipal() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (authentication.isAuthenticated()
+    if (authentication != null
+        && authentication.isAuthenticated()
         && authentication.getPrincipal() instanceof Jwt jwtPrincipal) {
       return jwtPrincipal;
     }
     throw new UserNotFoundException();
-  }
-
-  /**
-   * Builds a merged claims map that contains:
-   * <ol>
-   *   <li>All claims from the access token (cognito:groups, sub, etc.)</li>
-   *   <li>Profile claims from the Cognito userInfo endpoint
-   *       (custom:idp_name, custom:idp_username, email, etc.)</li>
-   * </ol>
-   * UserInfo claims do NOT overwrite access-token claims if there's a collision.
-   */
-  private Map<String, Object> getEnrichedClaims() {
-    Jwt accessToken = getPrincipal();
-    Map<String, Object> userInfoClaims = userInfoService.getUserInfo(accessToken);
-
-    // Start with userInfo (lower precedence), overlay with access token claims
-    java.util.HashMap<String, Object> merged = new java.util.HashMap<>(userInfoClaims);
-    merged.putAll(accessToken.getClaims());
-    return merged;
   }
 
 }

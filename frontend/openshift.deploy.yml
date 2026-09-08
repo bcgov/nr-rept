@@ -16,10 +16,15 @@ parameters:
     description: PR number, 'test', or 'prod'
     required: true
   # SLOT decouples the public-facing Route hostname from the OpenShift object
-  # names so per-PR previews can share a fixed pool of Cognito callback URIs.
-  # AWS Cognito user pool app clients don't accept wildcards in CallbackURLs;
-  # we pre-register 50 URIs (nr-rept-0…nr-rept-49.apps.silver.devops.gov.bc.ca)
-  # and bucket PRs into them via PR % 50.
+  # names so per-PR previews can share a fixed pool of registered redirect URIs.
+  # We pre-register 50 (nr-rept-0…nr-rept-49.apps.silver.devops.gov.bc.ca) and
+  # bucket PRs into them via PR % 50.
+  #
+  # This scheme was forced by Cognito, whose app clients reject wildcards in
+  # CallbackURLs. Redirect URIs now live on the CSS integration instead — so if
+  # CSS permits a wildcard there, this bucketing can go away entirely and every
+  # PR can have its own hostname. Worth asking before it is carried forward out
+  # of habit; nothing else depends on the modulo.
   # pr-open.yml computes SLOT = PR % 50; merge.yml passes SLOT = ZONE = test/prod.
   - name: SLOT
     description: Route hostname slot — PR % 50 for previews, or test/prod for those targets
@@ -39,33 +44,23 @@ parameters:
   - name: FRONTEND_LOG_LEVEL
     value: INFO
   # Runtime VITE_* config (rendered into /srv/config.js by the entrypoint).
-  - name: VITE_USER_POOLS_ID
+  # BC Gov SSO (Keycloak). The issuer URI is all oidc-client-ts needs — it
+  # discovers the authorize, token, and end-session endpoints from there, which
+  # is why the three VITE_LOGOUT_* variables that drove the old Cognito
+  # sign-out chain are gone rather than renamed.
+  - name: VITE_KEYCLOAK_URL
+    description: Realm issuer URI, e.g. https://test.loginproxy.gov.bc.ca/auth/realms/standard
     required: true
-  - name: VITE_USER_POOLS_WEB_CLIENT_ID
+  # Must match KEYCLOAK_CLIENT_ID on the backend: it is checked there as the
+  # token's `azp`, so a mismatch refuses every request.
+  - name: VITE_KEYCLOAK_CLIENT_ID
+    description: The CSS integration's client id
     required: true
-  # Federated logout chain (Siteminder → Keycloak → Cognito → app). The frontend
-  # builds this itself so Cognito fires LAST (context/auth/logoutChain.ts). If any
-  # of the three is blank, logout falls back to the Amplify hosted-UI sign-out
-  # (which returns to the app origin — register it as a Cognito sign-out URL).
-  - name: VITE_LOGOUT_SITEMINDER_URL
-    description: IDIR/BCeID Siteminder logoff.cgi base URL
-    value: ""
-  - name: VITE_LOGOUT_KEYCLOAK_URL
-    description: Keycloak end-session (logout) endpoint URL
-    value: ""
-  - name: VITE_LOGOUT_KEYCLOAK_CLIENT_ID
-    description: The app's FAM/Keycloak client id (for post-logout redirect)
-    value: ""
   - name: VITE_BACKEND_URL
     description: Browser-facing API base path; usually '/api'
     value: /api
   - name: VITE_APP_NAME
     value: Real Estate Project Tracking
-  # VITE_ZONE = the deploy zone. AuthProvider uppercases this to pick the
-  # Cognito identity provider (e.g. ZONE=42 → identity_provider=42-IDIR,
-  # which won't exist; map PR ZONEs to 'dev' below in reusable-deploy.yml).
-  - name: VITE_ZONE
-    value: dev
 
 objects:
   # ── Deployment ────────────────────────────────────────────
@@ -134,22 +129,14 @@ objects:
                   value: /tmp
                 - name: XDG_CONFIG_HOME
                   value: /tmp
-                - name: VITE_USER_POOLS_ID
-                  value: ${VITE_USER_POOLS_ID}
-                - name: VITE_USER_POOLS_WEB_CLIENT_ID
-                  value: ${VITE_USER_POOLS_WEB_CLIENT_ID}
-                - name: VITE_LOGOUT_SITEMINDER_URL
-                  value: ${VITE_LOGOUT_SITEMINDER_URL}
-                - name: VITE_LOGOUT_KEYCLOAK_URL
-                  value: ${VITE_LOGOUT_KEYCLOAK_URL}
-                - name: VITE_LOGOUT_KEYCLOAK_CLIENT_ID
-                  value: ${VITE_LOGOUT_KEYCLOAK_CLIENT_ID}
+                - name: VITE_KEYCLOAK_URL
+                  value: ${VITE_KEYCLOAK_URL}
+                - name: VITE_KEYCLOAK_CLIENT_ID
+                  value: ${VITE_KEYCLOAK_CLIENT_ID}
                 - name: VITE_BACKEND_URL
                   value: ${VITE_BACKEND_URL}
                 - name: VITE_APP_NAME
                   value: ${VITE_APP_NAME}
-                - name: VITE_ZONE
-                  value: ${VITE_ZONE}
               volumeMounts:
                 - name: srv
                   mountPath: /srv

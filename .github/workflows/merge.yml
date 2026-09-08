@@ -48,7 +48,6 @@ jobs:
       keystore_secret: ${{ secrets.keystore_secret }}
       keycloak_sa_client_id: ${{ secrets.KEYCLOAK_SA_CLIENT_ID }}
       keycloak_sa_client_secret: ${{ secrets.KEYCLOAK_SA_CLIENT_SECRET }}
-      keycloak_issuer_uri: ${{ secrets.KEYCLOAK_ISSUER_URI }}
       user_lookup_base_url: ${{ secrets.USER_LOOKUP_BASE_URL }}
     with:
       environment: test
@@ -59,6 +58,11 @@ jobs:
 
   tests:
     name: Tests
+    # Set the repository variable SKIP_E2E to `true` to skip the browser suite.
+    # Neither this job nor reusable-tests.yml declares an `environment:`, so the
+    # value is read from repository (or org) variables — one switch covering both
+    # this workflow and pr-open.yml. PROD still deploys; see deploy-prod below.
+    if: vars.SKIP_E2E != 'true'
     needs: [deploy-test]
     permissions:
       contents: read
@@ -71,7 +75,21 @@ jobs:
 
   deploy-prod:
     name: PROD Deploys (${{ needs.init.outputs.pr }})
-    needs: [tests, init]
+    # `always()` is required because a skipped dependency otherwise skips this
+    # job and everything downstream of it. With it, each upstream result must be
+    # checked explicitly:
+    #   - tests SKIPPED is fine (that is the flag doing its job)
+    #   - tests FAILED or CANCELLED still blocks PROD
+    #   - deploy-test must be named and required, because if IT fails, `tests`
+    #     is skipped too — and "skipped" alone would otherwise wave PROD through
+    #     on top of a broken TEST deploy.
+    needs: [tests, init, deploy-test]
+    if: >-
+      always()
+      && needs.init.result == 'success'
+      && needs['deploy-test'].result == 'success'
+      && needs.tests.result != 'failure'
+      && needs.tests.result != 'cancelled'
     permissions:
       contents: read
     uses: ./.github/workflows/reusable-deploy.yml
@@ -85,7 +103,6 @@ jobs:
       keystore_secret: ${{ secrets.keystore_secret }}
       keycloak_sa_client_id: ${{ secrets.KEYCLOAK_SA_CLIENT_ID }}
       keycloak_sa_client_secret: ${{ secrets.KEYCLOAK_SA_CLIENT_SECRET }}
-      keycloak_issuer_uri: ${{ secrets.KEYCLOAK_ISSUER_URI }}
       user_lookup_base_url: ${{ secrets.USER_LOOKUP_BASE_URL }}
     with:
       environment: prod

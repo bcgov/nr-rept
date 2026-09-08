@@ -35,12 +35,9 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: [
         '@tanstack/react-query',
-        'aws-amplify',
-        'aws-amplify/auth/cognito',
-        'aws-amplify/utils',
+        'oidc-client-ts',
         'react-dom/client',
         '@tanstack/react-query-devtools',
-        'aws-amplify/auth',
       ],
     },
     server: {
