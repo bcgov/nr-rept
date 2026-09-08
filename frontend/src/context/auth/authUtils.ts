@@ -1,16 +1,50 @@
-import { env } from '@/env';
-
 import {
   AVAILABLE_ROLES,
   validIdpProviders,
   type FamLoginUser,
   type IdpProviderType,
-  type JWT,
   type ROLE_TYPE,
   type USER_PRIVILEGE_TYPE,
 } from './types';
 
-// ── Cookie helpers ───────────────────────────────────────────────────
+/**
+ * The claims REPT reads off a BC Gov SSO access token.
+ *
+ * Names follow the SSO identity-mappers reference for the *IDIR - MFA*
+ * integration:
+ * https://bcgov.github.io/sso-docs/advanced/identity-mappers#idir---mfa
+ *
+ * All of these ride the access token, which is the change that let the backend
+ * drop its per-request `/oauth2/userInfo` call.
+ */
+export type KeycloakProfile = {
+  /** `<guid>@azureidir`. The OIDC subject, stable per user per provider. */
+  preferred_username?: string;
+  idir_username?: string;
+  idir_user_guid?: string;
+  /** `azureidir` for the IDIR - MFA integration. */
+  identity_provider?: string;
+  display_name?: string;
+  given_name?: string;
+  family_name?: string;
+  email?: string;
+  name?: string;
+  /** Roles CSS attaches for the client the token was issued to. */
+  client_roles?: string[];
+  resource_access?: Record<string, { roles?: string[] }>;
+  azp?: string;
+  [claim: string]: unknown;
+};
+
+/**
+ * FAM's own bookkeeping roles, which reach the token like any other role.
+ *
+ * Per-grant expiry dates are recorded in CSS as roles assigned to the person —
+ * `FAM:EXPIRES:2026-09-30:REPT_ADMIN` — because a role is a name and nothing
+ * else, so it is the only way CSS can record something about one grant. REPT
+ * never matches one, but they must not be mistaken for privileges.
+ */
+const FAM_SIDECAR_PREFIX = 'FAM:';
 
 /** Reads a browser cookie value by name. Returns '' if not found. */
 export const getCookie = (name: string): string => {
@@ -21,153 +55,62 @@ export const getCookie = (name: string): string => {
 };
 
 /**
- * Reads the Cognito **access token** from cookies set by AWS Amplify's CookieStorage.
- * This is the token sent to the backend API as a Bearer token.
+ * Normalises the realm's provider alias to the one name REPT knows.
  *
- * Access tokens carry `cognito:groups` (for authorization) and `sub` but do NOT
- * carry the `custom:idp_*` profile claims — those live only in the ID token.
- */
-export const getAccessTokenFromCookie = (): string | undefined => {
-  const baseCookieName = `CognitoIdentityServiceProvider.${env.VITE_USER_POOLS_WEB_CLIENT_ID}`;
-  const userId = encodeURIComponent(getCookie(`${baseCookieName}.LastAuthUser`));
-  if (userId) {
-    const token = getCookie(`${baseCookieName}.${userId}.accessToken`);
-    return token || undefined;
-  }
-  return undefined;
-};
-
-/**
- * Reads the Cognito **ID token** from cookies set by AWS Amplify's CookieStorage.
- * Used **only** on the frontend to populate the local user profile (display name,
- * email, IDP provider, etc.). Never sent to the backend.
- */
-export const getIdTokenFromCookie = (): string | undefined => {
-  const baseCookieName = `CognitoIdentityServiceProvider.${env.VITE_USER_POOLS_WEB_CLIENT_ID}`;
-  const userId = encodeURIComponent(getCookie(`${baseCookieName}.LastAuthUser`));
-  if (userId) {
-    const token = getCookie(`${baseCookieName}.${userId}.idToken`);
-    return token || undefined;
-  }
-  return undefined;
-};
-
-/**
- * @deprecated Use {@link getAccessTokenFromCookie} for API calls or
- * {@link getIdTokenFromCookie} for local profile parsing.
- */
-export const getUserTokenFromCookie = getAccessTokenFromCookie;
-
-/**
- * Drops every Amplify token/session entry for the configured app client. Used
- * by the federated-logout path, which drives the sign-out redirect chain itself
- * (Siteminder → KC → Cognito → app) instead of Amplify's signOut(): clearing
- * the tokens here means that when the browser lands back on the app at the end
- * of the chain, AuthProvider bootstraps with no session and renders the
- * logged-out Landing. The chain's final Cognito /logout hop clears the Cognito
- * session cookie server-side.
+ * The standard realm federates IDIR through Azure AD and reports `azureidir`;
+ * the legacy alias is `idir`. Both are IDIR as far as this application is
+ * concerned. Anything else is left undefined rather than guessed at.
  *
- * REPT configures Amplify with CookieStorage (main.tsx), but Amplify's v6 flow
- * doesn't always keep every token as a DOM-visible cookie — some can land in
- * localStorage (see the note in services/http/headers.ts). If ANY store still
- * holds a valid token when the app re-bootstraps after the logout chain, the
- * SPA reads it and considers the user logged in (bouncing straight back to
- * /dashboard). So we sweep ALL three stores — cookies, localStorage,
- * sessionStorage — for the Cognito key prefix, and for cookies we expire under
- * every domain/path combination the cookie may have been written with (a cookie
- * only clears when the deletion's domain+path match how it was set).
+ * Falls back to the `preferred_username` suffix (`<guid>@azureidir`), which the
+ * identity-mappers reference documents and which is always present —
+ * `identity_provider` is added by the broker rather than by a mapper.
  */
-export const clearStoredTokens = (): void => {
-  const prefix = `CognitoIdentityServiceProvider.${env.VITE_USER_POOLS_WEB_CLIENT_ID}`;
+export const parseIdpProvider = (profile: KeycloakProfile): IdpProviderType | undefined => {
+  const raw = profile.identity_provider ?? profile.preferred_username?.split('@')[1] ?? '';
 
-  // Cookies — enumerate names from document.cookie, expire each under the likely
-  // attribute combinations (Amplify sets domain = hostname, path = base path).
-  try {
-    const path = env.VITE_BASE_PATH || '/';
-    const host = window.location.hostname;
-    const past = 'Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie
-      .split(';')
-      .map((c) => c.trim().split('=')[0])
-      .filter((name) => name && name.startsWith(prefix))
-      .forEach((name) => {
-        for (const p of new Set([path, '/'])) {
-          document.cookie = `${name}=; expires=${past}; path=${p}`;
-          document.cookie = `${name}=; expires=${past}; path=${p}; domain=${host}`;
-          document.cookie = `${name}=; expires=${past}; path=${p}; domain=.${host}`;
-        }
-      });
-  } catch {
-    /* cookies disabled — nothing to clear */
-  }
+  const normalized =
+    raw.toLowerCase() === 'azureidir' || raw.toLowerCase() === 'idir' ? 'IDIR' : '';
 
-  // Web storage — Amplify may have written some tokens here despite the
-  // CookieStorage config; the app reads whichever store has them, so clear both.
-  for (const store of [window.localStorage, window.sessionStorage]) {
-    try {
-      const keys: string[] = [];
-      for (let i = 0; i < store.length; i++) {
-        const key = store.key(i);
-        if (key && key.startsWith(prefix)) keys.push(key);
-      }
-      keys.forEach((k) => store.removeItem(k));
-    } catch {
-      /* storage disabled — skip */
-    }
-  }
-};
-
-/**
- * Parses a Cognito ID token JWT into the app's FamLoginUser shape.
- * Extracts display name, IDP provider, Cognito groups → roles.
- *
- * NOTE: This must be called with the **ID token**, not the access token,
- * because only the ID token carries the `custom:idp_*` profile claims.
- */
-export const parseToken = (idToken: JWT | undefined): FamLoginUser | undefined => {
-  if (!idToken) return undefined;
-  const decodedIdToken = idToken?.payload;
-  const displayName = (decodedIdToken?.['custom:idp_display_name'] as string) || '';
-  const idpProvider = validIdpProviders.includes(
-    (decodedIdToken?.['custom:idp_name'] as string)?.toUpperCase() as IdpProviderType,
-  )
-    ? ((decodedIdToken?.['custom:idp_name'] as string).toUpperCase() as IdpProviderType)
+  return validIdpProviders.includes(normalized as IdpProviderType)
+    ? (normalized as IdpProviderType)
     : undefined;
-  const hasComma = displayName.includes(',');
-  let [lastName, firstName] = hasComma ? displayName.split(', ') : displayName.split(' ');
-  if (!hasComma) [lastName, firstName] = [firstName, lastName];
-  const sanitizedFirstName = hasComma ? firstName?.split(' ')[0]?.trim() : firstName || '';
-  const userName = (decodedIdToken?.['custom:idp_username'] as string) || '';
-  const email = (decodedIdToken?.['email'] as string) || '';
-  const cognitoGroups = extractGroups(decodedIdToken);
-  const privileges = parsePrivileges(cognitoGroups);
-  const derivedRoles = Object.keys(privileges) as ROLE_TYPE[];
-  return {
-    userName,
-    displayName,
-    email,
-    idpProvider,
-    privileges,
-    roles: derivedRoles,
-    firstName: sanitizedFirstName,
-    lastName,
-    providerUsername: `${idpProvider}\\${userName}`,
-  };
 };
 
 /**
- * Parses Cognito group strings into a user privilege object.
+ * Reads the caller's roles for the client the token was issued to.
  *
- * Recognizes groups that exactly match {@link AVAILABLE_ROLES} (e.g. "REPT_ADMIN", "REPT_VIEWER").
- * Unrecognized groups are silently ignored.
+ * Under CSS these arrive as `client_roles`. Falls back to
+ * `resource_access.<azp>.roles`, which is where stock Keycloak puts them —
+ * which one appears depends on the realm's mappers, so both are read.
+ */
+export const extractRoles = (profile: KeycloakProfile | undefined): string[] => {
+  if (!profile) return [];
+
+  const clientRoles = profile.client_roles;
+  if (Array.isArray(clientRoles) && clientRoles.length > 0) {
+    return clientRoles;
+  }
+
+  const clientId = profile.azp;
+  if (!clientId) return [];
+
+  const roles = profile.resource_access?.[clientId]?.roles;
+  return Array.isArray(roles) ? roles : [];
+};
+
+/**
+ * Parses role strings into a user privilege object.
  *
- * @param {string[]} input - Array of group strings from Cognito.
- * @returns {USER_PRIVILEGE_TYPE} The parsed privilege object.
+ * Recognizes roles that exactly match {@link AVAILABLE_ROLES} (`REPT_ADMIN`,
+ * `REPT_VIEWER`). Exact matching is correct here because REPT scopes no role —
+ * FAM's `<CODE>_DISTRICT-DCC` suffixes never appear on a REPT token. FAM's
+ * `FAM:`-prefixed bookkeeping roles are dropped explicitly rather than left to
+ * fall through, so they cannot be read as privileges.
  */
 export function parsePrivileges(input: string[]): USER_PRIVILEGE_TYPE {
   const result: USER_PRIVILEGE_TYPE = {};
   for (const item of input) {
-    // Direct match against known Cognito groups (REPT_ADMIN, REPT_VIEWER)
+    if (item.startsWith(FAM_SIDECAR_PREFIX)) continue;
     if (AVAILABLE_ROLES.includes(item as ROLE_TYPE)) {
       result[item as ROLE_TYPE] = null; // null = global (non-scoped) role
     }
@@ -176,14 +119,35 @@ export function parsePrivileges(input: string[]): USER_PRIVILEGE_TYPE {
 }
 
 /**
- * Extracts Cognito groups from a decoded JWT payload.
- * @param {object | undefined} decodedIdToken - The decoded JWT payload.
- * @returns {string[]} Array of group strings, or empty array if none found.
+ * Parses an oidc-client-ts profile into the app's FamLoginUser shape.
+ *
+ * `given_name` and `family_name` are real claims on this realm, so the name is
+ * read directly rather than split out of the display name — Cognito carried only
+ * `custom:idp_display_name`, which forced a guess at whether "Smith, Jane" or
+ * "Jane Smith" was intended.
  */
-export function extractGroups(decodedIdToken: object | undefined): string[] {
-  if (!decodedIdToken) return [];
-  if ('cognito:groups' in decodedIdToken) {
-    return decodedIdToken['cognito:groups'] as string[];
-  }
-  return [];
-}
+export const parseToken = (profile: KeycloakProfile | undefined): FamLoginUser | undefined => {
+  if (!profile) return undefined;
+
+  const idpProvider = parseIdpProvider(profile);
+  const userName = profile.idir_username ?? '';
+  const firstName = profile.given_name ?? '';
+  const lastName = profile.family_name ?? '';
+  const displayName =
+    profile.display_name ?? profile.name ?? [firstName, lastName].filter(Boolean).join(' ');
+
+  const privileges = parsePrivileges(extractRoles(profile));
+  const derivedRoles = Object.keys(privileges) as ROLE_TYPE[];
+
+  return {
+    userName,
+    displayName,
+    email: profile.email ?? '',
+    idpProvider,
+    privileges,
+    roles: derivedRoles,
+    firstName,
+    lastName,
+    providerUsername: `${idpProvider}\\${userName}`,
+  };
+};

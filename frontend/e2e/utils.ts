@@ -20,6 +20,23 @@ export const baseURL = process.env.E2E_BASE_URL;
 export const STORAGE_STATE = path.join(import.meta.dirname, '.auth', 'user.json');
 
 /**
+ * Path to the saved **sessionStorage** snapshot, which is where the OIDC tokens
+ * actually live.
+ *
+ * Playwright's `storageState` captures cookies and localStorage — and nothing
+ * else. Under Cognito that was enough, because Amplify was configured with
+ * CookieStorage and the tokens were cookies. oidc-client-ts keeps them in
+ * sessionStorage (see `services/keycloak.ts`, where that is a deliberate
+ * choice), so `user.json` no longer carries a session on its own and this file
+ * has to be saved and restored alongside it.
+ */
+export const SESSION_STORAGE_STATE = path.join(
+  import.meta.dirname,
+  '.auth',
+  'session-storage.json',
+);
+
+/**
  * Unique-ish identifier suffix for test artifacts so concurrent runs and
  * leftover rows don't collide. Format: e2e-<base36 timestamp>-<rand>.
  */

@@ -1,47 +1,24 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Amplify } from 'aws-amplify';
-import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
-import { CookieStorage } from 'aws-amplify/utils';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import '@/styles/index.scss';
 import App from '@/App.tsx';
-import amplifyconfig from '@/config/fam/config';
 import { queryClientConfig } from '@/config/react-query/config';
 import { AuthProvider } from '@/context/auth/AuthProvider';
 import NotificationProvider from '@/context/notification/NotificationProvider';
 import PageTitleProvider from '@/context/pageTitle/PageTitleProvider';
 import { PreferenceProvider } from '@/context/preference/PreferenceProvider.tsx';
 import ThemeProvider from '@/context/theme/ThemeProvider.tsx';
-import { env } from '@/env';
 
 const queryClient = new QueryClient(queryClientConfig);
 
-// Configure AWS Amplify with Cognito; store tokens in cookies so they
-// survive page reloads and are accessible to the service worker.
-//
-// Storage MUST be set BEFORE Amplify.configure(): in v6, configure() can
-// trigger immediate OAuth-callback processing when the URL contains
-// ?code=...&state=..., and that processing reads the OAuth flow state
-// (PKCE verifier, state, nonce) from whatever storage is active at that
-// moment. If we configure first and swap storage afterward, the callback
-// handler reads from the default (localStorage) while signInWithRedirect
-// wrote to the swapped-in CookieStorage — silent miss, no token POST.
-cognitoUserPoolsTokenProvider.setKeyValueStorage(
-  new CookieStorage({
-    domain: window.location.hostname,
-    path: env.VITE_BASE_PATH || '/',
-    // Match the page protocol. Forcing `secure: true` on http://localhost
-    // makes the browser silently refuse to store the OAuth state/PKCE
-    // cookies, so the code-exchange fails on redirect-back and the SPA
-    // stays in the unauthenticated branch.
-    secure: window.location.protocol === 'https:',
-    sameSite: 'strict', // no cross-site sending
-    expires: undefined, // session cookie — dies when browser closes
-  }),
-);
-Amplify.configure(amplifyconfig);
+// No auth bootstrapping here any more. Amplify needed its token storage wired
+// up before `configure()`, because configure() itself processed the OAuth
+// callback and had to read the PKCE verifier from the same store that wrote it.
+// oidc-client-ts makes the exchange an explicit call on the /authCallback route
+// (pages/AuthCallback), so there is nothing to sequence at module scope — the
+// UserManager is built lazily on first use in services/keycloak.ts.
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

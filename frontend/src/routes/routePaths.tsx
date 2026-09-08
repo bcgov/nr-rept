@@ -22,6 +22,7 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 
 import Layout from '@/components/Layout';
 import AdminPage from '@/pages/Admin';
+import AuthCallback from '@/pages/AuthCallback';
 import DashboardPage from '@/pages/Dashboard';
 import GlobalErrorPage from '@/pages/GlobalError';
 import LandingPage from '@/pages/Landing';
@@ -65,6 +66,16 @@ export const PUBLIC_ROUTES: RouteDescription[] = [
     path: '/unauthorized',
     id: 'Unauthorized',
     element: <RoleErrorPage />,
+    isSideMenu: false,
+  },
+  {
+    // Where Keycloak returns after sign-in. Must sit above the catch-all below,
+    // which would otherwise bounce the callback (with its ?code=&state=) back to
+    // Landing before the code could be exchanged. It belongs in the *public*
+    // table because the session does not exist until this route creates it.
+    path: '/authCallback',
+    id: 'AuthCallback',
+    element: <AuthCallback />,
     isSideMenu: false,
   },
   {

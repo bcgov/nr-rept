@@ -2,20 +2,21 @@
 #
 # Two-service stack: Spring Boot backend (port 8080) + Vite frontend (port
 # 3000) + optional Caddy production-image variant (profile `caddy`, port 3005).
-# No database service — this project uses the shared BCGov Oracle at
-# nrcdb03.bcgov:1543; the backend container connects to that directly.
+# No database service — this project uses a shared BCGov Oracle instance and the
+# backend container connects to it directly. The host, port and service name are
+# set in the gitignored application-local.yml (see prereq 2 below).
 #
 # Prereqs (host machine):
 #   1. BCGov VPN is connected. Compose can't route traffic to the Oracle
 #      host for you; the reachability comes from your host's routing table.
 #   2. backend/src/main/resources/application-local.yml exists. It's
-#      gitignored and holds the DB password + Cognito + IDIR config that
+#      gitignored and holds the DB password + Keycloak + IDIR config that
 #      the `local` profile reads.
 #   3. backend/src/main/resources/cert/jssecacerts exists (the Oracle
 #      truststore). Copy it from a running pod — the procedure is in the
 #      header comment of application-local.yml.
 #   4. frontend/.env exists. Copy frontend/.env.example and fill in the
-#      Cognito client IDs.
+#      Keycloak realm URI and client id.
 #
 # Usage:
 #   docker compose up                       # backend + frontend

@@ -1,6 +1,5 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
-
 import { env } from '@/env';
+import { ensureFreshUser, getUserManager } from '@/services/keycloak';
 import { UserService } from '@/services/users.service';
 
 import type { APIConfig } from '@/config/api/types';
@@ -11,11 +10,10 @@ const basePath = (env.VITE_BASE_PATH ?? '').replace(/\/$/, '');
 
 // Central API configuration shared by all service classes.
 //
-// TOKEN is sourced from Amplify's auth session rather than parsing document.cookie
-// directly. This works regardless of where the configured token storage (cookies,
-// localStorage, etc.) actually lands — Amplify reads from its own storage and
-// returns the current accessToken. Refreshes on every request so a stale token
-// from an expired session isn't sent.
+// TOKEN comes from the OIDC UserManager rather than from document.cookie: tokens
+// live in sessionStorage now, and the manager is the only thing that knows
+// whether the stored one is still good. Checked per request — with a five-minute
+// access token, a stale one is a live possibility rather than an edge case.
 export const BackendApiConfig: APIConfig = {
   BASE: env.VITE_BACKEND_URL || `${basePath}/api`,
   VERSION: '0',
@@ -30,8 +28,8 @@ export const BackendApiConfig: APIConfig = {
 
 BackendApiConfig.TOKEN = async () => {
   try {
-    const { tokens } = (await fetchAuthSession()) ?? {};
-    return tokens?.accessToken?.toString() ?? '';
+    const user = await ensureFreshUser(getUserManager());
+    return user?.access_token ?? '';
   } catch {
     return '';
   }

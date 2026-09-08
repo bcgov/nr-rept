@@ -17,11 +17,11 @@ import { baseURL, STORAGE_STATE } from './e2e/utils';
 export default defineConfig({
   timeout: 180_000,
   testDir: './e2e',
-  // Serial execution. We share one Cognito refresh token via storageState
-  // across runs; parallel workers race that refresh and intermittently leave
-  // some contexts stuck on the white `<Loading>` overlay. Bump back up later
-  // once we have a way to mint per-worker auth (or if we move to a mock
-  // strategy that doesn't touch Cognito at all).
+  // Serial execution. We share one rotating refresh token across specs (see
+  // e2e/fixtures.ts); parallel workers race that renewal and intermittently
+  // leave some contexts stuck on the white `<Loading>` overlay. Bump back up
+  // later once we have a way to mint per-worker auth (or if we move to a mock
+  // strategy that doesn't touch the realm at all).
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,

@@ -88,16 +88,14 @@ spec:
               value: /tmp
             # VITE_* values are injected into /srv/config.js by docker-entrypoint.sh
             # at container start, so a single image works for DEV/TEST/PROD.
-            - name: VITE_USER_POOLS_ID
-              value: ${VITE_USER_POOLS_ID}
-            - name: VITE_USER_POOLS_WEB_CLIENT_ID
-              value: ${VITE_USER_POOLS_WEB_CLIENT_ID}
+            - name: VITE_KEYCLOAK_URL
+              value: ${VITE_KEYCLOAK_URL}
+            - name: VITE_KEYCLOAK_CLIENT_ID
+              value: ${VITE_KEYCLOAK_CLIENT_ID}
             - name: VITE_BACKEND_URL
               value: ${VITE_BACKEND_URL}
             - name: VITE_APP_NAME
               value: ${VITE_APP_NAME}
-            - name: VITE_ZONE
-              value: ${VITE_ZONE}
           volumeMounts:
             - name: srv
               mountPath: /srv

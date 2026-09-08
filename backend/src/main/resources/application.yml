@@ -26,8 +26,13 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${AWS_COGNITO_ISSUER_URI}
-          jwk-set-uri: ${AWS_COGNITO_ISSUER_URI}/.well-known/jwks.json
+          # BC Gov SSO (Keycloak) standard realm, e.g.
+          #   https://test.loginproxy.gov.bc.ca/auth/realms/standard
+          # Note the JWKS path: Keycloak publishes its keys at
+          # /protocol/openid-connect/certs, NOT the /.well-known/jwks.json that
+          # Cognito used.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI}/protocol/openid-connect/certs
   # Datasource is intentionally left un-configured for the POC. The application will expect
   # environment-specific JDBC settings (e.g. Oracle) to be provided at runtime. Flyway and
   # Postgres-specific settings were removed for this POC.
@@ -126,8 +131,11 @@ ca:
           read-timeout: 30s
         user-directory:
           default-page-size: 10
-        cognito:
-          userinfo-uri: ${COGNITO_USERINFO_URI}
+        keycloak:
+          # The CSS integration's client id. Tokens must carry it as `azp` or
+          # they are refused — see Oauth2SecurityCustomizer. Required: a blank
+          # value would accept every token the realm signs, for any client.
+          client-id: ${KEYCLOAK_CLIENT_ID}
         frontend:
           url: http://localhost:3000
           cors:
