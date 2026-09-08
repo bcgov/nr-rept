@@ -80,3 +80,10 @@
     }
   }
 }
+/* Supporting copy under the subtitle. Used by the unauthorized screen to say
+   how access is actually obtained, since the user cannot self-serve it. */
+.landing-content-wrapper .landing-help {
+  max-width: 46ch;
+  margin: 0;
+  @include type.type-style('body-01');
+}
