@@ -5,7 +5,7 @@
     "types": [
       "@tanstack/react-query",
       "axios",
-      "@vitest/browser/providers/playwright",
+      "@vitest/browser-playwright/context",
       "vitest/globals",
       "node"
     ]

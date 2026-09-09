@@ -74,8 +74,12 @@ jobs:
           # separate `format:check` step. `test:coverage` is the real script
           # name in package.json (Vitest with --coverage; auto-installs
           # Playwright browsers via the pretest:coverage hook).
+          #
+          # `--ignore-scripts` suppresses dependency INSTALL lifecycle hooks
+          # only. `npm run` scripts are unaffected, so pretest:coverage still
+          # fetches the Playwright browsers on the line below.
           commands: |
-            npm ci
+            npm ci --ignore-scripts
             npm run lint
             npm run test:coverage
           dir: frontend
