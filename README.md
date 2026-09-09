@@ -10,6 +10,59 @@ A full-stack application for tracking real estate projects in the Natural Resour
 | Auth | BC Gov SSO (Keycloak), administered through CSS |
 | Reports | JasperReports library (embedded, no remote server) |
 
+## Architecture
+
+```mermaid
+flowchart LR
+    user["IDIR user<br/>browser"]
+
+    subgraph sso["BC Gov SSO — Keycloak standard realm"]
+        kc["azureidir / IDIR-MFA<br/>client_roles:<br/>REPT_ADMIN, REPT_VIEWER"]
+    end
+
+    subgraph ocp["OpenShift Silver — one namespace per zone"]
+        subgraph fe["frontend pod — nr-rept-frontend-ZONE"]
+            caddy["Caddy :3000<br/>Coraza WAF, CSP + security headers<br/>static SPA bundle from /srv"]
+        end
+        subgraph be["backend pod — nr-rept-backend-ZONE"]
+            boot["Spring Boot 3.5 / Java 21<br/>OAuth2 resource server<br/>JasperReports embedded"]
+        end
+    end
+
+    oracle[("Oracle — BC Gov managed<br/>REPT / REPT_CODELIST<br/>PL/SQL packages")]
+    lookup["nr-user-lookup-api<br/>IDIR directory"]
+
+    user -->|"1 - OIDC auth code + PKCE"| kc
+    user -->|"2 - HTTPS via Route"| caddy
+    caddy -->|"3 - /api* reverse_proxy to<br/>cluster-internal Service :8080"| boot
+    boot -->|"4 - validate JWT: JWKS, issuer, azp"| kc
+    boot -->|"5 - JDBC over TLS,<br/>CallableStatement"| oracle
+    boot -->|"6 - client_credentials token"| lookup
+```
+
+**How a request flows.** The browser authenticates directly against Keycloak (`oidc-client-ts`, auth code + PKCE) and holds the access token; `buildAuthorizedHeaders` (`frontend/src/services/http/headers.ts`) attaches it as a `Bearer` header on every `/api` call — renewing first if the five-minute access token is near expiry — alongside Spring Security's `X-XSRF-TOKEN` for state-changing requests. Caddy serves the SPA and reverse-proxies `/api*` to the backend Service — the backend has **no Route**, so the only path to it is through the frontend pod (enforced by a NetworkPolicy that admits the same-zone frontend pod and cluster monitoring, nothing else). Spring Security validates the token as an OAuth2 resource server: signature against the realm JWKS, issuer, and `azp` matching `KEYCLOAK_CLIENT_ID` — the last one matters because the standard realm is shared by many BC Gov apps, so signature and issuer alone don't prove a token was minted for REPT. Roles come from the `client_roles` claim and gate endpoints as `REPT_ADMIN` / `REPT_VIEWER`.
+
+**Data access.** There is no ORM over the business tables and no schema DDL in this repo. Repositories under `backend/.../repository/rept` call PL/SQL packages (`REPT`, `REPT_CODELIST`) through `JdbcTemplate` + `CallableStatement`; the procedure signatures live in the database, not here. Reports are `.jrxml` templates in `backend/src/main/resources/reports`, compiled and cached in-process by `ReptReportService` and filled against the same Oracle connection — JasperReports is a library, there is no report server.
+
+**Config and images.** One image per component serves every zone. The Vite bundle is env-agnostic; `docker-entrypoint.sh` writes `VITE_*` values into `/srv/config.js` at container start, so DEV preview, TEST and PROD run the same binary with different runtime config.
+
+```mermaid
+flowchart LR
+    pr["PR opened"] --> build["action-builder-ghcr<br/>frontend + backend images"]
+    pr --> analysis["analysis.yml<br/>Maven verify + jacoco, Sonar,<br/>frontend unit tests, Trivy"]
+    build --> ghcr[("ghcr.io/bcgov/nr-rept")]
+    ghcr --> prev["PR preview zone<br/>nr-rept-SLOT.apps...<br/>SLOT = PR mod 50"]
+    prev --> e2e["Playwright E2E<br/>against the preview"]
+    e2e --> merged["merge to main"]
+    analysis --> merged
+    merged --> test["deploy TEST"] --> prod["deploy PROD"]
+    prod --> sysdig["Sysdig monitors<br/>monitoring/alerts/*.json"]
+```
+
+`pr-close.yml` tears the preview zone down on close, and passes an explicit `cleanup_name` because the objects are labelled `app=nr-rept-{backend,frontend}-<PR>` rather than the helper's default.
+
+PR previews share a fixed pool of 50 pre-registered hostnames because redirect URIs had to be enumerated under Cognito. Redirect URIs now live on the CSS integration; if CSS accepts a wildcard, the bucketing in `frontend/openshift.deploy.yml` can go away.
+
 ## Local Development
 
 Two supported ways to run REPT locally. Pick whichever fits your workflow.
