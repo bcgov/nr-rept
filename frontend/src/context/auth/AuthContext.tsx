@@ -20,6 +20,12 @@ export type AuthContextType = {
    * expired — the caller then treats it as a real expiry and signs out.
    */
   forceRefreshSession: () => Promise<void>;
+  /**
+   * Completes the authorization-code exchange after Keycloak redirects back.
+   * Called only by the /authCallback route; rejects if the callback URL carries
+   * no usable code or its state has already been consumed.
+   */
+  completeLogin: () => Promise<void>;
 };
 
 export type AuthProviderProps = {

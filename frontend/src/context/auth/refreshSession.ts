@@ -1,80 +1,46 @@
-import { fetchAuthSession, signOut } from 'aws-amplify/auth';
+import { ensureFreshUser, getUserManager } from '@/services/keycloak';
 
 /**
- * Seconds before access-token expiry at which we consider it "stale" and
- * force a refresh via the refresh token.
- */
-const REFRESH_MARGIN_SECONDS = 30;
-
-/**
- * Minimum gap (ms) between two consecutive refresh attempts to prevent
- * concurrent calls from each triggering their own refresh.
- */
-const MIN_REFRESH_GAP_MS = 5_000;
-
-let refreshInFlight = false;
-let lastRefreshTime = 0;
-
-/**
- * Ensures the Cognito access token is fresh before making an API call.
+ * Ensures the access token is fresh before making an API call.
  *
- * - If the token has more than REFRESH_MARGIN_SECONDS remaining, returns immediately.
- * - If the token is about to expire, uses the refresh token to get a new one.
- * - If the refresh token itself has expired (user was idle too long), signs the
- *   user out and redirects to the login page.
+ * - Returns immediately when the token still has comfortable life left.
+ * - Renews from the refresh token when it is at or near expiry.
+ * - Signs the user out and returns to the sign-in screen when the refresh token
+ *   itself has expired — they were idle past the realm's thirty-minute ceiling.
  *
  * Call this at the top of every API request function.
+ *
+ * The staleness margin and the single-flight guard both live in
+ * `services/keycloak.ts` now: oidc-client-ts already tracks token expiry, so the
+ * hand-rolled `exp` arithmetic and refresh-gap bookkeeping this module used to
+ * carry were duplicating it — and, being a second source of truth, could
+ * disagree with it.
  */
 export async function ensureSessionFresh(): Promise<void> {
   try {
-    const { tokens } = (await fetchAuthSession({ forceRefresh: false })) ?? {};
-    const accessToken = tokens?.accessToken;
+    const user = await ensureFreshUser(getUserManager());
 
-    if (!accessToken) {
-      // No session — force sign out and redirect
-      await signOut();
-      window.location.href =
-        window.location.origin + (import.meta.env.VITE_BASE_PATH ?? '').replace(/\/$/, '');
+    if (!user) {
+      // Nobody is signed in. Nothing to renew and nothing to sign out of — the
+      // route guards will already be showing the public tree.
       return;
     }
-
-    const exp = accessToken.payload?.exp;
-    if (!exp) return;
-
-    const secondsRemaining = exp - Math.floor(Date.now() / 1000);
-
-    if (secondsRemaining > REFRESH_MARGIN_SECONDS) {
-      // Token is still fresh
-      return;
-    }
-
-    // Token is stale — need to refresh
-    if (refreshInFlight) {
-      // Another refresh is in progress; wait briefly and return
-      await new Promise((resolve) => setTimeout(resolve, 1_500));
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastRefreshTime < MIN_REFRESH_GAP_MS) {
-      // Recently refreshed — skip
-      return;
-    }
-
-    refreshInFlight = true;
-    lastRefreshTime = now;
-
-    try {
-      await fetchAuthSession({ forceRefresh: true });
-    } finally {
-      refreshInFlight = false;
-    }
-  } catch {
-    // Refresh token expired or revoked — session is over
-    refreshInFlight = false;
+  } catch (error) {
+    // Refresh token expired or revoked — the session is over.
     // eslint-disable-next-line no-console
-    console.warn('[ensureSessionFresh] Session expired — signing out.');
-    await signOut();
-    window.location.href = window.location.origin + (import.meta.env.VITE_BASE_PATH || '/');
+    console.warn('[ensureSessionFresh] Session expired — signing out.', error);
+
+    // Left in place deliberately: signoutRedirect reads `id_token_hint` off the
+    // stored user, and clearing it first sends a logout Keycloak cannot tie to a
+    // session — the realm session survives and the next sign-in walks straight
+    // back in. If the redirect itself fails, drop the tokens and go home.
+    await getUserManager()
+      .signoutRedirect()
+      .catch(async () => {
+        await getUserManager()
+          .removeUser()
+          .catch(() => undefined);
+        window.location.href = import.meta.env.BASE_URL || '/';
+      });
   }
 }

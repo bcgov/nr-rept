@@ -1,6 +1,6 @@
 # Playwright E2E
 
-These tests hit a real REPT backend (Cognito, Oracle, the works).
+These tests hit a real REPT backend (BC Gov SSO, Oracle, the works).
 `E2E_BASE_URL` is **required** — the suite has no built-in default. The
 GitHub Actions workflows compute it from the PR slot or `test`/`prod` target
 automatically; for local runs you set it yourself.
@@ -25,8 +25,10 @@ rather than silently targeting a stale URL.
 
 ## One-time auth bootstrap
 
-Cognito + BC Gov IDIR can't be scripted headlessly. Run the setup project
-once interactively to capture an authenticated session:
+BC Gov IDIR sign-in can't reliably be scripted headlessly — REPT uses the
+**IDIR - MFA** integration, and a second factor is by design not something a
+stored password satisfies. Run the setup project once interactively to capture
+an authenticated session:
 
 ```bash
 E2E_BASE_URL=http://localhost:3000 npm run e2e:login
@@ -34,12 +36,22 @@ E2E_BASE_URL=http://localhost:3000 npm run e2e:login
 
 A Chromium window opens, navigates to the landing page, and clicks **Log in
 with IDIR**. Finish the IDIR sign-in (and any MFA) by hand. Once the app
-lands on `/dashboard`, the session is saved to `e2e/.auth/user.json` (gitignored).
+lands on `/dashboard`, the session is saved to **two** gitignored files:
+`e2e/.auth/user.json` (cookies + localStorage) and
+`e2e/.auth/session-storage.json` (the OIDC tokens).
+
+Both are needed. Playwright's `storageState` captures cookies and localStorage
+only, and oidc-client-ts keeps the tokens in `sessionStorage` — so `user.json`
+on its own is not a session. `e2e/fixtures.ts` restores the second file with
+`addInitScript` before each test and writes both back afterwards, so the
+rotating refresh token stays current across specs.
 
 The saved session is scoped to the `E2E_BASE_URL` you logged in against —
 switching targets means re-running `e2e:login` against the new URL. Also
 re-run whenever the session expires (you'll know because tests start
-bouncing back to the IDIR domain or seeing 401s).
+bouncing back to the login domain or seeing 401s). **That window is 30 minutes
+now, not 60** — the BC Gov SSO refresh token is half the life of the Cognito one
+it replaced, so cached auth goes stale twice as fast.
 
 ## Running the suite
 

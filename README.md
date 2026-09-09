@@ -7,7 +7,7 @@ A full-stack application for tracking real estate projects in the Natural Resour
 | Frontend | React 19, TypeScript, Carbon Design System |
 | Backend | Spring Boot 3.5, Java 21 |
 | Database | Oracle (shared, BC Gov-managed) |
-| Auth | AWS Cognito (FAM) |
+| Auth | BC Gov SSO (Keycloak), administered through CSS |
 | Reports | JasperReports library (embedded, no remote server) |
 
 ## Local Development
@@ -36,7 +36,7 @@ These are all gitignored — you set them up once and they stay on your machine.
 
 #### `backend/src/main/resources/application-local.yml`
 
-Activated by the Spring `local` profile. Holds DB credentials, Cognito issuer/userinfo URIs, the nr-user-lookup-api settings (`ca.bc.gov.nrs.user-lookup.*` — see [backend/README.md](backend/README.md)), and `TRUSTSTORE_PATH`. The header comment in that file documents every field. Copy from a teammate or from the `oc cp` template in the file's comment block.
+Activated by the Spring `local` profile. Holds DB credentials, the Keycloak issuer URI and client id, the nr-user-lookup-api settings (`ca.bc.gov.nrs.user-lookup.*` — see [backend/README.md](backend/README.md)), and `TRUSTSTORE_PATH`. The header comment in that file documents every field. Copy from a teammate or from the `oc cp` template in the file's comment block.
 
 The user-lookup block is optional locally: leave `base-url`/`token-url`/`client-id`/`client-secret` blank and the app starts fine — the "Find user" search just returns nothing.
 
@@ -53,7 +53,7 @@ oc cp $(oc get pod -l app=rept-backend -o jsonpath='{.items[0].metadata.name}'):
 
 #### `frontend/.env`
 
-Copy `frontend/.env.example` and fill in the Cognito client IDs. `VITE_USER_POOLS_ID`, `VITE_USER_POOLS_WEB_CLIENT_ID`, `VITE_LOGOUT_SITEMINDER_URL`, `VITE_LOGOUT_KEYCLOAK_URL`, `VITE_LOGOUT_KEYCLOAK_CLIENT_ID`, `VITE_BACKEND_URL`, `VITE_ZONE`, `VITE_APP_NAME` are inlined into the app bundle by Vite (via `import.meta.env`); changing `.env` requires restarting `npm run dev`. For local dev, `http://localhost:3000` must be in the Cognito user-pool client's allowed-callback list — already configured via the slot-bucketing scheme (see `.github/workflows/pr-open.yml` for context).
+Copy `frontend/.env.example` and fill in the Keycloak settings. `VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_CLIENT_ID`, `VITE_BACKEND_URL` and `VITE_APP_NAME` are inlined into the app bundle by Vite (via `import.meta.env`); changing `.env` requires restarting `npm run dev`. For local dev, `http://localhost:3000/authCallback` must be a registered redirect URI on the CSS integration, and `http://localhost:3000` a registered post-logout URI.
 
 ### Option A — direct on host (recommended for backend work)
 
@@ -114,7 +114,7 @@ That builds the real `frontend/Dockerfile` (Caddy + Coraza WAF + runtime config.
 
 Regardless of option:
 - `curl http://localhost:8080/actuator/health` → `{"status":"UP"}`
-- Open `http://localhost:3000` → app loads, Cognito login round-trips.
+- Open `http://localhost:3000` → app loads, IDIR login round-trips through Keycloak and returns via `/authCallback`.
 
 If `/actuator/health` returns `DOWN`, the most likely cause is the Oracle connection — check VPN, `application-local.yml` credentials, and the truststore path.
 

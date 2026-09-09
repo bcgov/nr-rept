@@ -1,4 +1,4 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { ensureFreshUser, getUserManager } from '@/services/keycloak';
 
 export type HeaderRecord = Record<string, string>;
 
@@ -38,23 +38,27 @@ const getCsrfToken = (): string | null => {
 };
 
 /**
- * Reads the current Cognito access token from Amplify's auth session.
- * Returns the token regardless of whether Amplify stores it in cookies,
- * localStorage, memory, or anywhere else — parsing document.cookie directly
- * was fragile because the configured CookieStorage doesn't always write the
- * tokens as DOM-visible cookies (depending on Amplify's internal flow).
+ * The current access token, renewed first if it is at or near expiry.
+ *
+ * The access token lives five minutes on this realm, so "is it still valid?" is
+ * a live question on almost every request — hence renewing here rather than
+ * reading whatever is stored and hoping. `ensureFreshUser` is a no-op until the
+ * token is nearly out, so the common case costs a storage read.
  */
 const getAccessToken = async (): Promise<string | undefined> => {
   try {
-    const { tokens } = (await fetchAuthSession()) ?? {};
-    return tokens?.accessToken?.toString();
+    const user = await ensureFreshUser(getUserManager());
+    return user?.access_token;
   } catch {
+    // A failed renewal is the session ending. The request goes out unauthorized
+    // and the 401 handling takes it from there; throwing here would turn every
+    // in-flight call into an unhandled rejection at the same moment.
     return undefined;
   }
 };
 
 // Builds headers for backend API calls: merges custom headers, injects the
-// Cognito Bearer token and Spring Security's XSRF-TOKEN (CSRF protection).
+// Bearer token and Spring Security's XSRF-TOKEN (CSRF protection).
 export const buildAuthorizedHeaders = async (
   ...headerSets: Array<HeadersInit | undefined>
 ): Promise<HeaderRecord> => {

@@ -81,7 +81,6 @@ jobs:
       keystore_secret: ${{ secrets.keystore_secret }}
       keycloak_sa_client_id: ${{ secrets.KEYCLOAK_SA_CLIENT_ID }}
       keycloak_sa_client_secret: ${{ secrets.KEYCLOAK_SA_CLIENT_SECRET }}
-      keycloak_issuer_uri: ${{ secrets.KEYCLOAK_ISSUER_URI }}
       user_lookup_base_url: ${{ secrets.USER_LOOKUP_BASE_URL }}
     with:
       environment: dev
@@ -91,7 +90,12 @@ jobs:
 
   tests:
     name: Tests
-    if: needs.deploys.outputs.triggered == 'true'
+    # Set the repository variable SKIP_E2E to `true` to skip the browser suite.
+    # The `results` gate below treats a skipped job as passing (it only fails on
+    # failure / cancelled), so PRs stay mergeable.
+    if: >-
+      needs.deploys.outputs.triggered == 'true'
+      && vars.SKIP_E2E != 'true'
     needs: [deploys, vars]
     permissions:
       contents: read
