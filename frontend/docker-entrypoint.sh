@@ -25,7 +25,7 @@ window.config = {
   // BC Gov SSO (Keycloak). VITE_KEYCLOAK_URL is the realm issuer URI —
   // oidc-client-ts discovers every endpoint from it, so there is nothing else
   // to configure. VITE_KEYCLOAK_CLIENT_ID must match the client id the backend
-  // checks as the token's `azp`.
+  // checks as the token's azp claim.
   VITE_KEYCLOAK_URL: "$(escape "${VITE_KEYCLOAK_URL:-}")",
   VITE_KEYCLOAK_CLIENT_ID: "$(escape "${VITE_KEYCLOAK_CLIENT_ID:-}")",
   VITE_BACKEND_URL: "$(escape "${VITE_BACKEND_URL:-}")",
