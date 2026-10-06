@@ -55,7 +55,8 @@ flowchart LR
     prev --> e2e["Playwright E2E<br/>against the preview"]
     e2e --> merged["merge to main"]
     analysis --> merged
-    merged --> test["deploy TEST"] --> prod["deploy PROD"]
+    merged --> test["deploy TEST"]
+    test --> release["GitHub Release published"] --> prod["deploy PROD"]
     prod --> sysdig["Sysdig monitors<br/>monitoring/alerts/*.json"]
 ```
 

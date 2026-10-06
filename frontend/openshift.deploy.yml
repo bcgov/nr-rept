@@ -25,7 +25,8 @@ parameters:
   # CSS permits a wildcard there, this bucketing can go away entirely and every
   # PR can have its own hostname. Worth asking before it is carried forward out
   # of habit; nothing else depends on the modulo.
-  # pr-open.yml computes SLOT = PR % 50; merge.yml passes SLOT = ZONE = test/prod.
+  # pr-open.yml computes SLOT = PR % 50. TEST (merge.yml) and PROD (release.yml)
+  # omit SLOT, so the route host uses ZONE (test or prod).
   - name: SLOT
     description: Route hostname slot — PR % 50 for previews, or test/prod for those targets
     required: true
@@ -33,7 +34,7 @@ parameters:
     description: Pod count; PR previews get 1 via lite_mode, TEST=2, PROD=3
     value: "2"
   - name: IMAGE_TAG
-    description: Container image tag (PR number, 'test', or 'prod')
+    description: Container image tag (PR number, release tag, or prod)
     value: latest
   - name: REGISTRY
     description: Image registry path (no tag)
