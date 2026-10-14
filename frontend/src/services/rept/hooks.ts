@@ -1,6 +1,7 @@
 import {
   keepPreviousData,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type UseMutationResult,
@@ -237,6 +238,44 @@ export const useReptPropertyContacts = (
     queryFn: () => getPropertyContacts(projectId as string, propertyId as string),
     enabled: Boolean(projectId && propertyId),
   });
+};
+
+export type ReptPropertyOwnersEntry = { isLoading: boolean; owners: string[] };
+
+const isOwnerContact = (contact: ReptContact) => {
+  const code = contact.contactTypeCode?.toLowerCase() ?? '';
+  const label = contact.contactTypeLabel?.toLowerCase() ?? '';
+  return code.includes('owner') || label.includes('owner');
+};
+
+/**
+ * Resolves the owner names for each property by loading its contacts and keeping
+ * the ones whose contact type is an owner. Keyed by property id (as a string).
+ */
+export const useReptPropertyOwners = (
+  projectId: string | undefined,
+  propertyIds: ReadonlyArray<number | string>,
+): Map<string, ReptPropertyOwnersEntry> => {
+  const queries = useQueries({
+    queries: propertyIds.map((propertyId) => ({
+      queryKey: reptKeys.propertyContacts(projectId, String(propertyId)),
+      queryFn: () => getPropertyContacts(projectId as string, String(propertyId)),
+      enabled: Boolean(projectId),
+    })),
+  });
+
+  return useMemo(() => {
+    const map = new Map<string, ReptPropertyOwnersEntry>();
+    propertyIds.forEach((propertyId, idx) => {
+      const query = queries[idx];
+      const owners = (query?.data ?? [])
+        .filter(isOwnerContact)
+        .map((c) => c.displayName?.trim() || c.companyName?.trim() || '')
+        .filter((name): name is string => Boolean(name));
+      map.set(String(propertyId), { isLoading: Boolean(query?.isPending), owners });
+    });
+    return map;
+  }, [propertyIds, queries]);
 };
 
 export const useReptProjectContacts = (

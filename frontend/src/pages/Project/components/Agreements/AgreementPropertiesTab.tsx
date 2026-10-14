@@ -18,10 +18,12 @@ import { useAuthorization } from '@/hooks/useAuthorization';
 import {
   useReptAgreementProperties,
   useReptPropertySummaries,
+  useReptPropertyOwners,
   useUpdateAgreementProperties,
 } from '@/services/rept/hooks';
 
 import { displayValue, formatWithCode } from '../../utils';
+import { PropertyOwners } from '../properties';
 
 import type { ReptAgreementProperty, ReptPropertySummary } from '@/services/rept/types';
 
@@ -40,14 +42,6 @@ type PropertyOption = {
   acquisitionLabel?: string | null;
   acquisitionCode?: string | null;
 };
-
-const buildAgreementPropertyRow = (property: ReptAgreementProperty) => [
-  displayValue(property.titleNumber),
-  displayValue(property.parcelIdentifier),
-  formatWithCode(property.acquisitionLabel, property.acquisitionCode),
-  formatWithCode(property.landTitleOfficeLabel, property.landTitleOfficeCode),
-  displayValue(property.legalDescription),
-];
 
 const mapProjectPropertyToOption = (property: ReptPropertySummary): PropertyOption => ({
   id: property.id,
@@ -125,6 +119,12 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
     () => projectPropertiesQuery.data ?? [],
     [projectPropertiesQuery.data],
   );
+
+  const agreementPropertyIds = useMemo(
+    () => agreementProperties.map((property) => property.propertyId),
+    [agreementProperties],
+  );
+  const propertyOwnersById = useReptPropertyOwners(projectId, agreementPropertyIds);
 
   const [isEditingProperties, setIsEditingProperties] = useState(false);
   const [propertySearch, setPropertySearch] = useState('');
@@ -395,6 +395,7 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
               <TableRow>
                 <TableHeader>Title Number</TableHeader>
                 <TableHeader>Parcel Identifier (PID)</TableHeader>
+                <TableHeader>Owners</TableHeader>
                 <TableHeader>Acquisition Type</TableHeader>
                 <TableHeader>LTO</TableHeader>
                 <TableHeader>Legal Description</TableHeader>
@@ -403,9 +404,18 @@ export const AgreementPropertiesTab: FC<AgreementPropertiesTabProps> = ({
             <TableBody>
               {agreementProperties.map((property) => (
                 <TableRow key={property.associationId}>
-                  {buildAgreementPropertyRow(property).map((value, index) => (
-                    <TableCell key={`${property.associationId}-${index}`}>{value}</TableCell>
-                  ))}
+                  <TableCell>{displayValue(property.titleNumber)}</TableCell>
+                  <TableCell>{displayValue(property.parcelIdentifier)}</TableCell>
+                  <TableCell className="property-owners-cell">
+                    <PropertyOwners entry={propertyOwnersById.get(String(property.propertyId))} />
+                  </TableCell>
+                  <TableCell>
+                    {formatWithCode(property.acquisitionLabel, property.acquisitionCode)}
+                  </TableCell>
+                  <TableCell>
+                    {formatWithCode(property.landTitleOfficeLabel, property.landTitleOfficeCode)}
+                  </TableCell>
+                  <TableCell>{displayValue(property.legalDescription)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
