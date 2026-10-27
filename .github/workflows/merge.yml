@@ -71,5 +71,6 @@ jobs:
     secrets:
       e2e_idir_user: ${{ secrets.E2E_IDIR_USER }}
       e2e_idir_password: ${{ secrets.E2E_IDIR_PASSWORD }}
+      e2e_idir_totp_secret: ${{ secrets.E2E_IDIR_TOTP_SECRET }}
     with:
       target: test

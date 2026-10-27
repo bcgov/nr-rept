@@ -1,7 +1,8 @@
 import { existsSync, writeFileSync } from 'node:fs';
 
-import { test as setup, expect } from '@playwright/test';
+import { test as setup, expect, type Locator, type Page } from '@playwright/test';
 
+import { freshTotp } from './totp';
 import { SESSION_STORAGE_STATE, STORAGE_STATE } from './utils';
 
 /**
@@ -23,14 +24,106 @@ import { SESSION_STORAGE_STATE, STORAGE_STATE } from './utils';
  * ## Programmatic login and MFA
  *
  * REPT signs in through the standard realm's **IDIR - MFA** integration, which
- * federates to Azure AD and can require a second factor. A second factor is, by
- * design, not something a stored password can satisfy — so the programmatic
- * path below works only for an account whose MFA is satisfied without
- * interaction (a CI service account with a conditional-access exemption). It is
- * left in place because that arrangement is the usual one, but if CI starts
- * timing out at the Microsoft sign-in page, this is why, and no selector change
- * will fix it.
+ * federates to Azure AD and requires a second factor. When
+ * E2E_IDIR_TOTP_SECRET is set, it is satisfied by generating the same 6-digit
+ * code an authenticator app would (see e2e/totp.ts), per
+ * https://bcgov.github.io/sso-docs/advanced/automating-mfa-totp. The secret is
+ * the base32 key from My Sign-Ins → Add sign-in method → Microsoft Authenticator
+ * → "Set up a different authentication app" → "Can't scan QR code?".
+ *
+ * Without the secret, the programmatic path only works for an account whose MFA
+ * is satisfied without interaction (a conditional-access exemption).
  */
+
+/**
+ * Fills an input without the value reaching the HTML report. `fill()`,
+ * `pressSequentially()` and the keyboard APIs all put the value in their step
+ * title (`Fill "<password>"`), and CI uploads that report as an artifact;
+ * `evaluate()` is titled just "Evaluate". The input event is what the
+ * Microsoft form's bindings listen for, so this reads as typing to them.
+ */
+const fillSecret = async (locator: Locator, value: string): Promise<void> => {
+  await locator.waitFor();
+  await locator.evaluate((el, v) => {
+    const input = el as HTMLInputElement;
+    input.focus();
+    input.value = v;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+};
+
+/**
+ * Answers the Entra MFA prompt with a TOTP code. If the account's default
+ * method is something else (usually an Authenticator push), switches to
+ * "Use a verification code" first. If no MFA prompt shows up at all, returns
+ * quietly — conditional access doesn't always ask.
+ */
+const completeTotpChallenge = async (page: Page, secret: string): Promise<void> => {
+  const codeInput = page.locator('input[name="otc"], #idTxtBx_SAOTCC_OTC').first();
+  const otherWay = page.locator('#signInAnotherWay').first();
+  const backToApp = page.waitForURL((url) => url.pathname.startsWith('/dashboard'), {
+    timeout: 30_000,
+  });
+
+  const first = await Promise.race([
+    codeInput.waitFor({ timeout: 30_000 }).then(() => 'code' as const),
+    otherWay.waitFor({ timeout: 30_000 }).then(() => 'other' as const),
+    backToApp.then(() => 'done' as const),
+  ]).catch(() => 'none' as const);
+  backToApp.catch(() => undefined);
+
+  if (first === 'done' || first === 'none') return;
+
+  if (first === 'other') {
+    await otherWay.click();
+    await page.locator('[data-value="PhoneAppOTP"]').first().click();
+    await codeInput.waitFor({ timeout: 30_000 });
+  }
+
+  await fillSecret(codeInput, await freshTotp(secret));
+  await page
+    .locator('#idSubmit_SAOTCC_Continue, input[type="submit"], button[type="submit"]')
+    .first()
+    .click();
+};
+
+/**
+ * Clears the screens Microsoft can show between MFA and the redirect back to
+ * the app, in whatever order they come:
+ *
+ *   - "Pick an account": appears after the code is accepted, listing the
+ *     account as "Signed in". The tile is matched on the user's address so a
+ *     stray second tile is never picked.
+ *   - "Stay signed in?": answered No.
+ *
+ * Returns once the app is back on /dashboard, or after 60s; the caller's own
+ * waitForURL is what fails the run if the redirect never comes.
+ */
+const finishPostMfaPrompts = async (page: Page, idirUser: string): Promise<void> => {
+  const localPart = idirUser.split('\\').pop()!.split('@')[0];
+  const escaped = localPart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const pickAccount = page.getByRole('heading', { name: /pick an account/i });
+  const accountTile = page.getByText(new RegExp(`^${escaped}@`, 'i')).first();
+  const staySignedIn = page.locator('input#idBtn_Back, input[value="No"]').first();
+
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    if (new URL(page.url()).pathname.startsWith('/dashboard')) return;
+
+    if (await pickAccount.isVisible().catch(() => false)) {
+      await accountTile.click();
+      await pickAccount.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => undefined);
+    } else if (await staySignedIn.isVisible().catch(() => false)) {
+      await staySignedIn.click();
+      await staySignedIn.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => undefined);
+    } else {
+      await page.waitForTimeout(500);
+    }
+  }
+};
+
 setup('authenticate via IDIR', async ({ page, context }) => {
   // Both halves are required. The tokens live in sessionStorage, so a stale
   // user.json on its own is not a session — see e2e/utils.ts.
@@ -40,6 +133,7 @@ setup('authenticate via IDIR', async ({ page, context }) => {
 
   const idirUser = process.env.E2E_IDIR_USER;
   const idirPassword = process.env.E2E_IDIR_PASSWORD;
+  const totpSecret = process.env.E2E_IDIR_TOTP_SECRET;
   const programmatic = Boolean(idirUser && idirPassword);
 
   await page.goto('/');
@@ -56,15 +150,17 @@ setup('authenticate via IDIR', async ({ page, context }) => {
     await page.locator('input[type="email"], input[name="loginfmt"]').first().fill(idirUser!);
     await page.locator('input[type="submit"], button[type="submit"]').first().click();
 
-    await page.locator('input[type="password"], input[name="passwd"]').first().fill(idirPassword!);
+    await fillSecret(
+      page.locator('input[type="password"], input[name="passwd"]').first(),
+      idirPassword!,
+    );
     await page.locator('input[type="submit"], button[type="submit"]').first().click();
 
-    // "Stay signed in?" — dismissed when it appears, absent otherwise.
-    await page
-      .locator('input#idBtn_Back, input[value="No"]')
-      .first()
-      .click({ timeout: 5_000 })
-      .catch(() => undefined);
+    if (totpSecret) {
+      await completeTotpChallenge(page, totpSecret);
+    }
+
+    await finishPostMfaPrompts(page, idirUser!);
   }
 
   // Whether interactive or programmatic, wait for the redirect back to
