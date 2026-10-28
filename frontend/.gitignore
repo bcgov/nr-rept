@@ -183,3 +183,7 @@ sketch
 .env.local
 .env.*.local
 !.env.example
+# Playwright output. Reports embed every step title, including filled values.
+playwright-report/
+test-results/
+blob-report/

@@ -53,6 +53,33 @@ bouncing back to the login domain or seeing 401s). **That window is 30 minutes
 now, not 60** — the BC Gov SSO refresh token is half the life of the Cognito one
 it replaced, so cached auth goes stale twice as fast.
 
+## Unattended login (TOTP)
+
+Set `E2E_IDIR_USER`, `E2E_IDIR_PASSWORD` and `E2E_IDIR_TOTP_SECRET` and the
+setup project signs in on its own, answering the Entra MFA prompt with a
+generated authenticator code (`e2e/totp.ts`). CI reads the same three values
+from repository secrets of the same names.
+
+This follows BC Gov SSO's
+[Automating MFA with TOTP](https://bcgov.github.io/sso-docs/advanced/automating-mfa-totp)
+guide, and should use a dedicated IDIR test account. To get the secret, sign in
+as that account at <https://mysignins.microsoft.com/security-info>, then
+**Add sign-in method → Microsoft Authenticator → Set up a different
+authentication app → Can't scan QR code?** and copy the **Secret key**. Spaces
+and case don't matter. Finish the registration by entering one generated code
+so the method is actually enrolled.
+
+The secret is the second factor itself: keep it in a masked secret, never in
+the repo or a committed `.env`.
+If the account's default sign-in method is an Authenticator push, the setup
+switches to "Use a verification code" itself, but making the authenticator-app
+code the default method is more reliable.
+
+```bash
+E2E_BASE_URL=http://localhost:3000 E2E_IDIR_USER=... E2E_IDIR_PASSWORD=... \
+  E2E_IDIR_TOTP_SECRET=... npm run e2e:login
+```
+
 ## Running the suite
 
 ```bash
