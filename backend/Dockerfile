@@ -6,7 +6,7 @@ COPY src src
 RUN mvn package -DskipTests
 RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
-FROM eclipse-temurin:21.0.9_10-jdk-alpine-3.23
+FROM eclipse-temurin:21.0.13_9-jdk-alpine-3.23
 
 RUN adduser -D -s /bin/sh spring
 RUN mkdir -p /logs
