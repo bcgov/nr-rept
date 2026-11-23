@@ -6,11 +6,11 @@ COPY . ./
 RUN npm run deploy
 
 # Build custom Caddy binary with Coraza WAF plugin
-FROM caddy:2.11.2-builder AS caddy
+FROM caddy:2.11.4-builder AS caddy
 # Install CA certificates for Go module downloads; libcap for setcap
 RUN apk add --no-cache ca-certificates libcap
 RUN xcaddy build \
-    --with github.com/corazawaf/coraza-caddy/v2
+    --with github.com/corazawaf/coraza-caddy/v2@v2.6.2
 # Strip file capabilities here so the final image does not need libcap
 RUN setcap -r /usr/bin/caddy
 

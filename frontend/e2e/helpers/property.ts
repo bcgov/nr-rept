@@ -63,8 +63,8 @@ export const deleteProperty = async (page: Page, pidFormatted: string): Promise<
     // Then wait for the row to drop out. Deleting a property invalidates the
     // project's whole property-list query (reptKeys.properties — the heavy
     // Oracle join), and on a project with many properties that refetch can take
-    // a while, so give it a generous window rather than racing it.
-    await expect(row).toHaveCount(0, { timeout: 60_000 });
+    // a while.
+    await expect(row).toHaveCount(0, { timeout: 30_000 });
   } catch (err) {
     if (!page.isClosed()) {
       // eslint-disable-next-line no-console

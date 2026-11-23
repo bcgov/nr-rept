@@ -24,10 +24,6 @@ const REPORTS = [
   { id: '2109', title: 'Payments by Requesting Source' },
 ] as const;
 
-// PDF generation hits a real database; one full pass through 9 reports
-// against DEV can take a couple of minutes.
-test.setTimeout(360_000);
-
 test('every report generates a PDF', async ({ page }) => {
   await gotoProtected(page, '/reports');
 
@@ -76,7 +72,7 @@ test('every report generates a PDF', async ({ page }) => {
       page.waitForResponse(
         (resp) =>
           resp.url().includes(`/api/reports/${report.id}`) && resp.request().method() === 'POST',
-        { timeout: 60_000 },
+        { timeout: 30_000 },
       ),
       generateButton.click(),
     ]);

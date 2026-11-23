@@ -10,7 +10,7 @@ import { uniqueSuffix } from './utils';
  * clicks: each property mutation invalidates `reptKeys.properties(projectId)`
  * (the project's whole property-list query — the heavy Oracle join), and
  * doing four list-refetches against a property we're about to delete blew
- * past the global 180s test budget. Per-sub-tab edit/save coverage should
+ * past the global test budget. Per-sub-tab edit/save coverage should
  * live in its own spec where the property under test isn't on the chopping
  * block.
  */
@@ -33,7 +33,7 @@ test('property: create, smoke-click sub-tabs, edit details, then delete', async 
     // for the Edit button to be enabled before clicking it.
     await propertySubTabs.getByRole('tab', { name: 'Details', exact: true }).click();
     const editButton = page.getByRole('button', { name: /^edit$/i });
-    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await expect(editButton).toBeEnabled({ timeout: 30_000 });
     await editButton.click();
 
     const addressValue = `E2E address ${uniqueSuffix()}`;

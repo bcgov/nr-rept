@@ -31,7 +31,7 @@ test.describe.serial('project lifecycle', () => {
     await expect(page).not.toHaveURL(/\/unauthorized/);
 
     const submit = page.getByRole('button', { name: /create project file/i });
-    await expect(submit).toBeEnabled({ timeout: 60_000 });
+    await expect(submit).toBeEnabled({ timeout: 30_000 });
 
     await page.locator('#project-create-prefix').selectOption({ index: 1 });
 
@@ -46,7 +46,7 @@ test.describe.serial('project lifecycle', () => {
 
     await submit.click();
 
-    await page.waitForURL(/\/projects\/\d+/, { timeout: 60_000 });
+    await page.waitForURL(/\/projects\/\d+/, { timeout: 30_000 });
     const match = page.url().match(/\/projects\/(\d+)/);
     expect(match, 'project URL should contain a numeric id').not.toBeNull();
     projectId = match![1];
@@ -261,7 +261,7 @@ test.describe.serial('project lifecycle', () => {
   const openPropertySubTab = async (page: import('@playwright/test').Page, subTab: string) => {
     await gotoProtected(page, `/projects/${projectId}`);
     await openProjectTab(page, 'Properties');
-    await expect(page.locator('tr', { hasText: propertyPid })).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('tr', { hasText: propertyPid })).toBeVisible({ timeout: 30_000 });
     const propertySubTabs = page.getByRole('tablist', { name: 'Property sub-sections' });
     await propertySubTabs.getByRole('tab', { name: subTab, exact: true }).click();
   };
@@ -272,7 +272,7 @@ test.describe.serial('project lifecycle', () => {
     await openPropertySubTab(page, 'Details');
 
     const editButton = page.getByRole('button', { name: /^edit$/i });
-    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await expect(editButton).toBeEnabled({ timeout: 30_000 });
     await editButton.click();
 
     const addressValue = `E2E address ${uniqueSuffix()}`;
@@ -289,7 +289,7 @@ test.describe.serial('project lifecycle', () => {
     await openPropertySubTab(page, 'Milestones');
 
     const editButton = page.getByRole('button', { name: /^edit$/i });
-    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await expect(editButton).toBeEnabled({ timeout: 30_000 });
     await editButton.click();
 
     await page.locator('#ownerContactDate').fill('2026-02-15');
@@ -304,7 +304,7 @@ test.describe.serial('project lifecycle', () => {
     await openPropertySubTab(page, 'Registration');
 
     const editButton = page.getByRole('button', { name: /^edit$/i });
-    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await expect(editButton).toBeEnabled({ timeout: 30_000 });
     await editButton.click();
 
     await page.locator('#ltoPlanNumber').fill('E2E-PLAN');
@@ -319,7 +319,7 @@ test.describe.serial('project lifecycle', () => {
     await openPropertySubTab(page, 'Expropriation');
 
     const editButton = page.getByRole('button', { name: /^edit$/i });
-    await expect(editButton).toBeEnabled({ timeout: 60_000 });
+    await expect(editButton).toBeEnabled({ timeout: 30_000 });
     await editButton.click();
 
     // executiveApprovalDate is a Carbon <DatePicker> (flatpickr). A raw fill()

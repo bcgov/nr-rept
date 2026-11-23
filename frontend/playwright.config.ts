@@ -15,7 +15,10 @@ import { baseURL, STORAGE_STATE } from './e2e/utils';
  * Override the target with E2E_BASE_URL (e.g. http://localhost:3000 for local).
  */
 export default defineConfig({
-  timeout: 180_000,
+  // Kept short on purpose: healthy runs finish every test in under ~25s, and a
+  // failure here is almost always the GitHub ↔ BC Gov network dropping out,
+  // which no amount of waiting fixes. Fail fast instead of burning minutes.
+  timeout: 30_000,
   testDir: './e2e',
   // Serial execution. We share one rotating refresh token across specs (see
   // e2e/fixtures.ts); parallel workers race that renewal and intermittently

@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 
-import { useReptUserSearch } from '@/services/rept/hooks';
-
-import type { ReptUserSearchParams } from '@/services/rept/types';
+import { useReptUser } from '@/services/rept/hooks';
 
 export type ResolvedUserName = {
   /** The formatted display string, e.g. "John Smith (AGOERTZE)", or the raw value while loading. */
@@ -24,31 +22,24 @@ const stripDomainPrefix = (value: string): string => {
  * Resolves an IDIR username to a display string like "John Smith (AGOERTZE)".
  *
  * Handles values with or without a domain prefix (e.g. "IDIR\AGOERTZE" or "AGOERTZE").
- * Fires a user search query when `userId` is non-empty. Returns the formatted
+ * Looks the user up by EXACT username when `userId` is non-empty. (It used to
+ * search, which is a partial match, and fall back to the first hit — so JDOE
+ * could show as AJDOE's name.) Returns the formatted
  * display string and a loading flag so callers can show a progress indicator.
  */
 export const useResolvedUserName = (userId: string | null | undefined): ResolvedUserName => {
   const raw = userId?.trim() ?? '';
   const trimmed = stripDomainPrefix(raw);
 
-  const params = useMemo<ReptUserSearchParams | null>(() => {
-    if (!trimmed) return null;
-    return { userId: trimmed, size: 10 };
-  }, [trimmed]);
-
-  const query = useReptUserSearch(params);
+  const query = useReptUser(trimmed);
 
   const displayValue = useMemo(() => {
     if (!trimmed) return '';
 
-    const results = query.data?.results;
-    if (!results || results.length === 0) {
+    const match = query.data;
+    if (!match) {
       return raw;
     }
-
-    // Prefer an exact IDIR match (case-insensitive), fall back to the first result
-    const match =
-      results.find((u) => u.userId?.toUpperCase() === trimmed.toUpperCase()) ?? results[0];
 
     const displayName =
       match.displayName ?? `${match.firstName ?? ''} ${match.lastName ?? ''}`.trim();
@@ -56,7 +47,7 @@ export const useResolvedUserName = (userId: string | null | undefined): Resolved
     if (!displayName) return raw;
 
     return `${displayName} (${trimmed})`;
-  }, [raw, trimmed, query.data?.results]);
+  }, [raw, trimmed, query.data]);
 
   const isLoading = Boolean(trimmed) && query.isFetching;
 
