@@ -39,6 +39,7 @@ import {
   type CodeName,
   type ReptUserSearchParams,
   type ReptUserSearchResponse,
+  type ReptUserSummary,
   type ReptAgreement,
   type ReptAgreementProperty,
   type ReptAgreementPropertyUpdateRequest,
@@ -417,6 +418,15 @@ export const searchUsers = (params: ReptUserSearchParams) =>
     }
     return result;
   });
+
+/**
+ * One IDIR user by EXACT username, or null when the user can't be resolved
+ * (the backend answers 404). Use this, not {@link searchUsers}, whenever the id
+ * is already known: the search is a partial ("contains") match, so its first
+ * hit for "JDOE" can be "AJDOE".
+ */
+export const getUser = (userId: string) =>
+  request<ReptUserSummary>(`/users/${encodeURIComponent(userId)}`);
 
 export const createProject = async (payload: ReptProjectCreateRequest) => {
   const result = await request<ReptProjectCreateResult>('/projects', {

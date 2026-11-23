@@ -97,7 +97,7 @@ const completeTotpChallenge = async (page: Page, secret: string): Promise<void> 
  *     stray second tile is never picked.
  *   - "Stay signed in?": answered No.
  *
- * Returns once the app is back on /dashboard, or after 60s; the caller's own
+ * Returns once the app is back on /dashboard, or after 30s; the caller's own
  * waitForURL is what fails the run if the redirect never comes.
  */
 const finishPostMfaPrompts = async (page: Page, idirUser: string): Promise<void> => {
@@ -108,7 +108,7 @@ const finishPostMfaPrompts = async (page: Page, idirUser: string): Promise<void>
   const accountTile = page.getByText(new RegExp(`^${escaped}@`, 'i')).first();
   const staySignedIn = page.locator('input#idBtn_Back, input[value="No"]').first();
 
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + 30_000;
   while (Date.now() < deadline) {
     if (new URL(page.url()).pathname.startsWith('/dashboard')) return;
 
@@ -136,6 +136,13 @@ setup('authenticate via IDIR', async ({ page, context }) => {
   const totpSecret = process.env.E2E_IDIR_TOTP_SECRET;
   const programmatic = Boolean(idirUser && idirPassword);
 
+  // A human signing in through `npm run e2e:login` (password + MFA) can't
+  // finish inside the 30s global budget, so only the interactive path gets
+  // longer. CI always takes the programmatic path and keeps 30s.
+  if (!programmatic) {
+    setup.setTimeout(5 * 60_000);
+  }
+
   await page.goto('/');
   await page.getByTestId('landing-button__idir').click();
 
@@ -145,7 +152,7 @@ setup('authenticate via IDIR', async ({ page, context }) => {
     // hint. The Microsoft form is what the selectors below target — the old
     // Siteminder/Logon7 `input[name="user"]` fields belonged to Cognito's
     // federation path and no longer appear.
-    await page.waitForURL(/loginproxy|login\.microsoftonline\.com|logon/i, { timeout: 60_000 });
+    await page.waitForURL(/loginproxy|login\.microsoftonline\.com|logon/i, { timeout: 30_000 });
 
     await page.locator('input[type="email"], input[name="loginfmt"]').first().fill(idirUser!);
     await page.locator('input[type="submit"], button[type="submit"]').first().click();
@@ -166,9 +173,9 @@ setup('authenticate via IDIR', async ({ page, context }) => {
   // Whether interactive or programmatic, wait for the redirect back to
   // /dashboard. The route now passes through /authCallback, where the
   // authorization code is exchanged before the app replaces the URL.
-  // Interactive flow gets 5 min for a human; programmatic gets 2.
+  // Interactive flow gets 5 min for a human; programmatic gets 30s.
   await page.waitForURL((url) => url.pathname.startsWith('/dashboard'), {
-    timeout: programmatic ? 2 * 60_000 : 5 * 60_000,
+    timeout: programmatic ? 30_000 : 5 * 60_000,
   });
 
   // Sanity check: the side menu should render once auth + roles resolve.

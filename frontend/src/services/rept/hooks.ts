@@ -34,6 +34,7 @@ import {
   setAgreementPaymentRescinded,
   searchProjects,
   searchUsers,
+  getUser,
   getProjectUpdateOptions,
   updateProject,
   getAcquisitionRequestOptions,
@@ -87,6 +88,7 @@ import type {
   CodeName,
   ReptUserSearchParams,
   ReptUserSearchResponse,
+  ReptUserSummary,
   ReptAgreement,
   ReptAgreementProperty,
   ReptAgreementPropertyUpdateRequest,
@@ -153,6 +155,7 @@ const reptKeys = {
   projectSearch: (params?: ReptProjectSearchParams | null) =>
     ['rept', 'project-search', 'results', params] as const,
   userSearch: (params?: ReptUserSearchParams | null) => ['rept', 'user-search', params] as const,
+  user: (userId: string) => ['rept', 'user', userId] as const,
 };
 
 export const useReptProject = (
@@ -544,6 +547,23 @@ export const useReptUserSearch = (
     queryFn: () => searchUsers(params ?? {}),
     enabled,
     placeholderData: keepPreviousData,
+  });
+};
+
+/**
+ * Exact lookup of one known IDIR user (name + email); data is null when the
+ * user can't be resolved. Deliberately no keepPreviousData: when the id
+ * changes, the previous user's name must not show against the new id.
+ */
+export const useReptUser = (
+  userId?: string | null,
+): UseQueryResult<ReptUserSummary | null, Error> => {
+  const id = userId?.trim() ?? '';
+  return useQuery<ReptUserSummary | null, Error>({
+    queryKey: reptKeys.user(id),
+    queryFn: () => getUser(id),
+    enabled: id.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
